@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { Menu } from 'lucide-react';
-import logoImage from '../../imports/Sin_titulo-1.png';
+import logoImage from '../../imports/Sin_título-1.png';
 import { Sidebar } from './Sidebar';
 import { useTheme } from '../context/ThemeContext';
 
@@ -47,9 +47,9 @@ export function Layout() {
 
           <div className="flex items-center gap-3">
             <h1 className="font-semibold tracking-tight text-lg lg:text-xl" style={{ color: colors.primaryText }}>
-              Kinova
+              Recova
             </h1>
-            <img src={logoImage} alt="Kinova Logo" className="w-10 h-10 lg:w-12 lg:h-12" />
+            <img src={logoImage} alt="Recova Logo" className="w-10 h-10 lg:w-12 lg:h-12" />
           </div>
         </header>
 

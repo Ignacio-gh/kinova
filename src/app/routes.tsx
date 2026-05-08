@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router";
-import { Layout } from "./components/Layout";
+import { DesktopLayout } from "./components/DesktopLayout";
 import { Home } from "./pages/Home";
 import { MiRutina } from "./pages/MiRutina";
 import { Ejercicios } from "./pages/Ejercicios";
@@ -9,7 +9,7 @@ import { SesionActiva } from "./pages/SesionActiva";
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Layout,
+    Component: DesktopLayout,
     children: [
       { index: true, Component: Home },
       { path: "mi-rutina", Component: MiRutina },

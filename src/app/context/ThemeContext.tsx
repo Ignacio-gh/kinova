@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -24,7 +24,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('Kinova-theme') as Theme | null;
+    const savedTheme = localStorage.getItem('recova-theme') as Theme | null;
     if (savedTheme) {
       setTheme(savedTheme);
     }
@@ -33,7 +33,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    localStorage.setItem('Kinova-theme', newTheme);
+    localStorage.setItem('recova-theme', newTheme);
   };
 
   const colors = theme === 'light' ? {

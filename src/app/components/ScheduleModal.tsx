@@ -47,8 +47,8 @@ export function ScheduleModal({ isOpen, onClose, exerciseName }: ScheduleModalPr
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-0 bottom-0 lg:inset-0 lg:flex lg:items-center lg:justify-center z-50 animate-slide-up">
-        <div className="rounded-t-3xl lg:rounded-3xl shadow-2xl max-w-md lg:max-w-lg mx-auto lg:w-full lg:mx-4" style={{ backgroundColor: colors.surface }}>
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+        <div className="rounded-3xl shadow-2xl max-w-2xl w-full" style={{ backgroundColor: colors.surface }}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 lg:px-8 py-5 lg:py-6 border-b" style={{ borderColor: colors.border }}>
             <h3 className="text-2xl lg:text-3xl" style={{ color: colors.primaryText, fontWeight: '700' }}>

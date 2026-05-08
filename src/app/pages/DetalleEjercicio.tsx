@@ -4,10 +4,16 @@ import { ArrowLeft, Play } from 'lucide-react';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { useTheme } from '../context/ThemeContext';
 
-const exerciseDetails = {
+const exerciseDetails: Record<string, {
+  name: string;
+  zone: string;
+  targetMuscles: string[];
+  description: string[];
+  benefits: string[];
+}> = {
   '1': {
     name: 'Sentadilla Búlgara',
-    zone: 'Pierna',
+    zone: 'Muslo',
     targetMuscles: ['Cuádriceps', 'Glúteos', 'Isquiotibiales'],
     description: [
       'Coloca un pie elevado detrás de ti sobre un banco o superficie estable',
@@ -49,7 +55,7 @@ export function DetalleEjercicio() {
   const exercise = exerciseDetails[id as keyof typeof exerciseDetails] || exerciseDetails['1'];
 
   return (
-    <main className="pb-8">
+    <main className="ml-64">
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -59,133 +65,148 @@ export function DetalleEjercicio() {
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10 p-2 lg:p-3 backdrop-blur-sm rounded-xl shadow-lg transition-all"
+        className="absolute top-8 left-72 z-10 p-3 backdrop-blur-sm rounded-xl shadow-lg transition-all"
         style={{
           backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.9)'
         }}
       >
-        <ArrowLeft size={24} className="lg:w-7 lg:h-7" style={{ color: theme === 'dark' ? '#ffffff' : '#002B49' }} />
+        <ArrowLeft size={24} style={{ color: theme === 'dark' ? '#ffffff' : '#002B49' }} />
       </button>
 
       {/* Hero Video/Image Placeholder */}
       <button
         onClick={() => navigate(`/sesion/${id}`)}
-        className="relative h-64 lg:h-96 flex items-center justify-center w-full transition-all hover:brightness-110"
+        className="relative h-96 flex items-center justify-center w-full transition-all hover:brightness-110"
         style={{
           background: 'linear-gradient(135deg, #003d5c 0%, #002B49 100%)',
         }}
       >
-        <div className="w-20 h-20 lg:w-28 lg:h-28 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all">
-          <Play size={32} className="lg:w-12 lg:h-12" color="#ffffff" fill="#ffffff" />
+        <div className="text-center">
+          <div className="w-28 h-28 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all mx-auto mb-4">
+            <Play size={48} color="#ffffff" fill="#ffffff" />
+          </div>
+          <p className="text-white/60 text-lg font-medium">Aca se ponen los videos</p>
         </div>
       </button>
 
-      <div className="px-6 lg:px-8 py-6 lg:py-8 space-y-8 lg:space-y-10 max-w-4xl mx-auto">
-        {/* Title */}
-        <div>
-          <h2 className="text-3xl lg:text-5xl mb-2" style={{ color: colors.primaryText, fontWeight: '700' }}>
-            {exercise.name}
-          </h2>
-          <p className="text-base lg:text-lg" style={{ color: colors.secondaryText }}>{exercise.zone}</p>
-        </div>
+      <div className="px-8 py-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-3 gap-8">
+          {/* Column 1: Title and Diagram */}
+          <div className="col-span-1 space-y-6">
+            {/* Title */}
+            <div>
+              <h2 className="text-4xl mb-2" style={{ color: colors.primaryText, fontWeight: '700' }}>
+                {exercise.name}
+              </h2>
+              <p className="text-lg" style={{ color: colors.secondaryText }}>{exercise.zone}</p>
+            </div>
 
-        {/* Anatomical Diagram */}
-        <div className="rounded-3xl p-8 lg:p-10" style={{
-          background: theme === 'dark'
-            ? 'linear-gradient(135deg, rgba(0,66,102,0.5) 0%, rgba(0,61,92,0.5) 100%)'
-            : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)'
-        }}>
-          <h3 className="mb-4 lg:mb-6 text-lg lg:text-xl" style={{ color: colors.primaryText, fontWeight: '600' }}>
-            Zonas Objetivo
-          </h3>
-          <div className="flex items-center justify-center">
-            {/* Simple body silhouette representation */}
-            <div className="relative w-40 h-56 lg:w-52 lg:h-72">
-              <svg viewBox="0 0 160 224" className="w-full h-full">
-                {/* Head */}
-                <circle cx="80" cy="20" r="18" fill={theme === 'dark' ? '#d1d5db' : '#002B49'} opacity="0.3" />
-                {/* Torso */}
-                <rect x="60" y="40" width="40" height="60" rx="8" fill={theme === 'dark' ? '#d1d5db' : '#002B49'} opacity="0.3" />
-                {/* Arms */}
-                <rect x="30" y="50" width="25" height="50" rx="6" fill={theme === 'dark' ? '#d1d5db' : '#002B49'} opacity="0.3" />
-                <rect x="105" y="50" width="25" height="50" rx="6" fill={theme === 'dark' ? '#d1d5db' : '#002B49'} opacity="0.3" />
-                {/* Legs - Highlighted */}
-                <rect x="65" y="105" width="12" height="70" rx="6" fill="#00A896" />
-                <rect x="83" y="105" width="12" height="70" rx="6" fill="#00A896" />
-                {/* Lower legs */}
-                <rect x="65" y="180" width="12" height="40" rx="6" fill="#00A896" opacity="0.5" />
-                <rect x="83" y="180" width="12" height="40" rx="6" fill="#00A896" opacity="0.5" />
-              </svg>
+            {/* Anatomical Diagram - Legs Only */}
+            <div className="rounded-3xl p-8 border" style={{
+              backgroundColor: colors.cardBg,
+              borderColor: colors.border
+            }}>
+              <h3 className="mb-6 text-xl font-semibold" style={{ color: colors.primaryText }}>
+                Zonas Objetivo
+              </h3>
+              <div className="flex items-center justify-center">
+                {/* Legs-focused diagram */}
+                <div className="relative w-48 h-80">
+                  <svg viewBox="0 0 160 320" className="w-full h-full">
+                    {/* Pelvis/Hip area */}
+                    <rect x="55" y="10" width="50" height="30" rx="8" fill={theme === 'dark' ? '#d1d5db' : '#6b7280'} opacity="0.2" />
+
+                    {/* Upper legs (Thighs) - Highlighted */}
+                    <rect x="60" y="45" width="18" height="110" rx="8" fill="#00A896" opacity="0.8" />
+                    <rect x="82" y="45" width="18" height="110" rx="8" fill="#00A896" opacity="0.8" />
+
+                    {/* Knees - Highlighted differently */}
+                    <circle cx="69" cy="165" r="12" fill="#00A896" />
+                    <circle cx="91" cy="165" r="12" fill="#00A896" />
+
+                    {/* Lower legs (Calves) */}
+                    <rect x="62" y="180" width="14" height="100" rx="6" fill="#00A896" opacity="0.5" />
+                    <rect x="84" y="180" width="14" height="100" rx="6" fill="#00A896" opacity="0.5" />
+
+                    {/* Ankles */}
+                    <circle cx="69" cy="290" r="8" fill="#00A896" opacity="0.6" />
+                    <circle cx="91" cy="290" r="8" fill="#00A896" opacity="0.6" />
+
+                    {/* Feet */}
+                    <ellipse cx="69" cy="305" rx="12" ry="8" fill={theme === 'dark' ? '#d1d5db' : '#6b7280'} opacity="0.3" />
+                    <ellipse cx="91" cy="305" rx="12" ry="8" fill={theme === 'dark' ? '#d1d5db' : '#6b7280'} opacity="0.3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                {exercise.targetMuscles.map((muscle) => (
+                  <span
+                    key={muscle}
+                    className="px-4 py-2 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: '#00A896',
+                      color: '#ffffff',
+                    }}
+                  >
+                    {muscle}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="mt-4 lg:mt-6 flex flex-wrap gap-2 lg:gap-3 justify-center">
-            {exercise.targetMuscles.map((muscle) => (
-              <span
-                key={muscle}
-                className="px-4 lg:px-5 py-2 lg:py-2.5 rounded-full text-sm lg:text-base"
+
+          {/* Column 2: Description */}
+          <div className="col-span-1">
+            <h3 className="mb-6 text-2xl font-semibold" style={{ color: colors.primaryText }}>
+              Descripción
+            </h3>
+            <ul className="space-y-4">
+              {exercise.description.map((step, index) => (
+                <li key={index} className="flex gap-4">
+                  <span
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                    style={{
+                      backgroundColor: '#00A896',
+                      color: '#ffffff',
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="leading-relaxed text-base" style={{ color: colors.primaryText }}>{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Benefits */}
+          <div className="col-span-1">
+            <h3 className="mb-6 text-2xl font-semibold" style={{ color: colors.primaryText }}>
+              Beneficios
+            </h3>
+            <ul className="space-y-4">
+              {exercise.benefits.map((benefit, index) => (
+                <li key={index} className="flex gap-4">
+                  <span className="text-2xl flex-shrink-0" style={{ color: '#28A745' }}>✓</span>
+                  <span className="leading-relaxed text-base" style={{ color: colors.primaryText }}>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Add to Routine Button */}
+            <div className="mt-8">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full px-8 py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
                 style={{
                   backgroundColor: '#00A896',
                   color: '#ffffff',
-                  fontWeight: '500',
                 }}
               >
-                {muscle}
-              </span>
-            ))}
+                Añadir a mi rutina
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Description */}
-        <div>
-          <h3 className="mb-4 lg:mb-6 text-xl lg:text-2xl" style={{ color: colors.primaryText, fontWeight: '600' }}>
-            Descripción
-          </h3>
-          <ul className="space-y-3 lg:space-y-4">
-            {exercise.description.map((step, index) => (
-              <li key={index} className="flex gap-3 lg:gap-4">
-                <span
-                  className="flex-shrink-0 w-6 h-6 lg:w-7 lg:h-7 rounded-full flex items-center justify-center text-sm lg:text-base"
-                  style={{
-                    backgroundColor: '#00A896',
-                    color: '#ffffff',
-                    fontWeight: '600',
-                  }}
-                >
-                  {index + 1}
-                </span>
-                <span className="leading-relaxed text-base lg:text-lg" style={{ color: colors.primaryText }}>{step}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Benefits */}
-        <div>
-          <h3 className="mb-4 lg:mb-6 text-xl lg:text-2xl" style={{ color: colors.primaryText, fontWeight: '600' }}>
-            Beneficios
-          </h3>
-          <ul className="space-y-3 lg:space-y-4">
-            {exercise.benefits.map((benefit, index) => (
-              <li key={index} className="flex gap-3 lg:gap-4">
-                <span className="text-lg lg:text-xl" style={{ color: '#00A896' }}>✓</span>
-                <span className="leading-relaxed text-base lg:text-lg" style={{ color: colors.primaryText }}>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Add to Routine Button */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="w-full lg:w-auto lg:px-12 py-4 lg:py-5 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl text-base lg:text-lg"
-          style={{
-            backgroundColor: '#00A896',
-            color: '#ffffff',
-            fontWeight: '600',
-          }}
-        >
-          Añadir a mi rutina
-        </button>
       </div>
     </main>
   );
