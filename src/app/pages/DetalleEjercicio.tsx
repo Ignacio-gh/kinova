@@ -55,7 +55,7 @@ export function DetalleEjercicio() {
   const exercise = exerciseDetails[id as keyof typeof exerciseDetails] || exerciseDetails['1'];
 
   return (
-    <main className="ml-64">
+    <main>
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

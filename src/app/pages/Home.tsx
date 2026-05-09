@@ -82,7 +82,7 @@ export function Home() {
         </div>
 
         {/* Progress Card */}
-        <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
+        <div className="rounded-2xl p-6 hover:shadow-lg border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)' }}>
               <TrendingUp size={24} style={{ color: '#00A896' }} />
@@ -135,7 +135,7 @@ export function Home() {
         </button>
 
         <div
-          className="rounded-2xl p-6 border"
+          className="rounded-2xl p-6 border hover:shadow-lg"
           style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
         >
           <h4 className="text-xl font-semibold mb-2" style={{ color: colors.primaryText }}>
