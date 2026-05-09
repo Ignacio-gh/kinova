@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
+import { Activity, TrendingUp } from 'lucide-react';
 
 export function Home() {
   const navigate = useNavigate();
@@ -7,11 +8,11 @@ export function Home() {
   const { colors } = useTheme();
 
   return (
-    <main className="px-6 lg:px-8 py-8 lg:py-12 space-y-8">
+    <main className="p-8 max-w-7xl mx-auto">
       {/* Welcome Message */}
-      <div className="text-center">
+      <div className="mb-8">
         <h2
-          className="text-4xl lg:text-6xl xl:text-7xl"
+          className="text-5xl mb-2"
           style={{
             fontFamily: 'Playball, cursive',
             color: colors.primaryText
@@ -19,37 +20,36 @@ export function Home() {
         >
           Bienvenido, {userName || 'Invitado'}
         </h2>
+        <p className="text-lg" style={{ color: colors.secondaryText }}>
+          Panel de Rehabilitación
+        </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
-        {/* Exercise Card */}
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        {/* Today's Exercise Card */}
         <div
-          className="relative overflow-hidden rounded-3xl p-8 lg:p-10 shadow-lg transition-all hover:shadow-xl lg:col-span-2"
+          className="col-span-2 relative overflow-hidden rounded-3xl p-10 shadow-lg transition-all hover:shadow-xl"
           style={{
             background: 'linear-gradient(135deg, #002B49 0%, #003d5c 100%)'
           }}
         >
-          {/* Decorative circles inspired by the logo */}
           <div
-            className="absolute -top-6 -right-6 w-24 h-24 lg:w-32 lg:h-32 rounded-full opacity-20"
+            className="absolute -top-6 -right-6 w-32 h-32 rounded-full opacity-20"
             style={{ backgroundColor: '#00A896' }}
           />
           <div
-            className="absolute bottom-4 left-4 w-3 h-3 lg:w-4 lg:h-4 rounded-full"
-            style={{ backgroundColor: '#00A896' }}
-          />
-          <div
-            className="absolute top-12 left-8 w-2 h-2 lg:w-3 lg:h-3 rounded-full"
+            className="absolute bottom-4 left-4 w-4 h-4 rounded-full"
             style={{ backgroundColor: '#00A896' }}
           />
 
-          <div className="relative z-10 space-y-4 lg:space-y-6">
-            <p className="text-gray-300 uppercase tracking-wider text-sm lg:text-base">
-              Lunes
-            </p>
+          <div className="relative z-10 space-y-6">
+            <div className="flex items-center gap-2 text-gray-300 uppercase tracking-wider">
+              <Activity size={20} />
+              <span>Ejercicio del Día - Lunes</span>
+            </div>
             <div>
               <h3
-                className="text-3xl lg:text-5xl tracking-tight mb-2"
+                className="text-4xl tracking-tight mb-3"
                 style={{
                   color: '#00A896',
                   fontWeight: '700'
@@ -58,7 +58,7 @@ export function Home() {
                 Sentadilla Búlgara
               </h3>
               <p
-                className="text-5xl lg:text-7xl"
+                className="text-6xl mb-4"
                 style={{
                   color: '#00A896',
                   fontWeight: '700'
@@ -66,10 +66,11 @@ export function Home() {
               >
                 x20
               </p>
+              <p className="text-gray-300 text-lg mb-2">3 series • Rodilla</p>
             </div>
             <button
               onClick={() => navigate('/sesion/1')}
-              className="mt-6 w-full lg:w-auto lg:px-12 py-3 lg:py-4 px-6 rounded-xl transition-all hover:shadow-md text-base lg:text-lg"
+              className="px-8 py-4 rounded-xl transition-all hover:shadow-md text-lg font-semibold"
               style={{
                 backgroundColor: '#00A896',
                 color: '#ffffff'
@@ -80,20 +81,85 @@ export function Home() {
           </div>
         </div>
 
-        {/* Additional Info Cards */}
-        <div className="rounded-2xl p-5 lg:p-7 shadow-sm border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
-          <p className="text-sm lg:text-base mb-2" style={{ color: colors.secondaryText }}>Progreso Semanal</p>
-          <p className="text-2xl lg:text-4xl" style={{ color: colors.primaryText, fontWeight: '700' }}>
-            4/7
+        {/* Progress Card */}
+        <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)' }}>
+              <TrendingUp size={24} style={{ color: '#00A896' }} />
+            </div>
+            <h3 className="font-semibold text-lg" style={{ color: colors.primaryText }}>
+              Progreso Semanal
+            </h3>
+          </div>
+          <p className="text-5xl font-bold mb-2" style={{ color: colors.primaryText }}>
+            4<span className="text-2xl" style={{ color: colors.secondaryText }}>/7</span>
           </p>
+          <p className="text-sm" style={{ color: colors.secondaryText }}>
+            Días completados esta semana
+          </p>
+          <div className="mt-4 h-2 rounded-full" style={{ backgroundColor: colors.border }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ backgroundColor: '#00A896', width: '57%' }}
+            />
+          </div>
         </div>
-        <div className="rounded-2xl p-5 lg:p-7 shadow-sm border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
-          <p className="text-sm lg:text-base mb-2" style={{ color: colors.secondaryText }}>Racha</p>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl lg:text-4xl" style={{ color: '#00A896', fontWeight: '700' }}>
-              12
-            </p>
-            <span className="text-2xl lg:text-3xl" style={{ color: '#00A896' }}>🔥</span>
+      </div>
+
+      {/* Quick Access Grid */}
+      <div className="grid grid-cols-3 gap-6">
+        <button
+          onClick={() => navigate('/mi-rutina')}
+          className="rounded-2xl p-6 text-left transition-all hover:shadow-lg border"
+          style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+        >
+          <h4 className="text-xl font-semibold mb-2" style={{ color: colors.primaryText }}>
+            Mi Rutina
+          </h4>
+          <p className="text-sm" style={{ color: colors.secondaryText }}>
+            Gestiona tus ejercicios semanales
+          </p>
+        </button>
+
+        <button
+          onClick={() => navigate('/ejercicios')}
+          className="rounded-2xl p-6 text-left transition-all hover:shadow-lg border"
+          style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+        >
+          <h4 className="text-xl font-semibold mb-2" style={{ color: colors.primaryText }}>
+            Biblioteca
+          </h4>
+          <p className="text-sm" style={{ color: colors.secondaryText }}>
+            Explora ejercicios para piernas
+          </p>
+        </button>
+
+        <div
+          className="rounded-2xl p-6 border"
+          style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+        >
+          <h4 className="text-xl font-semibold mb-2" style={{ color: colors.primaryText }}>
+            Zonas de Enfoque
+          </h4>
+          <div className="space-y-2 mt-4">
+            <div className="flex items-center justify-between">
+              <span style={{ color: colors.secondaryText }}>Rodilla</span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#00A896', color: '#ffffff' }}>
+                5
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span style={{ color: colors.secondaryText }}>Tobillo</span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#00A896', color: '#ffffff' }}>
+                2
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span style={{ color: colors.secondaryText }}>Muslo</span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#00A896', color: '#ffffff' }}>
+                3
+              </span>
+            </div>
           </div>
         </div>
       </div>
