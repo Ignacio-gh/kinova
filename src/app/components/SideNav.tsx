@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import logoImage from '../../imports/Sin_título-1.png';
 
 interface SideNavProps {
-  onLogout: () => void;
+  onLogout?: () => void;
 }
 
 export function SideNav({ onLogout }: SideNavProps) {
@@ -38,7 +38,7 @@ export function SideNav({ onLogout }: SideNavProps) {
         <div className="flex items-center gap-3">
           <img src={logoImage} alt="Recova Logo" className="w-12 h-12" />
           <h1 className="text-2xl font-bold" style={{ color: colors.primaryText }}>
-            Kinova
+            Recova
           </h1>
         </div>
       </div>
@@ -79,7 +79,10 @@ export function SideNav({ onLogout }: SideNavProps) {
       {/* Logout Button */}
       <div className="p-4 border-t" style={{ borderColor: colors.border }}>
         <button
-          onClick={onLogout}
+          onClick={() => {
+            if (onLogout) onLogout();
+            navigate('/login');
+          }}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
           style={{
             backgroundColor: '#FF4D4D',

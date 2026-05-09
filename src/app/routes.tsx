@@ -5,8 +5,23 @@ import { MiRutina } from "./pages/MiRutina";
 import { Ejercicios } from "./pages/Ejercicios";
 import { DetalleEjercicio } from "./pages/DetalleEjercicio";
 import { SesionActiva } from "./pages/SesionActiva";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import { Welcome } from "./pages/Welcome";
 
 export const router = createBrowserRouter([
+  {
+    path: "/welcome",
+    Component: Welcome,
+  },
+  {
+    path: "/login",
+    Component: Login,
+  },
+  {
+    path: "/registro",
+    Component: Register,
+  },
   {
     path: "/",
     Component: DesktopLayout,
