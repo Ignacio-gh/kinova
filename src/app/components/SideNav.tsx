@@ -13,14 +13,14 @@ export function SideNav({ onLogout }: SideNavProps) {
   const { theme, toggleTheme, colors } = useTheme();
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Inicio' },
-    { path: '/mi-rutina', icon: Calendar, label: 'Mi Rutina' },
-    { path: '/ejercicios', icon: Dumbbell, label: 'Ejercicios' },
+    { path: '/app', icon: Home, label: 'Inicio' },
+    { path: '/app/mi-rutina', icon: Calendar, label: 'Mi Rutina' },
+    { path: '/app/ejercicios', icon: Dumbbell, label: 'Ejercicios' },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/app') {
+      return location.pathname === '/app';
     }
     return location.pathname.startsWith(path);
   };
@@ -35,12 +35,15 @@ export function SideNav({ onLogout }: SideNavProps) {
     >
       {/* Logo */}
       <div className="p-6 border-b" style={{ borderColor: colors.border }}>
-        <div className="flex items-center gap-3">
-          <img src={logoImage} alt="Recova Logo" className="w-12 h-12" />
+        <button
+          onClick={() => navigate('/app')}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        >
+          <img src={logoImage} alt="Kinova Logo" className="w-12 h-12" />
           <h1 className="text-2xl font-bold" style={{ color: colors.primaryText }}>
-            Recova
+            Kinova
           </h1>
-        </div>
+        </button>
       </div>
 
       {/* Navigation Items */}

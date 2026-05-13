@@ -21,7 +21,7 @@ export function Home() {
           Bienvenido, {userName || 'Invitado'}
         </h2>
         <p className="text-lg" style={{ color: colors.secondaryText }}>
-          Panel de Rehabilitación
+          Panel de Rehabilitación de Piernas
         </p>
       </div>
 
@@ -76,13 +76,13 @@ export function Home() {
                 color: '#ffffff'
               }}
             >
-              Iniciar Ejercicio
+              Iniciar Ejercicio con IA
             </button>
           </div>
         </div>
 
         {/* Progress Card */}
-        <div className="rounded-2xl p-6 hover:shadow-lg border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
+        <div className="rounded-2xl p-6 shadow-sm border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 rounded-xl" style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)' }}>
               <TrendingUp size={24} style={{ color: '#00A896' }} />
@@ -109,7 +109,7 @@ export function Home() {
       {/* Quick Access Grid */}
       <div className="grid grid-cols-3 gap-6">
         <button
-          onClick={() => navigate('/mi-rutina')}
+          onClick={() => navigate('/app/mi-rutina')}
           className="rounded-2xl p-6 text-left transition-all hover:shadow-lg border"
           style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
         >
@@ -122,7 +122,7 @@ export function Home() {
         </button>
 
         <button
-          onClick={() => navigate('/ejercicios')}
+          onClick={() => navigate('/app/ejercicios')}
           className="rounded-2xl p-6 text-left transition-all hover:shadow-lg border"
           style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
         >
@@ -135,7 +135,7 @@ export function Home() {
         </button>
 
         <div
-          className="rounded-2xl p-6 border hover:shadow-lg"
+          className="rounded-2xl p-6 border"
           style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
         >
           <h4 className="text-xl font-semibold mb-2" style={{ color: colors.primaryText }}>

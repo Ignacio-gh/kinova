@@ -36,7 +36,7 @@ export function MiRutina() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/ejercicios')}
+          onClick={() => navigate('/app/ejercicios')}
           className="flex items-center gap-2 px-6 py-3 rounded-xl transition-all hover:shadow-lg font-semibold"
           style={{ backgroundColor: '#00A896', color: '#ffffff' }}
         >

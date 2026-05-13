@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logoImage from '../../imports/Sin_título-1.png';
 
 export function Register() {
@@ -10,7 +10,11 @@ export function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const userType = searchParams.get('type') || 'paciente';
+  const isKinesiologo = userType === 'kinesiologo';
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +23,7 @@ export function Register() {
       alert('Las contraseñas no coinciden');
       return;
     }
-    navigate('/');
+    navigate('/app');
   };
 
   return (
@@ -38,6 +42,16 @@ export function Register() {
         className="relative z-10 w-full max-w-md rounded-3xl shadow-2xl p-10"
         style={{ backgroundColor: '#ffffff' }}
       >
+        {/* Back to Home */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 mb-6 transition-colors hover:opacity-70"
+          style={{ color: '#6b7280' }}
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm">Volver al inicio</span>
+        </button>
+
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -47,7 +61,7 @@ export function Register() {
             Crear Cuenta
           </h1>
           <p className="text-lg" style={{ color: '#6b7280' }}>
-            Comienza tu rehabilitación hoy
+            {isKinesiologo ? 'Únete como profesional' : 'Comienza tu rehabilitación hoy'}
           </p>
         </div>
 

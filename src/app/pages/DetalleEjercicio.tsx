@@ -55,7 +55,7 @@ export function DetalleEjercicio() {
   const exercise = exerciseDetails[id as keyof typeof exerciseDetails] || exerciseDetails['1'];
 
   return (
-    <main>
+    <main className="ml-64">
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -64,7 +64,7 @@ export function DetalleEjercicio() {
 
       {/* Back Button */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate('/app/ejercicios')}
         className="absolute top-8 left-72 z-10 p-3 backdrop-blur-sm rounded-xl shadow-lg transition-all"
         style={{
           backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.9)'

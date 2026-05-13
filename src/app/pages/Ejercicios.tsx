@@ -4,17 +4,6 @@ import { useNavigate } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
 import { ScheduleModal } from '../components/ScheduleModal';
 
-// 1. Importamos las imágenes (asegurate de tenerlas en esta ruta)
-import imgBulgara from '../../assets/bulgara.jpeg';
-import imgRodilla from '../../assets/rodilla.png';
-
-// 2. Creamos el mapeo por ID para que sea fácil de mantener
-const EXERCISE_IMAGES: Record<number, string> = {
-  1: imgBulgara,
-  2: imgRodilla,
-  // Agregar los demás IDs
-};
-
 const filters = ['Todo', 'Rodilla', 'Tobillo', 'Muslo', 'Glúteo'];
 
 const exerciseLibrary = [
@@ -84,7 +73,7 @@ export function Ejercicios() {
         />
         <input
           type="text"
-          placeholder="Buscar por nombre o zona..."
+          placeholder="Buscar por nombre o zona (rodilla, tobillo, muslo, glúteo...)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-14 pr-5 py-4 rounded-2xl border focus:outline-none focus:ring-2 transition-all text-base"
@@ -118,61 +107,44 @@ export function Ejercicios() {
 
       {/* Exercise Grid */}
       <div className="grid grid-cols-4 gap-6">
-        {filteredExercises.map((exercise) => {
-          const imageSrc = EXERCISE_IMAGES[exercise.id];
-
-          return (
-            <div
-              key={exercise.id}
-              className="group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all border"
-              style={{ borderColor: colors.border }}
+        {filteredExercises.map((exercise) => (
+          <div
+            key={exercise.id}
+            className="relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all border"
+            style={{ borderColor: colors.border }}
+          >
+            {/* Background placeholder */}
+            <button
+              onClick={() => navigate(`/app/ejercicios/${exercise.id}`)}
+              className="w-full aspect-square flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #003d5c 0%, #002B49 100%)'
+              }}
             >
-              {/* Image Container */}
-              <button
-                onClick={() => navigate(`/ejercicios/${exercise.id}`)}
-                className="w-full aspect-square relative flex items-center justify-center overflow-hidden"
-                style={{ background: colors.navy }}
-              >
-                {imageSrc ? (
-                  <>
-                    <img 
-                      src={imageSrc} 
-                      alt={exercise.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    {/* Degradado para que el botón de '+' resalte */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </>
-                ) : (
-                  <p className="text-white/40 text-sm font-medium">Sin imagen</p>
-                )}
-              </button>
+              <p className="text-white/40 text-sm font-medium">Aca se ponen las fotos</p>
+            </button>
 
-              {/* Green Add Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddToRoutine(exercise);
-                }}
-                className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110 z-10"
-                style={{ backgroundColor: '#28A745' }}
-              >
-                <Plus size={20} color="#ffffff" strokeWidth={3} />
-              </button>
+            {/* Green Add Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToRoutine(exercise);
+              }}
+              className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110"
+              style={{ backgroundColor: '#28A745' }}
+            >
+              <Plus size={20} color="#ffffff" strokeWidth={3} />
+            </button>
 
-              {/* Exercise Info */}
-              <div className="p-4" style={{ backgroundColor: colors.cardBg }}>
-                <h3 className="font-semibold mb-1" style={{ color: colors.primaryText }}>
-                  {exercise.name}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00A896' }}></span>
-                  <p className="text-sm" style={{ color: colors.secondaryText }}>{exercise.zone}</p>
-                </div>
-              </div>
+            {/* Exercise Info */}
+            <div className="p-4" style={{ backgroundColor: colors.cardBg }}>
+              <h3 className="font-semibold mb-1" style={{ color: colors.primaryText }}>
+                {exercise.name}
+              </h3>
+              <p className="text-sm" style={{ color: colors.secondaryText }}>{exercise.zone}</p>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </main>
   );

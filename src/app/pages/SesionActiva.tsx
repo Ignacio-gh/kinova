@@ -72,7 +72,7 @@ export function SesionActiva() {
           </div>
 
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/app')}
             className="p-4 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
           >
             <X size={28} color="#ffffff" />

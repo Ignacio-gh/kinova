@@ -7,12 +7,12 @@ import { DetalleEjercicio } from "./pages/DetalleEjercicio";
 import { SesionActiva } from "./pages/SesionActiva";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
-import { Welcome } from "./pages/Welcome";
+import { Landing } from "./pages/Landing";
 
 export const router = createBrowserRouter([
   {
-    path: "/welcome",
-    Component: Welcome,
+    path: "/",
+    Component: Landing,
   },
   {
     path: "/login",
@@ -23,7 +23,7 @@ export const router = createBrowserRouter([
     Component: Register,
   },
   {
-    path: "/",
+    path: "/app",
     Component: DesktopLayout,
     children: [
       { index: true, Component: Home },
