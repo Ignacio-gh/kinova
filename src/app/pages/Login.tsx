@@ -19,13 +19,13 @@ export function Login() {
   const handlePatientLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual patient login logic
-    navigate('/app');
+    navigate('/paciente/calendario');
   };
 
   const handleKinesiologoLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual kinesiologist login logic
-    navigate('/app');
+    navigate('/kinesiologo/pacientes');
   };
 
   return (

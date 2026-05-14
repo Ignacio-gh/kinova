@@ -78,30 +78,7 @@ export function Landing() {
               asegurando que cada movimiento sea correcto y efectivo.
             </p>
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/registro')}
-                className="flex items-center gap-2 px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl font-semibold text-lg"
-                style={{
-                  backgroundColor: '#00A896',
-                  color: '#ffffff'
-                }}
-              >
-                Comenzar
-                <ArrowRight size={20} />
-              </button>
-
-              <button
-                className="px-8 py-4 rounded-xl transition-all font-semibold text-lg border-2"
-                style={{
-                  borderColor: '#ffffff',
-                  color: '#ffffff',
-                  backgroundColor: 'transparent'
-                }}
-              >
-                Ver Demo
-              </button>
-            </div>
+            
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 mt-16">
@@ -269,17 +246,6 @@ export function Landing() {
                   <span style={{ color: '#002B49' }}>Disponible 24/7 desde cualquier lugar</span>
                 </li>
               </ul>
-
-              <button
-                onClick={() => navigate('/registro?type=paciente')}
-                className="w-full py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-lg font-semibold"
-                style={{
-                  backgroundColor: '#00A896',
-                  color: '#ffffff'
-                }}
-              >
-                Comenzar como Paciente
-              </button>
             </div>
 
             {/* Para Kinesiólogos */}
@@ -328,18 +294,6 @@ export function Landing() {
                   <span className="text-white">Optimiza el tiempo de consulta presencial</span>
                 </li>
               </ul>
-
-              <button
-                onClick={() => navigate('/registro?type=kinesiologo')}
-                className="w-full py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-lg font-semibold border-2"
-                style={{
-                  borderColor: '#00A896',
-                  backgroundColor: '#00A896',
-                  color: '#ffffff'
-                }}
-              >
-                Comenzar como Kinesiólogo
-              </button>
             </div>
           </div>
         </div>
@@ -359,16 +313,9 @@ export function Landing() {
           <p className="text-xl text-white/90 mb-8">
             Únete a miles de pacientes que ya están mejorando su calidad de vida con Kinova
           </p>
-          <button
-            onClick={() => navigate('/registro')}
-            className="px-10 py-5 rounded-xl transition-all shadow-xl hover:shadow-2xl font-semibold text-lg"
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#002B49'
-            }}
-          >
-            Crear Cuenta Gratuita
-          </button>
+          <p className="text-2xl text-white/90 mb-8">
+            {/*ESLOGAN*/}
+          </p>
         </div>
       </section>
 
