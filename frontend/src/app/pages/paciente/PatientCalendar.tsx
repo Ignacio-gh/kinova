@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Play } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { CheckCircle, XCircle, Play, Camera } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 interface Exercise {
@@ -40,6 +41,7 @@ const mockExercises: DayExercises = {
 };
 
 export function PatientCalendar() {
+  const navigate = useNavigate();
   const { colors } = useTheme();
   const [exercises, setExercises] = useState<DayExercises>(mockExercises);
 
@@ -164,27 +166,40 @@ export function PatientCalendar() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-2">
-                          {exercise.hasVideo && (
-                            <button
-                              className="flex-1 flex items-center justify-center gap-1 p-2 rounded-lg transition-colors text-xs font-medium"
-                              style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)', color: '#00A896' }}
-                              title="Ver video demo"
-                            >
-                              <Play size={12} />
-                              Video
-                            </button>
-                          )}
+                        <div className="flex flex-col gap-2">
+                          {/* Botón principal: abrir cámara y comenzar el ejercicio con IA */}
                           <button
-                            onClick={() => toggleCompleted(day, exercise.id)}
-                            className="flex-1 p-2 rounded-lg transition-colors text-xs font-medium"
-                            style={{
-                              backgroundColor: exercise.completed ? 'rgba(40, 167, 69, 0.1)' : 'rgba(0, 168, 150, 0.1)',
-                              color: exercise.completed ? '#28A745' : '#00A896'
-                            }}
+                            onClick={() => navigate(`/sesion/${exercise.id}`)}
+                            className="w-full flex items-center justify-center gap-1 p-2 rounded-lg transition-all text-xs font-semibold hover:shadow-md"
+                            style={{ backgroundColor: '#00A896', color: '#ffffff' }}
+                            title="Iniciar ejercicio con cámara e IA"
                           >
-                            {exercise.completed ? 'Completado' : 'Marcar'}
+                            <Camera size={12} />
+                            Iniciar
                           </button>
+
+                          <div className="flex gap-2">
+                            {exercise.hasVideo && (
+                              <button
+                                className="flex-1 flex items-center justify-center gap-1 p-2 rounded-lg transition-colors text-xs font-medium"
+                                style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)', color: '#00A896' }}
+                                title="Ver video demo"
+                              >
+                                <Play size={12} />
+                                Video
+                              </button>
+                            )}
+                            <button
+                              onClick={() => toggleCompleted(day, exercise.id)}
+                              className="flex-1 p-2 rounded-lg transition-colors text-xs font-medium"
+                              style={{
+                                backgroundColor: exercise.completed ? 'rgba(40, 167, 69, 0.1)' : 'rgba(0, 168, 150, 0.1)',
+                                color: exercise.completed ? '#28A745' : '#00A896'
+                              }}
+                            >
+                              {exercise.completed ? 'Completado' : 'Marcar'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
