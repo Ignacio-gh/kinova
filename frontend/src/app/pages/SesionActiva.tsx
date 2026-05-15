@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { X, Pause, Play } from 'lucide-react';
 
 type FeedbackState = 'perfect' | 'improve' | 'bad';
+type CameraStatus = 'idle' | 'starting' | 'streaming' | 'error';
 
 const feedbackConfig = {
   perfect: {
@@ -45,6 +46,61 @@ export function SesionActiva() {
   const [currentFeedback, setCurrentFeedback] = useState(aiFeedbackMessages[0]);
   const [reps, setReps] = useState(0);
 
+  // ---------- estado de la cámara ----------
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Abre la webcam del navegador con getUserMedia.
+  const startCamera = async () => {
+    setCameraStatus('starting');
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user',
+        },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {
+          /* el play() puede rechazar si la pestaña pierde foco — lo ignoramos */
+        });
+      }
+      setCameraStatus('streaming');
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? mapCameraError(err)
+          : 'No se pudo acceder a la cámara.';
+      setCameraError(message);
+      setCameraStatus('error');
+    }
+  };
+
+  // Cierra todos los tracks del stream y libera la cámara.
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const feedbackInterval = setInterval(() => {
       const states: FeedbackState[] = ['perfect', 'improve', 'bad', 'perfect'];
@@ -79,36 +135,48 @@ export function SesionActiva() {
           </button>
         </div>
 
-        {/* Camera View with AR Overlay */}
+        {/* Camera View */}
         <div className="flex-1 relative bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center overflow-hidden">
-          <div className="text-center">
-            <p className="text-white/60 text-xl font-medium mb-8">Aca se ponen los videos</p>
-          </div>
-          {/* AR Overlay focused on legs */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <svg width="400" height="500" viewBox="0 0 400 500" className="drop-shadow-2xl">
-              {/* Hip joint */}
-              <circle cx="200" cy="100" r="12" fill="#00A896" className="animate-pulse" />
+          {/* Video real de la webcam — siempre montado para que srcObject funcione */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+              cameraStatus === 'streaming' ? 'opacity-100' : 'opacity-0'
+            }`}
+            // Espejado tipo "selfie": más natural haciendo ejercicio frente a la pantalla.
+            style={{ transform: 'scaleX(-1)' }}
+          />
 
-              {/* Legs - connecting lines */}
-              <line x1="200" y1="100" x2="170" y2="250" stroke="#00A896" strokeWidth="4" opacity="0.8" />
-              <line x1="200" y1="100" x2="230" y2="250" stroke="#00A896" strokeWidth="4" opacity="0.8" />
+          {/* Estado: cargando */}
+          {cameraStatus === 'starting' && (
+            <div className="relative text-center">
+              <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4" />
+              <p className="text-white/80 text-xl font-medium">Abriendo cámara…</p>
+            </div>
+          )}
 
-              {/* Knee joints */}
-              <circle cx="170" cy="250" r="14" fill="#00A896" className="animate-pulse" />
-              <circle cx="230" cy="250" r="14" fill="#00A896" className="animate-pulse" />
-              <circle cx="170" cy="250" r="20" fill="none" stroke="#00A896" strokeWidth="2" opacity="0.4" />
-              <circle cx="230" cy="250" r="20" fill="none" stroke="#00A896" strokeWidth="2" opacity="0.4" />
-
-              {/* Lower legs */}
-              <line x1="170" y1="250" x2="165" y2="420" stroke="#00A896" strokeWidth="4" opacity="0.8" />
-              <line x1="230" y1="250" x2="235" y2="420" stroke="#00A896" strokeWidth="4" opacity="0.8" />
-
-              {/* Ankle joints */}
-              <circle cx="165" cy="420" r="10" fill="#00A896" className="animate-pulse" />
-              <circle cx="235" cy="420" r="10" fill="#00A896" className="animate-pulse" />
-            </svg>
-          </div>
+          {/* Estado: error / permiso denegado */}
+          {cameraStatus === 'error' && (
+            <div className="relative text-center max-w-md px-6">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">⚠</span>
+              </div>
+              <p className="text-white text-xl font-semibold mb-2">No se pudo abrir la cámara</p>
+              <p className="text-white/60 text-sm mb-6">
+                {cameraError ?? 'Permití el acceso a la cámara y volvé a intentar.'}
+              </p>
+              <button
+                onClick={startCamera}
+                className="px-6 py-3 rounded-xl font-semibold transition-all"
+                style={{ backgroundColor: '#00A896', color: '#ffffff' }}
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
 
           {/* Pause/Play Button */}
           <button
@@ -215,4 +283,22 @@ export function SesionActiva() {
       </div>
     </div>
   );
+}
+
+// Mensajes amigables para los errores típicos de getUserMedia.
+function mapCameraError(err: Error): string {
+  switch (err.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Permiso denegado. Habilitá la cámara para este sitio en la configuración del navegador.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No se encontró ninguna cámara conectada.';
+    case 'NotReadableError':
+      return 'La cámara está siendo usada por otra aplicación (Zoom, Meet, Teams, etc.).';
+    case 'AbortError':
+      return 'La cámara se interrumpió. Volvé a intentar.';
+    default:
+      return err.message || 'No se pudo acceder a la cámara.';
+  }
 }
