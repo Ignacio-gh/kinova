@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Mail, Phone, Calendar, FileText } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, FileText, Clock } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface AddPatientModalProps {
@@ -14,6 +14,7 @@ export interface PatientData {
   phone: string;
   birthDate: string;
   diagnosis: string;
+  treatmentWeeks: number; // <-- Agregado a la interfaz de tipado
   notes: string;
 }
 
@@ -25,6 +26,7 @@ export function AddPatientModal({ isOpen, onClose, onAdd }: AddPatientModalProps
     phone: '',
     birthDate: '',
     diagnosis: '',
+    treatmentWeeks: 4, // <-- Inicializado por defecto en 4 semanas
     notes: ''
   });
 
@@ -33,7 +35,7 @@ export function AddPatientModal({ isOpen, onClose, onAdd }: AddPatientModalProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAdd(formData);
-    setFormData({ name: '', email: '', phone: '', birthDate: '', diagnosis: '', notes: '' });
+    setFormData({ name: '', email: '', phone: '', birthDate: '', diagnosis: '', treatmentWeeks: 4, notes: '' });
     onClose();
   };
 
@@ -192,6 +194,35 @@ export function AddPatientModal({ isOpen, onClose, onAdd }: AddPatientModalProps
                     value={formData.diagnosis}
                     onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
                     placeholder="Ej: Lesión de rodilla"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all"
+                    style={{
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.border,
+                      color: colors.primaryText,
+                      '--tw-ring-color': '#00A896'
+                    } as React.CSSProperties}
+                  />
+                </div>
+              </div>
+
+              {/* Duración del Tratamiento en Semanas (Nuevo campo acoplado) */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: colors.primaryText }}>
+                  Duración Tratamiento (Semanas) *
+                </label>
+                <div className="relative">
+                  <Clock
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2"
+                    size={18}
+                    style={{ color: colors.secondaryText }}
+                  />
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="52"
+                    value={formData.treatmentWeeks}
+                    onChange={(e) => setFormData({ ...formData, treatmentWeeks: parseInt(e.target.value) || 1 })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all"
                     style={{
                       backgroundColor: colors.inputBg,
