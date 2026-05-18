@@ -1,13 +1,10 @@
 import { createBrowserRouter } from "react-router";
-import { DesktopLayout } from "./components/DesktopLayout";
 import { KinesiologoLayout } from "./components/KinesiologoLayout";
 import { PatientLayout } from "./components/PatientLayout";
-import { Home } from "./pages/Home";
-import { MiRutina } from "./pages/MiRutina";
-import { Ejercicios } from "./pages/Ejercicios";
-import { DetalleEjercicio } from "./pages/DetalleEjercicio";
+import { PatientHome } from "./pages/PatientHome";
 import { SesionActiva } from "./pages/SesionActiva";
-import { Login } from "./pages/Login";
+import { PatientLogin } from "./pages/LoginPaciente";
+import { KinesiologoLogin } from "./pages/LoginKinesiologo";
 import { Register } from "./pages/Register";
 import { Landing } from "./pages/Landing";
 import { PatientList } from "./pages/kinesiologo/PatientList";
@@ -22,22 +19,16 @@ export const router = createBrowserRouter([
     Component: Landing,
   },
   {
-    path: "/login",
-    Component: Login,
+    path: "/login/paciente",
+    Component: PatientLogin,
+  },
+  {
+    path: "/login/kinesiologo",
+    Component: KinesiologoLogin,
   },
   {
     path: "/registro",
     Component: Register,
-  },
-  {
-    path: "/app",
-    Component: DesktopLayout,
-    children: [
-      { index: true, Component: Home },
-      { path: "mi-rutina", Component: MiRutina },
-      { path: "ejercicios", Component: Ejercicios },
-      { path: "ejercicios/:id", Component: DetalleEjercicio },
-    ],
   },
   {
     path: "/sesion/:id",
@@ -56,6 +47,7 @@ export const router = createBrowserRouter([
     path: "/paciente",
     Component: PatientLayout,
     children: [
+      { index: true, Component: PatientHome },
       { path: "calendario", Component: PatientCalendar },
       { path: "historial", Component: SessionHistory },
     ],
