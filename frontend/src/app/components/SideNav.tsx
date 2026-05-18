@@ -15,7 +15,7 @@ export function SideNav({ onLogout }: SideNavProps) {
   const navItems = [
     { path: '/app', icon: Home, label: 'Inicio' },
     { path: '/app/mi-rutina', icon: Calendar, label: 'Mi Rutina' },
-    { path: '/app/ejercicios', icon: Dumbbell, label: 'Ejercicios' },
+    { path: '/app/historial', icon: Dumbbell, label: 'Historial' },
   ];
 
   const isActive = (path: string) => {
