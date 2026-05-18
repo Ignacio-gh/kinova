@@ -14,17 +14,12 @@ export function Register() {
   // --- Estado para el archivo de verificación profesional ---
   const [verificationFile, setVerificationFile] = useState<File | null>(null);
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const userType = searchParams.get('type') || 'paciente';
   const isKinesiologo = userType === 'kinesiologo';
 
-  // Cambiar el tipo de usuario de forma dinámica en la URL
-  const handleTypeChange = (type: 'paciente' | 'kinesiologo') => {
-    setSearchParams({ type });
-    setVerificationFile(null); // Limpiamos el archivo si cambia de rol
-  };
 
   // Manejador de la carga del archivo
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,11 +45,7 @@ export function Register() {
   if (isKinesiologo) {
     // Si es kinesiólogo, lo mandamos directo a su listado de pacientes
     navigate('/login/kinesiologo'); 
-  } else {
-    // Si es paciente, lo mandamos a su calendario semanal
-    navigate('/login/paciente'); 
-  }
-};
+  }}
 
   return (
     <div
@@ -94,32 +85,6 @@ export function Register() {
           <p className="text-sm" style={{ color: '#6b7280' }}>
             {isKinesiologo ? 'Únete como profesional verificado' : 'Comienza tu rehabilitación hoy'}
           </p>
-        </div>
-
-        {/* --- SELECTOR DE ROL (PACIENTE O KINESIÓLOGO) --- */}
-        <div className="grid grid-cols-2 gap-2 p-1.5 bg-gray-100 rounded-2xl mb-6">
-          <button
-            type="button"
-            onClick={() => handleTypeChange('paciente')}
-            className={`py-2.5 text-sm font-bold rounded-xl transition-all ${
-              !isKinesiologo 
-                ? 'bg-white text-[#002B49] shadow-sm' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Soy Paciente
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeChange('kinesiologo')}
-            className={`py-2.5 text-sm font-bold rounded-xl transition-all ${
-              isKinesiologo 
-                ? 'bg-[#00A896] text-white shadow-sm' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Soy Kinesiólogo
-          </button>
         </div>
 
         {/* Register Form */}
@@ -300,7 +265,7 @@ export function Register() {
             ¿Ya tienes una cuenta?{' '}
             <button
               type="button"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login/kinesiologo')}
               className="font-semibold hover:underline"
               style={{ color: '#00A896' }}
             >
