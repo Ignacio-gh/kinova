@@ -1,4 +1,4 @@
-import { Calendar, History, Moon, Sun, LogOut } from 'lucide-react';
+import { Home, Calendar, History, Moon, Sun, LogOut } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
 import logoImage from '../../imports/Sin_título-1.png';
@@ -9,11 +9,15 @@ export function PatientSidebar() {
   const { theme, toggleTheme, colors } = useTheme();
 
   const navItems = [
+    { path: '/paciente', icon: Home, label: 'Inicio'},
     { path: '/paciente/calendario', icon: Calendar, label: 'Mi Calendario' },
     { path: '/paciente/historial', icon: History, label: 'Historial de Sesiones' },
   ];
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/paciente') return location.pathname === '/paciente';
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div
@@ -26,7 +30,7 @@ export function PatientSidebar() {
       {/* Logo */}
       <div className="p-6 border-b" style={{ borderColor: colors.border }}>
         <button
-          onClick={() => navigate('/paciente/calendario')}
+          onClick={() => navigate('/paciente')}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img src={logoImage} alt="Kinova Logo" className="w-12 h-12" />
