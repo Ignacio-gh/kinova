@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
     path: "/kinesiologo",
     Component: KinesiologoLayout,
     children: [
-      { path: "pacientes", Component: PatientList },
+      { index: true, Component: PatientList },
       { path: "pacientes/:id", Component: PatientDetail },
       { path: "ejercicios", Component: ExerciseLibrary },
     ],

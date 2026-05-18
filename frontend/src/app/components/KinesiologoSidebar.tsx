@@ -9,11 +9,16 @@ export function KinesiologoSidebar() {
   const { theme, toggleTheme, colors } = useTheme();
 
   const navItems = [
-    { path: '/kinesiologo/pacientes', icon: Users, label: 'Mis Pacientes' },
+    { path: '/kinesiologo', icon: Users, label: 'Mis Pacientes' },
     { path: '/kinesiologo/ejercicios', icon: Dumbbell, label: 'Biblioteca de Ejercicios' },
   ];
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/kinesiologo') {
+      return location.pathname === '/kinesiologo';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div
@@ -26,7 +31,7 @@ export function KinesiologoSidebar() {
       {/* Logo */}
       <div className="p-6 border-b" style={{ borderColor: colors.border }}>
         <button
-          onClick={() => navigate('/kinesiologo/pacientes')}
+          onClick={() => navigate('/kinesiologo')}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img src={logoImage} alt="Kinova Logo" className="w-12 h-12" />

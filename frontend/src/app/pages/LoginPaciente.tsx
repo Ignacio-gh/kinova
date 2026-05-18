@@ -11,7 +11,7 @@ export function PatientLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/app');
+    navigate('/paciente');
   };
 
   return (

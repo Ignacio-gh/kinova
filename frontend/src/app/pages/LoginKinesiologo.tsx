@@ -11,7 +11,7 @@ export function KinesiologoLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/kinesiologo/pacientes');
+    navigate('/kinesiologo');
   };
 
   return (
