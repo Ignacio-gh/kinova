@@ -24,7 +24,7 @@ export function Landing() {
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/login?type=paciente')}
+              onClick={() => navigate('/login/paciente')}
               className="px-6 py-3 rounded-xl transition-all hover:shadow-md font-semibold border-2"
               style={{
                 borderColor: '#00A896',
@@ -35,7 +35,7 @@ export function Landing() {
               Soy Paciente
             </button>
             <button
-              onClick={() => navigate('/login?type=kinesiologo')}
+              onClick={() => navigate('/login/kinesiologo')}
               className="px-6 py-3 rounded-xl transition-all hover:shadow-md font-semibold"
               style={{
                 backgroundColor: '#00A896',
@@ -77,8 +77,6 @@ export function Landing() {
               Kinova utiliza visión por computadora e inteligencia artificial para monitorear tus ejercicios de rehabilitación en tiempo real,
               asegurando que cada movimiento sea correcto y efectivo.
             </p>
-
-            
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 mt-16">
@@ -312,9 +310,6 @@ export function Landing() {
           </h2>
           <p className="text-xl text-white/90 mb-8">
             Únete a miles de pacientes que ya están mejorando su calidad de vida con Kinova
-          </p>
-          <p className="text-2xl text-white/90 mb-8">
-            {/*ESLOGAN*/}
           </p>
         </div>
       </section>

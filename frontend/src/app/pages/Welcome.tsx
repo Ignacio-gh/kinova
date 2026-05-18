@@ -1,9 +1,7 @@
-import { useNavigate } from 'react-router';
 import { Activity, Shield, Zap } from 'lucide-react';
 import logoImage from '../../imports/Sin_título-1.png';
 
 export function Welcome() {
-  const navigate = useNavigate();
 
   return (
     <div
@@ -73,31 +71,6 @@ export function Welcome() {
               Encriptación de nivel médico
             </p>
           </div>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="flex gap-6">
-          <button
-            onClick={() => navigate('/login')}
-            className="px-10 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl font-semibold text-lg"
-            style={{
-              backgroundColor: '#00A896',
-              color: '#ffffff'
-            }}
-          >
-            Iniciar Sesión
-          </button>
-          <button
-            onClick={() => navigate('/registro')}
-            className="px-10 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl font-semibold text-lg border-2"
-            style={{
-              backgroundColor: 'transparent',
-              color: '#ffffff',
-              borderColor: '#ffffff'
-            }}
-          >
-            Crear Cuenta
-          </button>
         </div>
 
         {/* Footer */}
