@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { CheckCircle, XCircle, Play, Camera } from 'lucide-react';
+import { CheckCircle, XCircle, Play, Camera, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 interface Exercise {
@@ -45,6 +45,9 @@ export function PatientCalendar() {
   const { colors } = useTheme();
   const [exercises, setExercises] = useState<DayExercises>(mockExercises);
 
+  // Nombre del kinesiólogo asignado (Hardcodeado temporalmente para el MVP)
+  const kinesiologoName = 'Lic. Ignacio Ghiggi';
+
   const toggleCompleted = (day: string, exerciseId: number) => {
     setExercises(prev => ({
       ...prev,
@@ -57,12 +60,35 @@ export function PatientCalendar() {
   return (
     <main className="p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-4xl mb-2 font-bold" style={{ color: colors.primaryText }}>
           Mi Calendario Semanal
         </h2>
         <p className="text-lg" style={{ color: colors.secondaryText }}>
           Visualiza y completa tus ejercicios asignados
+        </p>
+      </div>
+
+      {/* MENSAJE INFORMATIVO CON EL KINESIÓLOGO ASIGNADO */}
+      <div 
+        className="mb-6 rounded-2xl p-4 border flex items-center gap-3 text-sm font-medium shadow-sm"
+        style={{ 
+          backgroundColor: colors.cardBg, 
+          borderColor: colors.border,
+          color: colors.primaryText 
+        }}
+      >
+        <div 
+          className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)' }}
+        >
+          <User size={16} style={{ color: '#00A896' }} />
+        </div>
+        <p>
+          Tu rutina actual fue proporcionada y supervisada por el profesional:{' '}
+          <span className="font-bold" style={{ color: '#00A896' }}>
+            {kinesiologoName}
+          </span>
         </p>
       </div>
 
@@ -139,9 +165,9 @@ export function PatientCalendar() {
                           </span>
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions apiladas de forma vertical responsiva */}
                         <div className="flex flex-col gap-2">
-                          {/* Botón principal: abrir cámara y comenzar el ejercicio con IA */}
+                          {/* Botón principal: Iniciar */}
                           <button
                             onClick={() => navigate(`/sesion/${exercise.id}`)}
                             className="w-full flex items-center justify-center gap-1 p-2 rounded-lg transition-all text-xs font-semibold hover:shadow-md"
@@ -152,28 +178,29 @@ export function PatientCalendar() {
                             Iniciar
                           </button>
 
-                          <div className="flex gap-2">
-                            {exercise.hasVideo && (
-                              <button
-                                className="flex-1 flex items-center justify-center gap-1 p-2 rounded-lg transition-colors text-xs font-medium"
-                                style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)', color: '#00A896' }}
-                                title="Ver video demo"
-                              >
-                                <Play size={12} />
-                                Video
-                              </button>
-                            )}
+                          {/* Botón Secundario: Video (Si tiene) */}
+                          {exercise.hasVideo && (
                             <button
-                              onClick={() => toggleCompleted(day, exercise.id)}
-                              className="flex-1 p-2 rounded-lg transition-colors text-xs font-medium"
-                              style={{
-                                backgroundColor: exercise.completed ? 'rgba(40, 167, 69, 0.1)' : 'rgba(0, 168, 150, 0.1)',
-                                color: exercise.completed ? '#28A745' : '#00A896'
-                              }}
+                              className="w-full flex items-center justify-center gap-1 p-2 rounded-lg transition-colors text-xs font-medium"
+                              style={{ backgroundColor: 'rgba(0, 168, 150, 0.1)', color: '#00A896' }}
+                              title="Ver video demo"
                             >
-                              {exercise.completed ? 'Completado' : 'Marcar'}
+                              <Play size={12} />
+                              Video Demo
                             </button>
-                          </div>
+                          )}
+
+                          {/* Botón de Estado: Marcar / Completado */}
+                          <button
+                            onClick={() => toggleCompleted(day, exercise.id)}
+                            className="w-full p-2 rounded-lg transition-colors text-xs font-medium"
+                            style={{
+                              backgroundColor: exercise.completed ? 'rgba(40, 167, 69, 0.1)' : 'rgba(0, 168, 150, 0.1)',
+                              color: exercise.completed ? '#28A745' : '#00A896'
+                            }}
+                          >
+                            {exercise.completed ? '✓ Completado' : 'Marcar Listo'}
+                          </button>
                         </div>
                       </div>
                     ))}
