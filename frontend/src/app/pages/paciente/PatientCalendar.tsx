@@ -64,32 +64,6 @@ export function PatientCalendar() {
         <p className="text-lg" style={{ color: colors.secondaryText }}>
           Visualiza y completa tus ejercicios asignados
         </p>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-6 mt-6">
-          <div className="rounded-2xl p-6 border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
-            <p className="text-sm mb-2" style={{ color: colors.secondaryText }}>Ejercicios Esta Semana</p>
-            <p className="text-3xl font-bold" style={{ color: colors.primaryText }}>
-              {Object.values(exercises).flat().length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl p-6 border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
-            <p className="text-sm mb-2" style={{ color: colors.secondaryText }}>Completados</p>
-            <p className="text-3xl font-bold" style={{ color: '#28A745' }}>
-              {Object.values(exercises).flat().filter(e => e.completed).length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl p-6 border" style={{ backgroundColor: colors.cardBg, borderColor: colors.border }}>
-            <p className="text-sm mb-2" style={{ color: colors.secondaryText }}>Tu Adherencia</p>
-            <p className="text-3xl font-bold" style={{ color: '#00A896' }}>
-              {Object.values(exercises).flat().length > 0
-                ? Math.round((Object.values(exercises).flat().filter(e => e.completed).length / Object.values(exercises).flat().length) * 100)
-                : 0}%
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Weekly Calendar */}
