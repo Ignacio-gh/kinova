@@ -167,17 +167,7 @@ export function PatientCalendar() {
 
                         {/* Actions apiladas de forma vertical responsiva */}
                         <div className="flex flex-col gap-2">
-                          {/* Botón principal: Iniciar */}
-                          <button
-                            onClick={() => navigate(`/sesion/${exercise.id}`)}
-                            className="w-full flex items-center justify-center gap-1 p-2 rounded-lg transition-all text-xs font-semibold hover:shadow-md"
-                            style={{ backgroundColor: '#00A896', color: '#ffffff' }}
-                            title="Iniciar ejercicio con cámara e IA"
-                          >
-                            <Camera size={12} />
-                            Iniciar
-                          </button>
-
+                          
                           {/* Botón Secundario: Video (Si tiene) */}
                           {exercise.hasVideo && (
                             <button
