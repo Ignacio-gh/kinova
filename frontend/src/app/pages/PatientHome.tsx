@@ -250,7 +250,7 @@ export function PatientHome() {
             ))}
 
             <button
-              onClick={() => navigate('/app/mi-rutina')}
+              onClick={() => navigate('/paciente/calendario')}
               className="w-full py-3 px-4 rounded-xl transition-all hover:shadow-md font-semibold text-sm border"
               style={{
                 borderColor: '#00A896',
