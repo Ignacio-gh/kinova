@@ -14,9 +14,9 @@ interface Exercise {
 }
 
 const todayExercises: Exercise[] = [
-  { id: 1, name: 'Sentadilla Búlgara', zone: 'Muslo', reps: 20, sets: 3, day: 'Lunes', completed: false },
-  { id: 2, name: 'Extensión de Rodilla', zone: 'Rodilla', reps: 15, sets: 3, day: 'Lunes', completed: false },
-  { id: 3, name: 'Puente de Glúteo', zone: 'Glúteo', reps: 25, sets: 4, day: 'Lunes', completed: true },
+  { id: 1, name: 'Sentadilla', zone: 'Muslo', reps: 20, sets: 3, day: 'Lunes', completed: false },
+  { id: 2, name: 'Extensión Sentado', zone: 'Rodilla', reps: 15, sets: 3, day: 'Lunes', completed: false },
+  { id: 3, name: 'Elevación de pierna recta', zone: 'Cadera', reps: 25, sets: 4, day: 'Lunes', completed: true },
 ];
 
 const upcomingExercises: Exercise[] = [
