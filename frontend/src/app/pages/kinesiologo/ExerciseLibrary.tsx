@@ -20,31 +20,32 @@ interface Patient {
 }
 
 const exercises: Exercise[] = [
+
   {
     id: 1,
-    name: 'Sentadilla Búlgara',
-    targetMuscles: ['Cuádriceps', 'Glúteos', 'Isquiotibiales'],
+    name: 'Sentadilla',
+    targetMuscles: ['Cuádriceps', 'Glúteo mayor', 'Isquiotibiales', 'Core'],
     zone: 'Muslo',
-    description: 'Ejercicio unilateral que fortalece los músculos del tren inferior, mejorando el equilibrio y la estabilidad.',
-    benefits: ['Fortalece cuádriceps', 'Mejora equilibrio', 'Aumenta fuerza unilateral'],
+    description: 'Patrón de movimiento básico y poliarticular para desarrollar fuerza global en todo el miembro inferior.',
+    benefits: ['Aumenta densidad ósea', 'Fortalece cadena cinética anterior', 'Funcionalidad diaria'],
     videoUrl: 'placeholder'
   },
   {
     id: 2,
-    name: 'Extensión de Rodilla',
-    targetMuscles: ['Cuádriceps'],
+    name: 'Extensión Sentado',
+    targetMuscles: ['Cuádriceps femoral'],
     zone: 'Rodilla',
-    description: 'Ejercicio de aislamiento que trabaja específicamente el músculo cuádriceps, ideal para rehabilitación de rodilla.',
-    benefits: ['Aísla cuádriceps', 'Fortalece rodilla', 'Mejora extensión'],
+    description: 'Ejercicio cinético abierto ideal para el aislamiento muscular y control analítico de la extensión terminal de rodilla.',
+    benefits: ['Aísla el vasto medial', 'Estabiliza la rótula', 'Seguro para fases tempranas'],
     videoUrl: 'placeholder'
   },
   {
     id: 3,
-    name: 'Elevación de Talón',
-    targetMuscles: ['Gemelos', 'Sóleo'],
-    zone: 'Tobillo',
-    description: 'Fortalece la musculatura de la pantorrilla, mejorando la flexión plantar y la estabilidad del tobillo.',
-    benefits: ['Fortalece pantorrilla', 'Mejora propulsión', 'Estabiliza tobillo'],
+    name: 'Elevación de pierna recta',
+    targetMuscles: ['Cuádriceps', 'Psoas ilíaco'],
+    zone: 'Cadera',
+    description: 'Ejercicio de activación muscular isométrico y concéntrico sin carga articular sobre la rodilla.',
+    benefits: ['Evita inhibición del cuádriceps', 'Cero compresión patelar', 'Fortalece flexores'],
     videoUrl: 'placeholder'
   },
   {
@@ -126,6 +127,33 @@ const exercises: Exercise[] = [
     zone: 'Cadera',
     description: 'Ejercicio de activación para los rotadores externos de cadera, fundamental para estabilidad.',
     benefits: ['Activa rotadores', 'Estabiliza cadera', 'Previene lesiones'],
+    videoUrl: 'placeholder'
+  },
+  {
+    id: 13,
+    name: 'Sentadilla Búlgara',
+    targetMuscles: ['Cuádriceps', 'Glúteos', 'Isquiotibiales'],
+    zone: 'Muslo',
+    description: 'Ejercicio unilateral que fortalece los músculos del tren inferior, mejorando el equilibrio y la estabilidad.',
+    benefits: ['Fortalece cuádriceps', 'Mejora equilibrio', 'Aumenta fuerza unilateral'],
+    videoUrl: 'placeholder'
+  },
+  {
+    id: 14,
+    name: 'Extensión de Rodilla',
+    targetMuscles: ['Cuádriceps'],
+    zone: 'Rodilla',
+    description: 'Ejercicio de aislamiento que trabaja específicamente el músculo cuádriceps, ideal para rehabilitación de rodilla.',
+    benefits: ['Aísla cuádriceps', 'Fortalece rodilla', 'Mejora extensión'],
+    videoUrl: 'placeholder'
+  },
+  {
+    id: 15,
+    name: 'Elevación de Talón',
+    targetMuscles: ['Gemelos', 'Sóleo'],
+    zone: 'Tobillo',
+    description: 'Fortalece la musculatura de la pantorrilla, mejorando la flexión plantar y la estabilidad del tobillo.',
+    benefits: ['Fortalece pantorrilla', 'Mejora propulsión', 'Estabiliza tobillo'],
     videoUrl: 'placeholder'
   }
 ];
