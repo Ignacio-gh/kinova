@@ -27,7 +27,9 @@ const mockExercises: DayExercises = {
     { id: 2, name: 'Extensión de Rodilla', zone: 'Rodilla', reps: 15, sets: 3, completed: true, hasVideo: true },
   ],
   'Martes': [
-    { id: 3, name: 'Elevación de Talón', zone: 'Tobillo', reps: 30, sets: 3, completed: false, hasVideo: true },
+    { id: 1, name: 'Sentadilla', zone: 'Muslo', reps: 20, sets: 3, minAngle: 60, maxAngle: 90, completed: false, hasVideo: true },
+    { id: 2, name: 'Extensión Sentado', zone: 'Rodilla', reps: 15, sets: 3, completed: false, hasVideo: true },
+    { id: 3, name: 'Elevación de pierna recta', zone: 'Cadera', reps: 25, sets: 4, minAngle: 60, maxAngle: 90, completed: true, hasVideo: true }
   ],
   'Miércoles': [
     { id: 4, name: 'Puente de Glúteo', zone: 'Glúteo', reps: 25, sets: 4, completed: false, hasVideo: true },
