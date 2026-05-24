@@ -1,7 +1,6 @@
 # ============================================================
-# app/models/__init__.py
+# app/api/__init__.py
 # ============================================================
-# Paquete de modelos ORM de SQLAlchemy.
-# Cada archivo define una tabla de la base de datos.
-# Responsable: Agus
+# Paquete que contiene todas las versiones de la API.
+# Cada versión (v1, v2, ...) vive en su propio subpaquete.
 # ============================================================

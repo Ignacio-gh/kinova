@@ -1,7 +1,6 @@
 # ============================================================
-# app/models/__init__.py
+# app/api/v1/routes/__init__.py
 # ============================================================
-# Paquete de modelos ORM de SQLAlchemy.
-# Cada archivo define una tabla de la base de datos.
-# Responsable: Agus
+# Subpaquete que contiene los endpoints individuales agrupados
+# por dominio (auth, patients, exercises, routines, etc.)
 # ============================================================

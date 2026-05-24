@@ -1,7 +1,6 @@
 # ============================================================
-# app/models/__init__.py
+# app/config/__init__.py
 # ============================================================
-# Paquete de modelos ORM de SQLAlchemy.
-# Cada archivo define una tabla de la base de datos.
-# Responsable: Agus
+# Paquete de configuración. Lee variables de entorno y las expone
+# como un objeto tipado.
 # ============================================================

@@ -1,7 +1,5 @@
 # ============================================================
-# app/models/__init__.py
+# app/api/v1/__init__.py
 # ============================================================
-# Paquete de modelos ORM de SQLAlchemy.
-# Cada archivo define una tabla de la base de datos.
-# Responsable: Agus
+# Versión 1 de la API pública de Kinova.
 # ============================================================

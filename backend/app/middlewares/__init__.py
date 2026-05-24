@@ -1,7 +1,5 @@
 # ============================================================
-# app/models/__init__.py
+# app/middlewares/__init__.py
 # ============================================================
-# Paquete de modelos ORM de SQLAlchemy.
-# Cada archivo define una tabla de la base de datos.
-# Responsable: Agus
+# Paquete de middlewares de FastAPI.
 # ============================================================

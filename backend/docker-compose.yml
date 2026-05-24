@@ -1,0 +1,40 @@
+# ============================================================
+# docker-compose.yml — Kinova Backend (PLACEHOLDER)
+# ============================================================
+# Orquestación local para levantar el backend + base de datos
+# en contenedores. Útil cuando se migre de SQLite a PostgreSQL.
+#
+# TODO: Definir servicio "backend" usando docker/Dockerfile
+# TODO: Definir servicio "db" con PostgreSQL 16
+# TODO: Definir volumen para persistencia de datos
+# TODO: Definir red para comunicación entre servicios
+# TODO: Variables de entorno por servicio
+# ============================================================
+
+# version: '3.9'
+#
+# services:
+#   backend:
+#     build:
+#       context: .
+#       dockerfile: docker/Dockerfile
+#     ports:
+#       - "8000:8000"
+#     environment:
+#       - DATABASE_URL=postgresql+asyncpg://kinova:kinova@db:5432/kinova
+#     depends_on:
+#       - db
+#
+#   db:
+#     image: postgres:16
+#     environment:
+#       - POSTGRES_USER=kinova
+#       - POSTGRES_PASSWORD=kinova
+#       - POSTGRES_DB=kinova
+#     volumes:
+#       - kinova_data:/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"
+#
+# volumes:
+#   kinova_data:

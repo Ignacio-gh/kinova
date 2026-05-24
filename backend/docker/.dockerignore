@@ -1,0 +1,44 @@
+# ============================================================
+# .dockerignore — Archivos a excluir del build context de Docker
+# ============================================================
+
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+
+# Cachés
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Documentación / archivos generados
+*.md
+docs/
+
+# Variables de entorno (se montan en runtime, no se buildean)
+.env
+.env.local
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+tests/
