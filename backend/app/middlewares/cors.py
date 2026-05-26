@@ -1,26 +1,65 @@
 """
-cors.py — Configuración de CORS.
+cors.py — Configuracion de CORS.
 
-Responsabilidad:
-    Permitir que el frontend (en localhost:5173 en dev) pueda hacer
-    requests al backend (en localhost:8000).
+QUE ES CORS:
+    Cuando tu frontend (React en localhost:5173) intenta hablar con
+    tu backend (FastAPI en localhost:8000), el NAVEGADOR lo bloquea
+    por seguridad. ¿Por que? Porque son dos "origenes" distintos
+    (distinto puerto = distinto origen).
 
-Función planeada:
-    def setup_cors(app: FastAPI) -> None:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[settings.FRONTEND_URL],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+    Esto se llama "Same-Origin Policy" — el browser no deja que una
+    pagina en un dominio hable con otro dominio sin permiso.
 
-Dependencias:
-    - fastapi.middleware.cors
-    - app.config.settings (FRONTEND_URL)
+    CORS (Cross-Origin Resource Sharing) es la forma de dar ese permiso.
+    Basicamente el backend le dice al browser: "tranqui, yo autorizo
+    a localhost:5173 a hablar conmigo".
+
+    Sin esto, TODOS los requests del frontend al backend fallan con:
+        "Access to fetch at 'http://localhost:8000' from origin
+        'http://localhost:5173' has been blocked by CORS policy"
+
+QUE HACE ESTE ARCHIVO:
+    Agrega el middleware de CORS a la app de FastAPI. Es UNA funcion
+    que se llama una sola vez al arrancar el servidor.
+
+COMO SE USA:
+    # En main.py:
+    from app.middlewares.cors import setup_cors
+    setup_cors(app)
 """
 
-# TODO: from fastapi import FastAPI
-# TODO: from fastapi.middleware.cors import CORSMiddleware
-# TODO: from app.config.settings import settings
-# TODO: def setup_cors(app)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config.settings import settings
+
+
+def setup_cors(app: FastAPI) -> None:
+    """
+    Agrega el middleware CORS a la aplicacion.
+
+    Parametros del middleware:
+        allow_origins: lista de URLs que pueden hablar con el backend.
+            Usamos settings.FRONTEND_URL (viene del .env).
+            En desarrollo es ["http://localhost:5173"].
+            En produccion seria ["https://kinova.com"].
+
+        allow_credentials: permite que el frontend mande cookies y
+            headers de autenticacion (el token JWT va en un header).
+            Sin esto, el header "Authorization: Bearer ..." se bloquea.
+
+        allow_methods: que metodos HTTP se permiten.
+            ["*"] = todos (GET, POST, PUT, DELETE, etc).
+            Podriamos restringirlo, pero para un MVP no hace falta.
+
+        allow_headers: que headers puede mandar el frontend.
+            ["*"] = todos. El mas importante es "Authorization"
+            (donde va el token JWT).
+    """
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.FRONTEND_URL],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )

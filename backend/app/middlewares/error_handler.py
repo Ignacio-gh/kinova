@@ -1,35 +1,116 @@
 """
 error_handler.py — Middleware global de manejo de errores.
 
-Responsabilidad:
-    Atrapar excepciones custom del dominio (definidas en
-    `core/exceptions.py`) y devolverlas como respuestas HTTP
-    con status code apropiado y formato consistente.
+QUE HACE ESTE ARCHIVO:
+    Atrapa TODAS las excepciones custom que tiramos en los services
+    (las que definimos en exceptions.py) y las convierte en respuestas
+    HTTP con formato consistente.
 
-Mapeo planeado:
-    InvalidCredentialsError              → 401
-    UnauthorizedError                    → 403
-    PatientNotBelongsToKinesiologoError  → 403
-    *NotFoundError                       → 404
-    EmailAlreadyRegisteredError          → 400
-    Invalid*Error                        → 400
-    Duplicate*Error                      → 400
-    PoseDetectionError                   → 500
-    Exception (genérica)                 → 500
+POR QUE EXISTE:
+    Sin esto, tendrias que poner try/except en CADA endpoint:
 
-Formato de respuesta unificado:
+        @router.post("/login")
+        async def login(...):
+            try:
+                return await auth_service.login(email, password)
+            except InvalidCredentialsError as e:
+                return JSONResponse(status_code=401, ...)
+            except EmailAlreadyRegisteredError as e:
+                return JSONResponse(status_code=400, ...)
+            # ... y asi con cada error, en cada endpoint
+
+    Con el error handler, los endpoints solo hacen:
+
+        @router.post("/login")
+        async def login(...):
+            return await auth_service.login(email, password)
+            # si login() tira InvalidCredentialsError, el middleware
+            # la atrapa SOLO y devuelve el JSON correcto
+
+    Es como un try/except GLOBAL que envuelve todos los endpoints.
+
+FORMATO DE RESPUESTA:
+    Siempre devuelve el mismo formato JSON para que el frontend
+    sepa que esperar:
     {
-      "error": "PatientNotFoundError",
-      "message": "El paciente no existe.",
-      "status_code": 404
+        "error": "InvalidCredentialsError",    ← nombre de la excepcion
+        "message": "Email o contraseña ...",   ← mensaje para el usuario
+        "status_code": 401                     ← codigo HTTP
     }
 
-Dependencias:
-    - fastapi (Request, JSONResponse)
-    - app.core.exceptions
+COMO SE USA:
+    # En main.py:
+    from app.middlewares.error_handler import setup_exception_handlers
+    setup_exception_handlers(app)
 """
 
-# TODO: from fastapi import FastAPI, Request
-# TODO: from fastapi.responses import JSONResponse
-# TODO: from app.core.exceptions import *
-# TODO: def setup_exception_handlers(app)
+import logging
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from app.core.exceptions import DomainError
+
+logger = logging.getLogger("kinova")
+
+
+def setup_exception_handlers(app: FastAPI) -> None:
+    """
+    Registra los exception handlers en la app.
+
+    ¿Que es un exception handler?
+    Es una funcion que FastAPI llama automaticamente cuando una
+    excepcion de cierto tipo no fue atrapada por nadie. FastAPI
+    la intercepta y en vez de mostrar un error feo, ejecuta
+    nuestra funcion que devuelve un JSON limpio.
+    """
+
+    # ── Handler para TODAS las excepciones de dominio ─────────
+    # Gracias a la herencia, este unico handler atrapa las 13
+    # excepciones que definimos en exceptions.py. Cualquier
+    # excepcion nueva que herede de DomainError se atrapa aca
+    # automaticamente — no hay que tocar este archivo.
+    @app.exception_handler(DomainError)
+    async def domain_error_handler(request: Request, exc: DomainError):
+        # Loggeamos el error para poder debuggear
+        logger.warning(
+            "%s %s → %s: %s",
+            request.method,
+            request.url.path,
+            type(exc).__name__,
+            exc.message,
+        )
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": type(exc).__name__,
+                "message": exc.message,
+                "status_code": exc.status_code,
+            },
+        )
+
+    # ── Handler para errores inesperados (los que no prevenimos) ──
+    # Si algo que NO es DomainError explota (un bug, un error de
+    # Python, algo que no previmos), esto lo atrapa y devuelve
+    # un 500 generico. Asi el frontend nunca recibe un HTML de
+    # error feo o un traceback de Python.
+    @app.exception_handler(Exception)
+    async def generic_error_handler(request: Request, exc: Exception):
+        # Aca si loggeamos con error (es algo inesperado, hay que verlo)
+        logger.error(
+            "%s %s → Error inesperado: %s",
+            request.method,
+            request.url.path,
+            str(exc),
+            exc_info=True,  # incluye el traceback completo en el log
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "InternalServerError",
+                "message": "Error interno del servidor",
+                "status_code": 500,
+            },
+        )
