@@ -1,15 +1,24 @@
-"""
-exercise.py — Schemas del catálogo de ejercicios.
+from pydantic import BaseModel
 
-Schemas planeados:
-    ExerciseResponse       — Detalle completo
-        { id, name, zone, description, steps, benefits,
-          image_url, video_url, evaluator_key }
 
-    ExerciseListItem       — Versión liviana para el grid del catálogo
-        { id, name, zone, image_url }
-"""
+class ExerciseResponse(BaseModel):
+    id: int
+    name: str
+    zone: str
+    description: str | None = None
+    steps: list[str] = []
+    benefits: list[str] = []
+    image_url: str | None = None
+    video_url: str | None = None
+    evaluator_key: str | None = None
 
-# TODO: from pydantic import BaseModel
-# TODO: class ExerciseResponse(BaseModel)
-# TODO: class ExerciseListItem(BaseModel)
+    model_config = {"from_attributes": True}
+
+
+class ExerciseListItem(BaseModel):
+    id: int
+    name: str
+    zone: str
+    image_url: str | None = None
+
+    model_config = {"from_attributes": True}

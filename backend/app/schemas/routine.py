@@ -1,32 +1,60 @@
-"""
-routine.py — Schemas de rutinas (asignación de ejercicios).
+from typing import Literal
 
-Schemas planeados:
-    RoutineCreate
-        { patient_id, exercise_id, day_of_week, reps, sets,
-          default_angle_min?, default_angle_max? }
+from pydantic import BaseModel, Field
 
-    RoutineUpdate         — campos opcionales
+from app.schemas.exercise import ExerciseResponse
 
-    RoutineResponse       — Incluye el ejercicio embebido (no solo el id)
-        { id, exercise: ExerciseResponse, day, reps, sets, defaults }
+DayOfWeek = Literal[
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+]
 
-    WeeklyRoutineResponse — dict { monday: [RoutineResponse], tuesday: [...], ... }
 
-    TodayRoutineItem      — La rutina de hoy con ángulos efectivos ya calculados
-        {
-          routine_id, exercise: ExerciseResponse,
-          reps, sets,
-          effective_angle_min, effective_angle_max,
-          current_week
-        }
-        → Este lo consume el frontend para mostrar el ejercicio del día.
-          El backend ya hizo el cálculo de qué semana es y qué progresión aplica.
-"""
+class RoutineCreate(BaseModel):
+    patient_id: int
+    exercise_id: int
+    day_of_week: DayOfWeek
+    reps: int = Field(ge=1)
+    sets: int = Field(ge=1)
+    default_angle_min: float | None = None
+    default_angle_max: float | None = None
 
-# TODO: from pydantic import BaseModel
-# TODO: class RoutineCreate(BaseModel)
-# TODO: class RoutineUpdate(BaseModel)
-# TODO: class RoutineResponse(BaseModel)
-# TODO: class WeeklyRoutineResponse(BaseModel)
-# TODO: class TodayRoutineItem(BaseModel)
+
+class RoutineUpdate(BaseModel):
+    reps: int | None = Field(None, ge=1)
+    sets: int | None = Field(None, ge=1)
+    default_angle_min: float | None = None
+    default_angle_max: float | None = None
+
+
+class RoutineResponse(BaseModel):
+    id: int
+    patient_id: int
+    exercise: ExerciseResponse
+    day_of_week: str
+    reps: int
+    sets: int
+    default_angle_min: float | None
+    default_angle_max: float | None
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class WeeklyRoutineResponse(BaseModel):
+    monday: list[RoutineResponse] = []
+    tuesday: list[RoutineResponse] = []
+    wednesday: list[RoutineResponse] = []
+    thursday: list[RoutineResponse] = []
+    friday: list[RoutineResponse] = []
+    saturday: list[RoutineResponse] = []
+    sunday: list[RoutineResponse] = []
+
+
+class TodayRoutineItem(BaseModel):
+    routine_id: int
+    exercise: ExerciseResponse
+    reps: int
+    sets: int
+    effective_angle_min: float | None
+    effective_angle_max: float | None
+    current_week: int

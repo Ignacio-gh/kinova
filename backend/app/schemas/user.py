@@ -1,14 +1,17 @@
-"""
-user.py — Schemas de usuario.
+from datetime import datetime
 
-Schemas planeados:
-    UserBase       — Campos comunes (email, full_name)
-    UserResponse   — Output básico de un usuario (sin password_hash)
+from pydantic import BaseModel, EmailStr
 
-Uso:
-    Lo embeben otros schemas como LoginResponse, PatientResponse, etc.
-"""
 
-# TODO: from pydantic import BaseModel, EmailStr
-# TODO: class UserBase(BaseModel): email, full_name
-# TODO: class UserResponse(UserBase): id, role, is_active, created_at
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: str
+
+
+class UserResponse(UserBase):
+    id: int
+    role: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

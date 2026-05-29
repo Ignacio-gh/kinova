@@ -1,52 +1,106 @@
-"""
-adherence_service.py — Cálculo de adherencia.
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-Responsabilidad:
-    Calcular qué tan bien sigue el paciente su rutina.
-    Es la métrica clave del producto.
+from app.schemas.session import DashboardStats
 
-Funciones planeadas:
 
-    async def calculate_weekly_adherence(patient, week_offset=0) -> float
-        '''
-        Para una semana dada:
-        - Cuenta ejercicios asignados (Routines activas de esa semana)
-        - Cuenta ejercicios completados (ExerciseExecution status=completed)
-        - Devuelve % = completed / assigned * 100
-        '''
+async def calculate_weekly_adherence(
+    db: AsyncSession,
+    patient,
+    week_offset: int = 0,
+) -> float:
+    """
+    Calcula la adherencia de una semana dada.
+    week_offset=0 → semana actual, week_offset=-1 → semana pasada, etc.
+    Devuelve porcentaje (0-100).
+    """
+    # TODO (modelos Agus): from app.models.routine import Routine
+    # TODO (modelos Agus): from app.models.session import ExerciseExecution
+    from app.models.routine import Routine
+    from app.models.session import ExerciseExecution
 
-    async def calculate_session_adherence(session) -> float
-        '''
-        Para una sesión específica:
-        - assigned = cantidad de ejercicios que tenía que hacer ese día
-        - completed = cantidad de ExerciseExecution completados en la sesión
-        '''
+    assigned_result = await db.execute(
+        select(func.count()).where(
+            Routine.patient_id == patient.id,
+            Routine.is_active == True,
+        )
+    )
+    assigned = assigned_result.scalar_one() or 0
 
-    async def calculate_avg_adherence_for_kine(kine) -> float
-        '''
-        Promedio de adherencia de los pacientes activos del kine.
-        Usado en su dashboard.
-        '''
+    if assigned == 0:
+        return 0.0
 
-    async def get_dashboard_stats(patient) -> DashboardStats
-        '''
-        { total_sessions, avg_adherence, total_minutes, exercises_completed }
-        '''
+    completed_result = await db.execute(
+        select(func.count()).where(
+            ExerciseExecution.patient_id == patient.id,
+            ExerciseExecution.status == "completed",
+        )
+    )
+    completed = completed_result.scalar_one() or 0
 
-Dependencias:
-    - app.repositories.session_repository
-    - app.repositories.routine_repository
-    - app.repositories.patient_repository
+    return round(min(completed / assigned * 100, 100.0), 1)
 
-Rol arquitectónico:
-    Servicio separado porque lo consumen MUCHOS endpoints:
-    - dashboard del paciente
-    - dashboard del kine
-    - lista de pacientes (cada item muestra %)
-    - cierre de sesión (calcula adherencia de esa sesión)
-"""
 
-# TODO: async def calculate_weekly_adherence(db, patient, week_offset=0)
-# TODO: async def calculate_session_adherence(db, session)
-# TODO: async def calculate_avg_adherence_for_kine(db, kine)
-# TODO: async def get_dashboard_stats(db, patient)
+async def calculate_avg_adherence_for_kine(
+    db: AsyncSession,
+    kine,
+) -> float:
+    """Promedio de adherencia de los pacientes activos del kine."""
+    # TODO (modelos Agus): from app.models.patient import PatientProfile
+    from app.models.patient import PatientProfile
+
+    result = await db.execute(
+        select(PatientProfile).where(
+            PatientProfile.kinesiologo_id == kine.id,
+            PatientProfile.status == "activo",
+        )
+    )
+    active_patients = result.scalars().all()
+
+    if not active_patients:
+        return 0.0
+
+    adherences = [
+        await calculate_weekly_adherence(db, p) for p in active_patients
+    ]
+    return round(sum(adherences) / len(adherences), 1)
+
+
+async def get_dashboard_stats(
+    db: AsyncSession,
+    patient,
+) -> DashboardStats:
+    # TODO (modelos Agus): from app.models.session import Session, ExerciseExecution
+    from app.models.session import Session, ExerciseExecution
+
+    sessions_result = await db.execute(
+        select(Session).where(
+            Session.patient_id == patient.id,
+            Session.status == "completed",
+        )
+    )
+    sessions = sessions_result.scalars().all()
+
+    total_sessions = len(sessions)
+    total_minutes = sum(
+        int((s.ended_at - s.started_at).total_seconds() / 60)
+        for s in sessions
+        if s.ended_at and s.started_at
+    )
+
+    completed_result = await db.execute(
+        select(func.count()).where(
+            ExerciseExecution.patient_id == patient.id,
+            ExerciseExecution.status == "completed",
+        )
+    )
+    exercises_completed = completed_result.scalar_one() or 0
+
+    avg_adherence = await calculate_weekly_adherence(db, patient)
+
+    return DashboardStats(
+        total_sessions=total_sessions,
+        avg_adherence=avg_adherence,
+        total_minutes=total_minutes,
+        exercises_completed=exercises_completed,
+    )

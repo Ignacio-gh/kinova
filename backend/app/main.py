@@ -1,34 +1,43 @@
-"""
-main.py — Entry point de la aplicación FastAPI.
+from contextlib import asynccontextmanager
 
-Responsabilidad:
-    Inicializar la aplicación FastAPI, registrar middlewares,
-    montar los routers de la API, y configurar el ciclo de vida
-    (lifespan) de la aplicación.
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-Propósito futuro:
-    - Inicialización del motor de pose (MediaPipe) en startup
-    - Cierre limpio de conexiones de DB en shutdown
-    - Healthcheck endpoint para monitoreo
-    - Configuración condicional según ENVIRONMENT
+from app.api.v1.api import api_router
+from app.config.settings import settings
 
-Dependencias:
-    - fastapi
-    - app.config.settings
-    - app.middlewares
-    - app.api.v1.api (router agregado)
 
-Rol arquitectónico:
-    Punto único de entrada. Todo arranque del servidor pasa por acá.
-    Se ejecuta con: `uvicorn app.main:app --reload`
-"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # TODO: inicializar motor de pose (MediaPipe) al arrancar
+    yield
+    # TODO: cerrar conexiones de DB al apagar
 
-# TODO: Importar FastAPI y crear instancia `app`
-# TODO: Cargar settings desde app.config.settings
-# TODO: Registrar middleware de CORS (usar FRONTEND_URL del .env)
-# TODO: Registrar middleware de logging
-# TODO: Registrar middleware de manejo global de excepciones
-# TODO: Incluir router principal: app.include_router(api_router, prefix="/api/v1")
-# TODO: Definir lifespan handler (startup + shutdown)
-# TODO: Definir endpoint GET / con info básica de la API
-# TODO: Definir endpoint GET /health para healthchecks
+
+app = FastAPI(
+    title="Kinova API",
+    version="0.1.0",
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.FRONTEND_URL],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router, prefix="/api/v1")
+
+
+@app.get("/")
+async def root():
+    return {"name": "Kinova API", "version": "0.1.0", "status": "ok"}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
