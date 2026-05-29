@@ -12,7 +12,6 @@ from app.schemas.routine import (
     TodayRoutineItem,
     WeeklyRoutineResponse,
 )
-from app.services import progression_service
 
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
@@ -26,8 +25,6 @@ async def assign_exercise(
     kine,
     data: RoutineCreate,
 ) -> RoutineResponse:
-    # TODO (modelos Agus): from app.models.routine import Routine
-    # TODO (modelos Agus): from app.models.exercise import Exercise
     from app.models.routine import Routine
     from app.models.exercise import Exercise
 
@@ -56,8 +53,8 @@ async def assign_exercise(
         day_of_week=data.day_of_week,
         reps=data.reps,
         sets=data.sets,
-        default_angle_min=data.default_angle_min,
-        default_angle_max=data.default_angle_max,
+        angle_min=data.angle_min,
+        angle_max=data.angle_max,
         is_active=True,
     )
     db.add(routine)
@@ -71,8 +68,8 @@ async def assign_exercise(
         day_of_week=routine.day_of_week,
         reps=routine.reps,
         sets=routine.sets,
-        default_angle_min=routine.default_angle_min,
-        default_angle_max=routine.default_angle_max,
+        angle_min=routine.angle_min,
+        angle_max=routine.angle_max,
         is_active=routine.is_active,
     )
 
@@ -81,8 +78,6 @@ async def get_weekly_routine(
     db: AsyncSession,
     patient_id: int,
 ) -> WeeklyRoutineResponse:
-    # TODO (modelos Agus): from app.models.routine import Routine
-    # TODO (modelos Agus): from app.models.exercise import Exercise
     from app.models.routine import Routine
     from app.models.exercise import Exercise
 
@@ -104,8 +99,8 @@ async def get_weekly_routine(
                 day_of_week=routine.day_of_week,
                 reps=routine.reps,
                 sets=routine.sets,
-                default_angle_min=routine.default_angle_min,
-                default_angle_max=routine.default_angle_max,
+                angle_min=routine.angle_min,
+                angle_max=routine.angle_max,
                 is_active=routine.is_active,
             )
         )
@@ -117,13 +112,10 @@ async def get_today_routine(
     db: AsyncSession,
     patient,
 ) -> list[TodayRoutineItem]:
-    # TODO (modelos Agus): from app.models.routine import Routine
-    # TODO (modelos Agus): from app.models.exercise import Exercise
     from app.models.routine import Routine
     from app.models.exercise import Exercise
 
     today = _day_of_week()
-    current_week = progression_service.calculate_current_week(patient.treatment_start_date)
 
     result = await db.execute(
         select(Routine, Exercise)
@@ -136,21 +128,17 @@ async def get_today_routine(
     )
     rows = result.all()
 
-    items = []
-    for routine, exercise in rows:
-        angle_min, angle_max = await progression_service.get_effective_angles(db, patient, routine)
-        items.append(
-            TodayRoutineItem(
-                routine_id=routine.id,
-                exercise=ExerciseResponse.model_validate(exercise),
-                reps=routine.reps,
-                sets=routine.sets,
-                effective_angle_min=angle_min,
-                effective_angle_max=angle_max,
-                current_week=current_week,
-            )
+    return [
+        TodayRoutineItem(
+            routine_id=routine.id,
+            exercise=ExerciseResponse.model_validate(exercise),
+            reps=routine.reps,
+            sets=routine.sets,
+            angle_min=routine.angle_min,
+            angle_max=routine.angle_max,
         )
-    return items
+        for routine, exercise in rows
+    ]
 
 
 async def update_routine(
@@ -187,8 +175,8 @@ async def update_routine(
         day_of_week=routine.day_of_week,
         reps=routine.reps,
         sets=routine.sets,
-        default_angle_min=routine.default_angle_min,
-        default_angle_max=routine.default_angle_max,
+        angle_min=routine.angle_min,
+        angle_max=routine.angle_max,
         is_active=routine.is_active,
     )
 

@@ -11,7 +11,13 @@ from app.schemas.patient import (
     PatientUpdate,
     TodayExerciseItem,
 )
-from app.services import adherence_service, progression_service, routine_service
+from datetime import date
+
+from app.services import adherence_service, routine_service
+
+
+def _current_week(treatment_start_date: date) -> int:
+    return (date.today() - treatment_start_date).days // 7 + 1
 
 
 async def list_for_kinesiologo(
@@ -43,7 +49,7 @@ async def list_for_kinesiologo(
     items = []
     for profile, user in rows:
         adherence = await adherence_service.calculate_weekly_adherence(db, profile)
-        current_week = progression_service.calculate_current_week(profile.treatment_start_date)
+        current_week = _current_week(profile.treatment_start_date)
         items.append(
             PatientListItem(
                 id=profile.id,
@@ -206,7 +212,7 @@ async def get_dashboard(
 ) -> PatientDashboard:
     today_routines = await routine_service.get_today_routine(db, patient)
     adherence = await adherence_service.calculate_weekly_adherence(db, patient)
-    current_week = progression_service.calculate_current_week(patient.treatment_start_date)
+    current_week = _current_week(patient.treatment_start_date)
 
     today_exercises = [
         TodayExerciseItem(
@@ -232,7 +238,7 @@ async def _build_patient_response(db, profile, user) -> PatientResponse:
     from app.schemas.user import UserResponse
 
     adherence = await adherence_service.calculate_weekly_adherence(db, profile)
-    current_week = progression_service.calculate_current_week(profile.treatment_start_date)
+    current_week = _current_week(profile.treatment_start_date)
 
     return PatientResponse(
         id=profile.id,

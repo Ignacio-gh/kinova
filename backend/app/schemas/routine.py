@@ -15,15 +15,15 @@ class RoutineCreate(BaseModel):
     day_of_week: DayOfWeek
     reps: int = Field(ge=1)
     sets: int = Field(ge=1)
-    default_angle_min: float | None = None
-    default_angle_max: float | None = None
+    angle_min: float | None = None
+    angle_max: float | None = None
 
 
 class RoutineUpdate(BaseModel):
     reps: int | None = Field(None, ge=1)
     sets: int | None = Field(None, ge=1)
-    default_angle_min: float | None = None
-    default_angle_max: float | None = None
+    angle_min: float | None = None
+    angle_max: float | None = None
 
 
 class RoutineResponse(BaseModel):
@@ -33,8 +33,8 @@ class RoutineResponse(BaseModel):
     day_of_week: str
     reps: int
     sets: int
-    default_angle_min: float | None
-    default_angle_max: float | None
+    angle_min: float | None
+    angle_max: float | None
     is_active: bool
 
     model_config = {"from_attributes": True}
@@ -55,6 +55,5 @@ class TodayRoutineItem(BaseModel):
     exercise: ExerciseResponse
     reps: int
     sets: int
-    effective_angle_min: float | None
-    effective_angle_max: float | None
-    current_week: int
+    angle_min: float | None
+    angle_max: float | None
