@@ -1,0 +1,38 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
+const TOKEN_KEY = 'kinova-token';
+
+export async function saveToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(TOKEN_KEY, token);
+}
+
+export async function clearToken(): Promise<void> {
+  await AsyncStorage.removeItem(TOKEN_KEY);
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(error.detail ?? 'Request failed');
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  get:    <T>(path: string)                => request<T>(path),
+  post:   <T>(path: string, body: unknown) => request<T>(path, { method: 'POST',   body: JSON.stringify(body) }),
+  put:    <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT',    body: JSON.stringify(body) }),
+  delete: <T>(path: string)               => request<T>(path, { method: 'DELETE' }),
+};
