@@ -1,25 +1,40 @@
 """
 pose.py — Schemas para el WebSocket de pose.
 
-Schemas planeados:
-    PoseFrameMessage         — Mensaje cliente → servidor
-        { frame: str }  # base64 del JPEG
-
-    PoseCorrection           — Una corrección individual
-        { joint: str, message: str, severity: "info"|"improve"|"bad" }
-
-    PoseFeedbackMessage      — Mensaje servidor → cliente
-        {
-          status: "perfect" | "improve" | "bad",
-          corrections: List[PoseCorrection],
-          angles: dict[str, float],   # ej: { "knee": 92.3, "trunk": 155.1 }
-          rep_counted: bool,
-          total_reps: int
-        }
+Define el formato de los mensajes que viajan entre el frontend
+y el backend durante una sesion de ejercicio en tiempo real.
 """
 
-# TODO: from pydantic import BaseModel
-# TODO: from typing import Literal
-# TODO: class PoseFrameMessage(BaseModel)
-# TODO: class PoseCorrection(BaseModel)
-# TODO: class PoseFeedbackMessage(BaseModel)
+from typing import Literal
+
+from pydantic import BaseModel
+
+
+class PoseCorrection(BaseModel):
+    """Una correccion individual que el evaluador detecta."""
+    joint: str              # "rodilla", "tronco", "cadera"
+    message: str            # "Mantene el tronco mas erguido"
+    severity: str           # "warning" | "error"
+
+
+class PoseFeedbackMessage(BaseModel):
+    """
+    Mensaje que el backend manda al frontend por WebSocket
+    despues de procesar cada frame.
+
+    Ejemplo:
+    {
+        "status": "improve",
+        "corrections": [
+            {"joint": "tronco", "message": "Mantene el tronco mas erguido", "severity": "warning"}
+        ],
+        "angles": {"knee": 92.3, "trunk": 155.1},
+        "rep_counted": false,
+        "total_reps": 3
+    }
+    """
+    status: Literal["perfect", "improve", "bad"]
+    corrections: list[PoseCorrection] = []
+    angles: dict[str, float] = {}
+    rep_counted: bool = False
+    total_reps: int = 0

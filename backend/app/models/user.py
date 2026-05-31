@@ -3,29 +3,32 @@ user.py — Modelo de cuenta de usuario.
 
 Tabla: users
 
-Responsabilidad:
-    Representar la cuenta básica de cualquier usuario (paciente o kine).
-    Los datos específicos de cada role están en `patient.py` o `kinesiologo.py`
-    (patrón de "perfil extendido").
-
-Campos planeados:
-    - id (PK)
-    - email (unique, indexed)
-    - password_hash
-    - full_name
-    - role: enum ("paciente" | "kinesiologo")
-    - is_active: bool
-    - created_at, updated_at
-
-Relaciones:
-    - patient_profile: 1-a-1 con PatientProfile (si role=paciente)
-    - kinesiologo_profile: 1-a-1 con KinesiologoProfile (si role=kinesiologo)
-
-Rol arquitectónico:
-    Tabla central de auth. Todo lo demás cuelga de acá.
+Cada persona que se registra en Kinova tiene un registro aca.
+El campo 'role' define si es paciente o kinesiologo, y los datos
+especificos de cada rol van en las tablas patient_profiles o
+kinesiologo_profiles (relacion 1-a-1).
 """
 
-# TODO: from sqlalchemy.orm import Mapped, mapped_column, relationship
-# TODO: from sqlalchemy import String, Boolean, Enum
-# TODO: from app.models.base import Base, TimestampMixin
-# TODO: class User(Base, TimestampMixin): __tablename__ = "users"
+from sqlalchemy import Boolean, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base, TimestampMixin
+
+
+class User(Base, TimestampMixin):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[str] = mapped_column(String(100))
+    role: Mapped[str] = mapped_column(String(20))  # "paciente" | "kinesiologo"
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Relaciones 1-a-1 con los perfiles
+    patient_profile: Mapped["PatientProfile | None"] = relationship(
+        "PatientProfile", back_populates="user", uselist=False,
+    )
+    kinesiologo_profile: Mapped["KinesiologoProfile | None"] = relationship(
+        "KinesiologoProfile", back_populates="user", uselist=False,
+    )

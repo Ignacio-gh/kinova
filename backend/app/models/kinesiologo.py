@@ -1,26 +1,31 @@
 """
-kinesiologo.py — Perfil extendido del kinesiólogo.
+kinesiologo.py — Perfil profesional del kinesiologo.
 
 Tabla: kinesiologo_profiles
 
-Responsabilidad:
-    Datos profesionales del kinesiólogo (relación 1-a-1 con User).
-
-Campos planeados:
-    - id (PK)
-    - user_id (FK users, unique)
-    - matricula (string, identificación profesional)
-    - credencial_url (string, URL/path al PDF de la credencial)
-    - especialidad (string, opcional)
-    - created_at, updated_at
-
-Relaciones:
-    - user: 1-a-1 con User
-    - patients: 1-a-N con PatientProfile
-    - routines: 1-a-N con Routine (las asignadas por este kine)
+Datos profesionales: matricula, credencial, especialidad.
+Relacion 1-a-1 con User (el kine es un User con role="kinesiologo").
 """
 
-# TODO: from sqlalchemy.orm import Mapped, mapped_column, relationship
-# TODO: from sqlalchemy import Integer, String, ForeignKey
-# TODO: from app.models.base import Base, TimestampMixin
-# TODO: class KinesiologoProfile(Base, TimestampMixin): __tablename__ = "kinesiologo_profiles"
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base, TimestampMixin
+
+
+class KinesiologoProfile(Base, TimestampMixin):
+    __tablename__ = "kinesiologo_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), unique=True,
+    )
+    matricula: Mapped[str] = mapped_column(String(20))
+    credencial_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    especialidad: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Relaciones
+    user: Mapped["User"] = relationship("User", back_populates="kinesiologo_profile")
+    patients: Mapped[list["PatientProfile"]] = relationship(
+        "PatientProfile", back_populates="kinesiologo",
+    )
