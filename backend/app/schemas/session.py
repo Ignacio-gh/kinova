@@ -1,36 +1,65 @@
-"""
-session.py — Schemas de sesiones de ejercicio.
+from datetime import datetime
 
-Schemas planeados:
-    SessionStart           — { patient_id } (opcional, se infiere del JWT)
+from pydantic import BaseModel
 
-    ExerciseExecutionStart — { routine_id }
-    ExerciseExecutionResult
-        { completed_reps, correct_reps, avg_score }
+from app.schemas.exercise import ExerciseResponse
 
-    SessionEnd             — { ended_at? } (puede ser auto-now)
 
-    SessionResponse
-        { id, started_at, ended_at, duration_minutes, adherence_pct,
-          executions: List[ExerciseExecutionResponse] }
+class SessionStart(BaseModel):
+    pass
 
-    ExerciseExecutionResponse
-        { id, exercise: ExerciseResponse, target_reps, completed_reps,
-          correct_reps, avg_score, effective_angle_min, effective_angle_max,
-          status }
 
-    SessionHistoryItem     — versión resumida para historial paginado
+class ExerciseExecutionStart(BaseModel):
+    routine_id: int
 
-    DashboardStats
-        { total_sessions, avg_adherence, total_minutes, exercises_completed }
-"""
 
-# TODO: from pydantic import BaseModel
-# TODO: class SessionStart(BaseModel)
-# TODO: class ExerciseExecutionStart(BaseModel)
-# TODO: class ExerciseExecutionResult(BaseModel)
-# TODO: class SessionEnd(BaseModel)
-# TODO: class SessionResponse(BaseModel)
-# TODO: class ExerciseExecutionResponse(BaseModel)
-# TODO: class SessionHistoryItem(BaseModel)
-# TODO: class DashboardStats(BaseModel)
+class ExerciseExecutionResult(BaseModel):
+    completed_reps: int
+    correct_reps: int
+    avg_score: float
+
+
+class SessionEnd(BaseModel):
+    ended_at: datetime | None = None
+
+
+class ExerciseExecutionResponse(BaseModel):
+    id: int
+    exercise: ExerciseResponse
+    target_reps: int
+    completed_reps: int | None
+    correct_reps: int | None
+    avg_score: float | None
+    effective_angle_min: float | None
+    effective_angle_max: float | None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
+class SessionResponse(BaseModel):
+    id: int
+    started_at: datetime
+    ended_at: datetime | None
+    duration_minutes: int | None
+    adherence_pct: float | None
+    executions: list[ExerciseExecutionResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+class SessionHistoryItem(BaseModel):
+    id: int
+    date: datetime
+    duration_minutes: int | None
+    adherence_pct: float | None
+    exercises_count: int
+
+    model_config = {"from_attributes": True}
+
+
+class DashboardStats(BaseModel):
+    total_sessions: int
+    avg_adherence: float
+    total_minutes: int
+    exercises_completed: int

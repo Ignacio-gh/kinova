@@ -1,35 +1,71 @@
-"""
-routines.py — Endpoints de rutinas (asignaciones de ejercicios).
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
-Responsabilidad:
-    Permitir que el kinesiólogo asigne ejercicios a sus pacientes
-    para días específicos de la semana.
+from app.core.dependencies import (
+    get_current_kinesiologo,
+    get_current_patient,
+    get_db,
+    verify_patient_belongs_to_kine,
+)
+from app.schemas.routine import (
+    RoutineCreate,
+    RoutineResponse,
+    RoutineUpdate,
+    TodayRoutineItem,
+    WeeklyRoutineResponse,
+)
+from app.services import routine_service
 
-Endpoints planeados:
-    GET    /routines/patient/{patient_id}    — Rutina semanal completa de un paciente
-    POST   /routines/                        — Asignar ejercicio (kine)
-    PUT    /routines/{id}                    — Editar asignación
-    DELETE /routines/{id}                    — Eliminar (soft delete)
-    GET    /routines/me/today                — Ejercicios de hoy del paciente logueado
-    GET    /routines/me/week                 — Vista semanal del paciente logueado
+router = APIRouter()
 
-Dependencias:
-    - app.schemas.routine
-    - app.services.routine_service
-    - app.services.progression_service (para calcular ángulos efectivos)
-    - app.core.dependencies
 
-Importante:
-    Los endpoints "/me/today" y "/me/week" devuelven los ángulos EFECTIVOS
-    según la semana actual del tratamiento del paciente (calculados por
-    progression_service).
-"""
+@router.get("/me/today", response_model=list[TodayRoutineItem])
+async def get_today_routine(
+    patient=Depends(get_current_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    return await routine_service.get_today_routine(db, patient)
 
-# TODO: from fastapi import APIRouter, Depends
-# TODO: router = APIRouter()
-# TODO: GET /patient/{patient_id} → rutina agrupada por día de la semana
-# TODO: POST / → asignar ejercicio (validar día, evitar duplicados)
-# TODO: PUT /{id} → editar reps/sets/ángulos default
-# TODO: DELETE /{id} → soft delete (is_active = False)
-# TODO: GET /me/today → ejercicios del día con ángulos efectivos
-# TODO: GET /me/week → vista semanal completa
+
+@router.get("/me/week", response_model=WeeklyRoutineResponse)
+async def get_my_weekly_routine(
+    patient=Depends(get_current_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    return await routine_service.get_weekly_routine(db, patient.id)
+
+
+@router.get("/patient/{patient_id}", response_model=WeeklyRoutineResponse)
+async def get_patient_weekly_routine(
+    patient=Depends(verify_patient_belongs_to_kine),
+    db: AsyncSession = Depends(get_db),
+):
+    return await routine_service.get_weekly_routine(db, patient.id)
+
+
+@router.post("/", response_model=RoutineResponse, status_code=201)
+async def assign_exercise(
+    data: RoutineCreate,
+    kine=Depends(get_current_kinesiologo),
+    db: AsyncSession = Depends(get_db),
+):
+    return await routine_service.assign_exercise(db, kine, data)
+
+
+@router.put("/{routine_id}", response_model=RoutineResponse)
+async def update_routine(
+    routine_id: int,
+    data: RoutineUpdate,
+    kine=Depends(get_current_kinesiologo),
+    db: AsyncSession = Depends(get_db),
+):
+    return await routine_service.update_routine(db, routine_id, data, kine)
+
+
+@router.delete("/{routine_id}", status_code=204)
+async def delete_routine(
+    routine_id: int,
+    kine=Depends(get_current_kinesiologo),
+    db: AsyncSession = Depends(get_db),
+):
+    await routine_service.delete_routine(db, routine_id, kine)
