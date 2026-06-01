@@ -1,7 +1,18 @@
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, FlatList } from 'react-native';
+import { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  TextInput, 
+  StyleSheet, 
+  ScrollView, 
+  Modal 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useBiblioteca, CATEGORY_FILTERS } from '@/hooks/use-biblioteca';
+import { MOCK_PATIENTS } from '@/hooks/use-mis-pacientes';
+import type { Exercise } from '@/components/kinesiologo/exercise-card';
 
 const C = {
   bg: '#F1F5F9',
@@ -32,8 +43,65 @@ const CATEGORY_TEXT: Record<string, string> = {
   Glúteo: '#EF4444',
 };
 
+const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
 export default function BibliotecaWeb() {
   const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
+
+  // --- Estados del Modal ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+
+  // --- Estados del Formulario ---
+  const [patientId, setPatientId] = useState('');
+  const [day, setDay] = useState('');
+  const [sets, setSets] = useState('3');
+  const [reps, setReps] = useState('15');
+  const [minAngle, setMinAngle] = useState('');
+  const [maxAngle, setMaxAngle] = useState('');
+
+  // --- Estados de los Dropdowns Personalizados ---
+  const [isPatientDropdownOpen, setIsPatientDropdownOpen] = useState(false);
+  const [isDayDropdownOpen, setIsDayDropdownOpen] = useState(false);
+
+  const activePatients = MOCK_PATIENTS.filter((p) => p.status === 'Activo');
+
+  const handleOpenAssign = (ex: Exercise) => {
+    setSelectedExercise(ex);
+    // Reiniciar valores por defecto
+    setPatientId('');
+    setDay('');
+    setSets('3');
+    setReps('15');
+    setMinAngle('');
+    setMaxAngle('');
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedExercise(null);
+    setIsPatientDropdownOpen(false);
+    setIsDayDropdownOpen(false);
+  };
+
+  const handleSave = () => {
+    if (!patientId || !day) {
+      alert('Por favor, selecciona un paciente y un día.');
+      return;
+    }
+    // TODO: Conectar con la lógica o el backend para guardar el ejercicio
+    console.log('Asignando:', { 
+      exercise: selectedExercise?.name, 
+      patientId, 
+      day, 
+      sets, 
+      reps, 
+      minAngle, 
+      maxAngle 
+    });
+    handleCloseModal();
+  };
 
   return (
     <View style={s.root}>
@@ -105,7 +173,11 @@ export default function BibliotecaWeb() {
                       <View style={[s.catBadge, { backgroundColor: catBg }]}>
                         <Text style={[s.catText, { color: catText }]}>{ex.category}</Text>
                       </View>
-                      <TouchableOpacity style={s.assignBtn} activeOpacity={0.8}>
+                      <TouchableOpacity 
+                        style={s.assignBtn} 
+                        activeOpacity={0.8}
+                        onPress={() => handleOpenAssign(ex as any)}
+                      >
                         <Ionicons name="add" size={14} color={C.white} />
                         <Text style={s.assignBtnText}>Asignar</Text>
                       </TouchableOpacity>
@@ -142,6 +214,177 @@ export default function BibliotecaWeb() {
           )}
         </ScrollView>
       </View>
+
+      {/* --- Modal de Asignación --- */}
+      <Modal
+        visible={isModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            {/* Modal Header */}
+            <View style={s.modalHeader}>
+              <View>
+                <Text style={s.modalTitle}>Asignar Ejercicio</Text>
+                <Text style={s.modalSub}>{selectedExercise?.name}</Text>
+              </View>
+              <TouchableOpacity onPress={handleCloseModal} hitSlop={10}>
+                <Ionicons name="close" size={24} color={C.gray500} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Body */}
+            <View style={s.modalBody}>
+              {/* Paciente */}
+
+<View style={[s.inputGroup, { zIndex: 2 }]}> {/* <-- zIndex movido al contenedor principal */}
+  <Text style={s.label}>PACIENTE (ACTIVOS)</Text>
+  <View> {/* <-- Se eliminó el zIndex de aquí */}
+    <TouchableOpacity 
+      style={s.dropdownBtn} 
+      activeOpacity={0.8}
+      onPress={() => {
+        setIsPatientDropdownOpen(!isPatientDropdownOpen);
+        setIsDayDropdownOpen(false);
+      }}
+    >
+      <Text style={[s.dropdownText, !patientId && { color: C.gray400 }]}>
+        {patientId ? activePatients.find(p => p.id === patientId)?.name : 'Seleccionar paciente...'}
+      </Text>
+      <Ionicons name={isPatientDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
+    </TouchableOpacity>
+    {isPatientDropdownOpen && (
+      <View style={s.dropdownList}>
+        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+          {activePatients.map(p => (
+            <TouchableOpacity 
+              key={p.id} 
+              style={s.dropdownItem} 
+              onPress={() => {
+                setPatientId(p.id);
+                setIsPatientDropdownOpen(false);
+              }}
+            >
+              <Text style={s.dropdownItemText}>{p.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    )}
+  </View>
+</View>
+
+              {/* Día */}
+              <View style={[s.inputGroup, { zIndex: 1 }]}>
+                <Text style={s.label}>DÍA DE LA SEMANA</Text>
+                <View>
+                  <TouchableOpacity 
+                    style={s.dropdownBtn} 
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setIsDayDropdownOpen(!isDayDropdownOpen);
+                      setIsPatientDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={[s.dropdownText, !day && { color: C.gray400 }]}>
+                      {day || 'Seleccionar día...'}
+                    </Text>
+                    <Ionicons name={isDayDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
+                  </TouchableOpacity>
+                  {isDayDropdownOpen && (
+                    <View style={s.dropdownList}>
+                      <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                        {DAYS.map(d => (
+                          <TouchableOpacity 
+                            key={d} 
+                            style={s.dropdownItem} 
+                            onPress={() => {
+                              setDay(d);
+                              setIsDayDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={s.dropdownItemText}>{d}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Series y Repeticiones */}
+              <View style={s.row}>
+                <View style={[s.inputGroup, { flex: 1 }]}>
+                  <Text style={s.label}>SERIES</Text>
+                  <TextInput
+                    style={s.input}
+                    keyboardType="numeric"
+                    value={sets}
+                    onChangeText={setSets}
+                    placeholder="Ej: 3"
+                  />
+                </View>
+                <View style={[s.inputGroup, { flex: 1 }]}>
+                  <Text style={s.label}>REPETICIONES</Text>
+                  <TextInput
+                    style={s.input}
+                    keyboardType="numeric"
+                    value={reps}
+                    onChangeText={setReps}
+                    placeholder="Ej: 15"
+                  />
+                </View>
+              </View>
+
+              {/* Rango Angular */}
+              <View style={s.row}>
+                <View style={[s.inputGroup, { flex: 1 }]}>
+                  <Text style={s.label}>ÁNGULO MÍNIMO (°)</Text>
+                  <TextInput
+                    style={s.input}
+                    keyboardType="numeric"
+                    value={minAngle}
+                    onChangeText={setMinAngle}
+                    placeholder="Vacío o '-'"
+                  />
+                </View>
+                <View style={[s.inputGroup, { flex: 1 }]}>
+                  <Text style={s.label}>ÁNGULO MÁXIMO (°)</Text>
+                  <TextInput
+                    style={s.input}
+                    keyboardType="numeric"
+                    value={maxAngle}
+                    onChangeText={setMaxAngle}
+                    placeholder="Vacío o '-'"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Modal Footer */}
+            <View style={s.modalFooter}>
+              <TouchableOpacity 
+                style={s.cancelBtn} 
+                activeOpacity={0.7}
+                onPress={handleCloseModal}
+              >
+                <Text style={s.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={s.saveBtn} 
+                activeOpacity={0.7}
+                onPress={handleSave}
+              >
+                <Text style={s.saveBtnText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -213,4 +456,103 @@ const s = StyleSheet.create({
   benefitText: { color: C.gray500, fontSize: 13, flex: 1 },
   empty: { alignItems: 'center', paddingVertical: 80, gap: 12 },
   emptyText: { color: C.gray400, fontSize: 15 },
+
+  /* Estilos del Modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 43, 73, 0.4)', // Fondo oscuro usando el C.navy con opacidad
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 480,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    backgroundColor: C.gray100,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: C.navy },
+  modalSub: { fontSize: 14, color: C.turquoise, fontWeight: '600', marginTop: 4 },
+  modalBody: { padding: 24, gap: 16 },
+  row: { flexDirection: 'row', gap: 16 },
+  inputGroup: { gap: 8 },
+  label: { fontSize: 12, fontWeight: '700', color: C.gray500, letterSpacing: 0.5 },
+  input: {
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 44,
+    fontSize: 14,
+    color: C.navy,
+    outlineStyle: 'none' as any,
+  },
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 44,
+  },
+  dropdownText: { fontSize: 14, color: C.navy },
+  dropdownList: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 10,
+  },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.gray100 },
+  dropdownItemText: { fontSize: 14, color: C.navy },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    padding: 24,
+    paddingTop: 0,
+  },
+  cancelBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  cancelBtnText: { color: C.gray500, fontWeight: '600', fontSize: 14 },
+  saveBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: C.turquoise,
+  },
+  saveBtnText: { color: C.white, fontWeight: '600', fontSize: 14 },
 });
