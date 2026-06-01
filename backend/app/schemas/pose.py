@@ -17,6 +17,13 @@ class PoseCorrection(BaseModel):
     severity: str           # "warning" | "error"
 
 
+class PoseLandmark(BaseModel):
+    """Coordenadas normalizadas (0-1) de un punto del cuerpo."""
+    x: float
+    y: float
+    v: float  # visibility
+
+
 class PoseFeedbackMessage(BaseModel):
     """
     Mensaje que el backend manda al frontend por WebSocket
@@ -36,5 +43,6 @@ class PoseFeedbackMessage(BaseModel):
     status: Literal["perfect", "improve", "bad"]
     corrections: list[PoseCorrection] = []
     angles: dict[str, float] = {}
+    landmarks: dict[str, PoseLandmark] = {}  # índice MediaPipe → coordenada
     rep_counted: bool = False
     total_reps: int = 0

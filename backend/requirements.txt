@@ -21,6 +21,7 @@ email-validator==2.2.0
 mediapipe==0.10.21
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
+Pillow>=10.0.0
 
 # WebSocket
 websockets==15.0.1

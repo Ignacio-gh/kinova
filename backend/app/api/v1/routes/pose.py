@@ -38,6 +38,10 @@ logger = logging.getLogger("kinova.pose")
 
 router = APIRouter()
 
+# Índices de landmarks de MediaPipe que se envían al frontend para dibujar el esqueleto.
+# Incluye: nariz, hombros, codos, muñecas, caderas, rodillas, tobillos.
+SKELETON_LANDMARK_INDICES = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+
 # Registry: mapea el evaluator_key del ejercicio a su clase evaluadora.
 # Cuando Maria o Agus crean un ejercicio en la DB, le ponen un
 # evaluator_key (ej: "squat") y el WebSocket sabe que clase usar.
@@ -136,11 +140,23 @@ async def pose_websocket(
             # Evaluar con el evaluador del ejercicio
             result = evaluator.evaluate(detection["all_landmarks"])
 
+            # Serializar los landmarks clave para que el frontend dibuje el esqueleto
+            lm_list = detection["all_landmarks"]
+            landmarks_payload = {
+                str(idx): {
+                    "x": round(float(lm_list[idx].x), 4),
+                    "y": round(float(lm_list[idx].y), 4),
+                    "v": round(float(lm_list[idx].visibility), 2),
+                }
+                for idx in SKELETON_LANDMARK_INDICES
+            }
+
             # Mandar feedback al frontend
             await websocket.send_json({
                 "status": result.status,
                 "corrections": result.corrections,
                 "angles": result.angles,
+                "landmarks": landmarks_payload,
                 "rep_counted": result.rep_counted,
                 "total_reps": result.total_reps,
             })

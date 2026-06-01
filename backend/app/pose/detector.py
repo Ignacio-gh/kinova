@@ -55,11 +55,13 @@ COMO SE USA:
 """
 
 import base64
+import io
 from typing import Any
 
 import cv2
 import mediapipe as mp
 import numpy as np
+from PIL import Image, ImageOps
 
 from app.config.settings import settings
 
@@ -135,21 +137,34 @@ class PoseDetector:
 
     def detect_from_bytes(self, image_bytes: bytes) -> dict[str, Any] | None:
         """
-        Recibe bytes de una imagen (como llega del WebSocket en base64)
-        y devuelve los landmarks.
+        Recibe bytes de una imagen y devuelve los landmarks.
 
-        Parametros:
-            image_bytes: la imagen como bytes (decodificada de base64)
-
-        Retorna:
-            dict con los landmarks o None si no se detecto una persona.
+        Usa PIL para respetar el EXIF de orientación — en Android,
+        las fotos tomadas en modo retrato llegan rotadas 90° en los
+        bytes pero con un tag EXIF que dice "rotar 90°". OpenCV
+        ignora ese tag; PIL lo aplica automáticamente con exif_transpose.
+        Sin este paso, MediaPipe ve a la persona de costado y no detecta
+        la pose.
         """
-        # Convertir bytes → array de numpy → imagen OpenCV
-        np_array = np.frombuffer(image_bytes, dtype=np.uint8)
-        image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+        try:
+            pil_img = Image.open(io.BytesIO(image_bytes))
+            pil_img = ImageOps.exif_transpose(pil_img)   # aplica rotación EXIF
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            image = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+        except Exception:
+            # Fallback si PIL falla por alguna razón
+            np_array = np.frombuffer(image_bytes, dtype=np.uint8)
+            image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
         if image is None:
             return None
+
+        # Reducir a máximo 640px en el lado largo para acelerar MediaPipe
+        h, w = image.shape[:2]
+        if max(h, w) > 640:
+            scale = 640 / max(h, w)
+            image = cv2.resize(image, (int(w * scale), int(h * scale)))
 
         return self.detect_from_array(image)
 

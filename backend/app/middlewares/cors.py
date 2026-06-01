@@ -56,10 +56,19 @@ def setup_cors(app: FastAPI) -> None:
             ["*"] = todos. El mas importante es "Authorization"
             (donde va el token JWT).
     """
+    # En desarrollo abrimos a todos los orígenes para facilitar pruebas
+    # con Expo Web (puerto 8081), Expo Go y otros clientes locales.
+    if settings.ENVIRONMENT == "development":
+        origins = ["*"]
+        credentials = False   # allow_credentials no puede ser True con "*"
+    else:
+        origins = [settings.FRONTEND_URL]
+        credentials = True
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.FRONTEND_URL],
-        allow_credentials=True,
+        allow_origins=origins,
+        allow_credentials=credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )
