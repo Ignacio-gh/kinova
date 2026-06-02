@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { usePerfilKine } from '@/hooks/use-perfil-kine';
-import { useMisPacientes } from '@/hooks/use-mis-pacientes';
 
 const C = {
   bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
@@ -19,8 +18,7 @@ const PERFIL_AJUSTES = [
 ];
 
 export default function MiPerfilWeb() {
-  const { perfilInfo, loading, handleLogout } = usePerfilKine();
-  const { filtered: patients } = useMisPacientes();
+  const { perfilInfo, loading, handleLogout, kineStats } = usePerfilKine();
 
   const name = perfilInfo.find((i) => i.label === 'Nombre completo')?.value ?? '';
   const email = perfilInfo.find((i) => i.label === 'Correo')?.value ?? '';
@@ -30,8 +28,6 @@ export default function MiPerfilWeb() {
     .join('')
     .slice(0, 2)
     .toUpperCase() || 'KN';
-
-  const activeCount = patients.filter((p) => p.status === 'Activo').length;
 
   return (
     <View style={s.root}>
@@ -65,17 +61,19 @@ export default function MiPerfilWeb() {
 
                   <View style={s.statsRow}>
                     <View style={s.statItem}>
-                      <Text style={s.statVal}>{activeCount}</Text>
+                      <Text style={s.statVal}>{kineStats?.active_patients ?? '—'}</Text>
                       <Text style={s.statLabel}>Pacientes</Text>
                     </View>
                     <View style={s.statDivider} />
                     <View style={s.statItem}>
-                      <Text style={s.statVal}>—</Text>
+                      <Text style={s.statVal}>{kineStats?.total_sessions ?? '—'}</Text>
                       <Text style={s.statLabel}>Sesiones</Text>
                     </View>
                     <View style={s.statDivider} />
                     <View style={s.statItem}>
-                      <Text style={s.statVal}>—</Text>
+                      <Text style={s.statVal}>
+                        {kineStats ? `${kineStats.avg_adherence}%` : '—'}
+                      </Text>
                       <Text style={s.statLabel}>Adherencia</Text>
                     </View>
                   </View>

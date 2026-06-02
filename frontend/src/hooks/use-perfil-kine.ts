@@ -14,17 +14,28 @@ interface KineProfile {
   especialidad: string | null;
 }
 
+export interface KineStats {
+  active_patients: number;
+  total_sessions: number;
+  avg_adherence: number;
+}
+
 export function usePerfilKine() {
   const router = useRouter();
   const [user, setUser] = useState<UserResponse | null>(null);
   const [kineProfile, setKineProfile] = useState<KineProfile | null>(null);
+  const [kineStats, setKineStats] = useState<KineStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<UserResponse & { kinesiologo_profile: KineProfile | null }>('/api/v1/auth/me')
-      .then((data) => {
-        setUser(data);
-        setKineProfile(data.kinesiologo_profile);
+    Promise.all([
+      api.get<UserResponse & { kinesiologo_profile: KineProfile | null }>('/api/v1/auth/me'),
+      api.get<KineStats>('/api/v1/sessions/kine/stats'),
+    ])
+      .then(([me, stats]) => {
+        setUser(me);
+        setKineProfile(me.kinesiologo_profile);
+        setKineStats(stats);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -42,5 +53,5 @@ export function usePerfilKine() {
     { icon: 'id-card-outline' as const, label: 'Matrícula', value: kineProfile?.matricula ?? '...' },
   ];
 
-  return { perfilInfo, loading, handleLogout };
+  return { perfilInfo, loading, handleLogout, kineStats };
 }

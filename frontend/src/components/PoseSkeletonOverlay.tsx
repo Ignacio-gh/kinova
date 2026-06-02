@@ -112,7 +112,10 @@ type Props = {
   frontCamera?: boolean;
 };
 
-const MIN_V = 0.25;
+// Umbral de visibilidad para dibujar un punto.
+// 0.15 es más permisivo que el default de MediaPipe (0.5), permitiendo
+// mostrar puntos detectados aunque la confianza sea baja.
+const MIN_V = 0.15;
 
 export function PoseSkeletonOverlay({
   landmarks, angles, status, width, height, exerciseKey, frontCamera = true,
@@ -123,9 +126,10 @@ export function PoseSkeletonOverlay({
   const lm  = (i: number) => landmarks[String(i)];
 
   // ── Elegir el lado más visible ──────────────────────────────────────────────
-  // Suma la visibilidad de cadera + rodilla + tobillo de cada lado
-  const leftScore  = [IDX.left.hip,  IDX.left.knee,  IDX.left.ankle ].reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
-  const rightScore = [IDX.right.hip, IDX.right.knee, IDX.right.ankle].reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
+  // Suma todos los joints disponibles (shoulder incluido) para elegir
+  // el lado con mejor visibilidad global.
+  const leftScore  = Object.values(IDX.left ).reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
+  const rightScore = Object.values(IDX.right).reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
   const side = leftScore >= rightScore ? IDX.left : IDX.right;
 
   const chain     = CHAIN[exerciseKey]  ?? CHAIN.default;

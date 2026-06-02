@@ -48,6 +48,7 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
   const [feedback, setFeedback] = useState<PoseWSFeedback | null>(null);
   const [connected, setConnected] = useState(false);
   const sendingRef = useRef(false);
+  const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!evaluatorKey || !enabled) return;
@@ -64,6 +65,10 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
       setConnected(true);
     };
     ws.onmessage = (event) => {
+      if (sendTimeoutRef.current) {
+        clearTimeout(sendTimeoutRef.current);
+        sendTimeoutRef.current = null;
+      }
       try {
         setFeedback(JSON.parse(event.data) as PoseWSFeedback);
       } catch {
@@ -93,6 +98,14 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
   const sendFrame = useCallback((base64: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN && !sendingRef.current) {
       sendingRef.current = true;
+
+      // Timeout de seguridad: si el backend no responde en 3s, liberamos el bloqueo
+      // para que el siguiente frame pueda enviarse (evita deadlock).
+      if (sendTimeoutRef.current) clearTimeout(sendTimeoutRef.current);
+      sendTimeoutRef.current = setTimeout(() => {
+        sendingRef.current = false;
+      }, 3000);
+
       wsRef.current.send(JSON.stringify({ frame: base64 }));
     }
   }, []);

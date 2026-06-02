@@ -28,16 +28,27 @@ function getBaseUrl(): string {
 const BASE_URL = getBaseUrl();
 const TOKEN_KEY = 'kinova-token';
 
+// Token cacheado en memoria para no leer AsyncStorage en cada request
+let _cachedToken: string | null | undefined = undefined;
+
+async function getToken(): Promise<string | null> {
+  if (_cachedToken !== undefined) return _cachedToken;
+  _cachedToken = await AsyncStorage.getItem(TOKEN_KEY);
+  return _cachedToken;
+}
+
 export async function saveToken(token: string): Promise<void> {
+  _cachedToken = token;
   await AsyncStorage.setItem(TOKEN_KEY, token);
 }
 
 export async function clearToken(): Promise<void> {
+  _cachedToken = null;
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const token = await getToken();
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

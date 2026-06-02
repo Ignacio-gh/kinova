@@ -40,39 +40,26 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.pool import NullPool
 
 from app.config.settings import settings
 
 
 # ── 1. ENGINE (el motor de conexion) ──────────────────────────
-# create_async_engine recibe la URL de la base de datos y crea
-# el motor asincrono.
+# Conexión directa a Supabase (db.*.supabase.co:5432) sin pgbouncer.
+# SQLAlchemy mantiene un pool de conexiones persistentes → las queries
+# reutilizan conexiones ya abiertas y responden en ~50ms en vez de ~3s.
 #
-# Parametros:
-#   - settings.DATABASE_URL: viene del .env (lo que hicimos en paso 1)
-#   - echo: si es True, imprime TODAS las queries SQL en la consola.
-#     Util para debuggear, molesto en produccion. Por eso lo atamos
-#     a settings.DEBUG — en desarrollo se ve, en produccion no.
-# asyncpg requiere SSL explícito para conectar a Supabase (y a PostgreSQL en general).
-# Para SQLite (desarrollo local) no se pasa connect_args.
+# pool_size=5      → hasta 5 conexiones simultáneas abiertas
+# max_overflow=10  → hasta 10 conexiones adicionales en picos de tráfico
+# pool_pre_ping    → testea la conexión antes de usarla (reconecta si cayó)
 _is_postgres = settings.DATABASE_URL.startswith("postgresql")
 
-if _is_postgres:
-    # Supabase Supavisor en Transaction mode (puerto 6543) YA es un pool.
-    # SQLAlchemy no debe tener pool propio encima — usar NullPool para que
-    # cada request tome y devuelva una conexión directamente a Supavisor.
-    # Esto elimina el "doble pool" que causaba 500 intermitentes.
-    import uuid
-    _connect_args = {
-        "ssl": "require",
-        "statement_cache_size": 0,
-        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4().hex}__",
-    }
-    _pool_kwargs = {"poolclass": NullPool}
-else:
-    _connect_args = {}
-    _pool_kwargs = {}
+_connect_args = {"ssl": "require"} if _is_postgres else {}
+_pool_kwargs = (
+    {"pool_size": 5, "max_overflow": 10, "pool_pre_ping": True}
+    if _is_postgres
+    else {}
+)
 
 engine = create_async_engine(
     settings.DATABASE_URL,

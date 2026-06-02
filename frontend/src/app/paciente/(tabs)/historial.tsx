@@ -1,86 +1,12 @@
-import { View, Text, ScrollView, FlatList } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-
-// ─── Tipos ───────────────────────────────────────────────────────────────────
-
-type SessionExercise = {
-  name: string;
-  series: number;
-  reps: number;
-  completed: boolean;
-};
-
-type Session = {
-  id: string;
-  date: string;
-  durationMin: number;
-  adherence: number;
-  exercises: SessionExercise[];
-};
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const STATS = {
-  sessions: 5,
-  adherence: 90,
-  totalMin: 115,
-  exercisesCompleted: 9,
-};
-
-const SESSIONS: Session[] = [
-  {
-    id: 's1',
-    date: 'lunes, 11 de mayo de 2026',
-    durationMin: 25,
-    adherence: 100,
-    exercises: [
-      { name: 'Sentadilla Búlgara', series: 3, reps: 20, completed: true },
-      { name: 'Extensión de Rodilla', series: 3, reps: 15, completed: true },
-    ],
-  },
-  {
-    id: 's2',
-    date: 'domingo, 10 de mayo de 2026',
-    durationMin: 15,
-    adherence: 100,
-    exercises: [
-      { name: 'Elevación de Talón', series: 3, reps: 30, completed: true },
-    ],
-  },
-  {
-    id: 's3',
-    date: 'viernes, 8 de mayo de 2026',
-    durationMin: 18,
-    adherence: 50,
-    exercises: [
-      { name: 'Sentadilla Búlgara', series: 3, reps: 20, completed: true },
-      { name: 'Extensión de Rodilla', series: 3, reps: 15, completed: false },
-    ],
-  },
-  {
-    id: 's4',
-    date: 'jueves, 7 de mayo de 2026',
-    durationMin: 22,
-    adherence: 100,
-    exercises: [
-      { name: 'Puente de Glúteo', series: 4, reps: 25, completed: true },
-      { name: 'Zancada Frontal', series: 3, reps: 15, completed: true },
-    ],
-  },
-  {
-    id: 's5',
-    date: 'martes, 5 de mayo de 2026',
-    durationMin: 35,
-    adherence: 100,
-    exercises: [
-      { name: 'Sentadilla Búlgara', series: 3, reps: 20, completed: true },
-      { name: 'Extensión de Rodilla', series: 3, reps: 15, completed: true },
-      { name: 'Elevación de Talón', series: 3, reps: 30, completed: true },
-    ],
-  },
-];
+import {
+  useHistorialSesiones,
+  formatSessionDate,
+  type SessionHistoryItem,
+} from '@/hooks/use-historial-sesiones';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -89,11 +15,7 @@ const adherenceColor = (v: number) =>
 
 // ─── Sub-componente: tarjeta de estadística ───────────────────────────────────
 
-type StatCardProps = {
-  label: string;
-  value: string;
-  highlight?: boolean;
-};
+type StatCardProps = { label: string; value: string; highlight?: boolean };
 
 function StatCard({ label, value, highlight = false }: StatCardProps) {
   return (
@@ -123,10 +45,11 @@ function StatCard({ label, value, highlight = false }: StatCardProps) {
 
 // ─── Sub-componente: tarjeta de sesión ────────────────────────────────────────
 
-function SessionCard({ session }: { session: Session }) {
-  const color = adherenceColor(session.adherence);
-  const dateCapitalized =
-    session.date.charAt(0).toUpperCase() + session.date.slice(1);
+function SessionCard({ session }: { session: SessionHistoryItem }) {
+  const adherence = session.adherence_pct ?? 0;
+  const color = adherenceColor(adherence);
+  const dateStr = formatSessionDate(session.date);
+  const dateCapitalized = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
   return (
     <View
@@ -158,7 +81,9 @@ function SessionCard({ session }: { session: Session }) {
           <View className="flex-row items-center mt-0.5" style={{ gap: 8 }}>
             <View className="flex-row items-center" style={{ gap: 3 }}>
               <Ionicons name="time-outline" size={12} color="#9CA3AF" />
-              <Text className="text-gray-400 text-xs">{session.durationMin} minutos</Text>
+              <Text className="text-gray-400 text-xs">
+                {session.duration_minutes ?? '—'} minutos
+              </Text>
             </View>
             <Text className="text-gray-300 text-xs">·</Text>
             <Text className="text-gray-400 text-xs">
@@ -170,7 +95,7 @@ function SessionCard({ session }: { session: Session }) {
         <View className="items-end">
           <Text className="text-gray-400 text-xs mb-0.5">Adherencia</Text>
           <Text className="font-extrabold text-xl" style={{ color }}>
-            {session.adherence}%
+            {adherence}%
           </Text>
         </View>
       </View>
@@ -200,7 +125,7 @@ function SessionCard({ session }: { session: Session }) {
               />
             </View>
             <Text className="text-gray-400 text-xs">
-              {ex.series} series × {ex.reps} reps
+              {ex.sets} series × {ex.reps} reps
             </Text>
           </View>
         ))}
@@ -212,15 +137,33 @@ function SessionCard({ session }: { session: Session }) {
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 
 export default function HistorialSesiones() {
+  const { sessions, stats, loading } = useHistorialSesiones();
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#00A896" />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
 
       <FlatList
-        data={SESSIONS}
-        keyExtractor={(item) => item.id}
+        data={sessions}
+        keyExtractor={(item) => String(item.id)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 90 }}
+        ListEmptyComponent={
+          <View className="items-center px-5 py-12">
+            <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
+            <Text className="text-gray-400 text-sm mt-3 text-center">
+              Todavía no tenés sesiones completadas
+            </Text>
+          </View>
+        }
         ListHeaderComponent={
           <>
             {/* Título */}
@@ -234,27 +177,29 @@ export default function HistorialSesiones() {
             </View>
 
             {/* Estadísticas — grid 2×2 */}
-            <View className="px-5 pb-5" style={{ gap: 10 }}>
-              <View className="flex-row" style={{ gap: 10 }}>
-                <StatCard label="Total de Sesiones" value={String(STATS.sessions)} />
-                <StatCard
-                  label="Adherencia Promedio"
-                  value={`${STATS.adherence}%`}
-                  highlight
-                />
+            {stats && (
+              <View className="px-5 pb-5" style={{ gap: 10 }}>
+                <View className="flex-row" style={{ gap: 10 }}>
+                  <StatCard label="Total de Sesiones" value={String(stats.total_sessions)} />
+                  <StatCard
+                    label="Adherencia Promedio"
+                    value={`${stats.avg_adherence}%`}
+                    highlight
+                  />
+                </View>
+                <View className="flex-row" style={{ gap: 10 }}>
+                  <StatCard
+                    label="Tiempo Total"
+                    value={`${stats.total_minutes} min`}
+                    highlight
+                  />
+                  <StatCard
+                    label="Ejercicios Completados"
+                    value={String(stats.exercises_completed)}
+                  />
+                </View>
               </View>
-              <View className="flex-row" style={{ gap: 10 }}>
-                <StatCard
-                  label="Tiempo Total"
-                  value={`${STATS.totalMin} min`}
-                  highlight
-                />
-                <StatCard
-                  label="Ejercicios Completados"
-                  value={String(STATS.exercisesCompleted)}
-                />
-              </View>
-            </View>
+            )}
           </>
         }
         renderItem={({ item }) => (

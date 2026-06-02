@@ -139,6 +139,13 @@ export function useEjercicioSesion(
   // Guardamos el total_reps previo para detectar nuevas reps
   const prevTotalReps = useRef(0);
 
+  // Últimos landmarks válidos — se mantienen aunque el siguiente frame
+  // no detecte ningún punto, evitando que el esqueleto desaparezca y reaparezca.
+  const stableLandmarksRef = useRef<Record<string, PoseLandmark>>({});
+  if (feedback?.landmarks && Object.keys(feedback.landmarks).length > 0) {
+    stableLandmarksRef.current = feedback.landmarks;
+  }
+
   // ── Reloj ──
   useEffect(() => {
     if (!isRunning || sessionFinished) return;
@@ -205,9 +212,10 @@ export function useEjercicioSesion(
     ? wsFeedbackToItem(feedback)
     : db.feedbackCycle[mockFeedbackIndex];
 
-  // Landmarks y ángulos (solo disponibles con WebSocket conectado)
+  // Landmarks: usa los del feedback actual, o los últimos válidos si no hay detección.
+  // Esto evita que el esqueleto "parpadee" cuando un frame no detecta al paciente.
   const landmarks: Record<string, PoseLandmark> | null = connected
-    ? (feedback?.landmarks ?? null)
+    ? (Object.keys(stableLandmarksRef.current).length > 0 ? stableLandmarksRef.current : null)
     : null;
   const angles: Record<string, number> | null = connected
     ? (feedback?.angles ?? null)

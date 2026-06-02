@@ -58,8 +58,29 @@ class SessionHistoryItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SessionExerciseDetail(BaseModel):
+    name: str
+    sets: int
+    reps: int
+    completed: bool
+
+
+class SessionHistoryDetail(BaseModel):
+    id: int
+    date: datetime
+    duration_minutes: int | None
+    adherence_pct: float | None
+    exercises: list[SessionExerciseDetail]
+
+
 class DashboardStats(BaseModel):
     total_sessions: int
     avg_adherence: float
     total_minutes: int
     exercises_completed: int
+
+
+class KineStats(BaseModel):
+    active_patients: int
+    total_sessions: int
+    avg_adherence: float

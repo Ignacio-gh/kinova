@@ -1,5 +1,7 @@
+from datetime import date, datetime
+
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.patient import (
@@ -11,8 +13,6 @@ from app.schemas.patient import (
     PatientUpdate,
     TodayExerciseItem,
 )
-from datetime import date
-
 from app.services import adherence_service, routine_service
 
 
@@ -48,8 +48,19 @@ async def list_for_kinesiologo(
 
     items = []
     for profile, user in rows:
+        from app.models.session import Session
+
         adherence = await adherence_service.calculate_weekly_adherence(db, profile)
         current_week = _current_week(profile.treatment_start_date)
+
+        last_session_result = await db.execute(
+            select(func.max(Session.started_at)).where(
+                Session.patient_id == profile.id,
+                Session.status == "completed",
+            )
+        )
+        last_session_at: datetime | None = last_session_result.scalar_one_or_none()
+
         items.append(
             PatientListItem(
                 id=profile.id,
@@ -60,7 +71,7 @@ async def list_for_kinesiologo(
                 current_week=current_week,
                 treatment_weeks=profile.treatment_weeks,
                 adherence_pct=adherence,
-                last_session_at=None,  # TODO: traer de session_repository
+                last_session_at=last_session_at,
             )
         )
     return items
@@ -239,10 +250,19 @@ async def get_dashboard(
 
 
 async def _build_patient_response(db, profile, user) -> PatientResponse:
+    from app.models.session import Session
     from app.schemas.user import UserResponse
 
     adherence = await adherence_service.calculate_weekly_adherence(db, profile)
     current_week = _current_week(profile.treatment_start_date)
+
+    last_session_result = await db.execute(
+        select(func.max(Session.started_at)).where(
+            Session.patient_id == profile.id,
+            Session.status == "completed",
+        )
+    )
+    last_session_at = last_session_result.scalar_one_or_none()
 
     return PatientResponse(
         id=profile.id,
@@ -257,6 +277,6 @@ async def _build_patient_response(db, profile, user) -> PatientResponse:
         status=profile.status,
         current_week=current_week,
         adherence_pct=adherence,
-        last_session_at=None,  # TODO: traer de session_repository
+        last_session_at=last_session_at,
         created_at=profile.created_at,
     )

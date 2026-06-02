@@ -71,24 +71,23 @@ function WebCamera({
         const node = containerRef.current as unknown as HTMLDivElement | null;
         node?.appendChild(video);
 
-        // Canvas oculto para captura de frames a baja resolución
+        // Canvas oculto para captura — resolución mayor y mejor calidad JPEG
         canvas = document.createElement('canvas');
-        canvas.width  = 320;
-        canvas.height = 240;
+        canvas.width  = 480;
+        canvas.height = 360;
         canvas.style.display = 'none';
         document.body.appendChild(canvas);
         canvasRef.current = canvas;
 
-        // Función de captura que usa el canvas
         captureRef.current = () => {
           const v = videoRef.current;
           const c = canvasRef.current;
           if (!v || !c || v.readyState < 2) return null;
           const ctx = c.getContext('2d');
           if (!ctx) return null;
-          // Cámara trasera: sin espejo
           ctx.drawImage(v, 0, 0, c.width, c.height);
-          return c.toDataURL('image/jpeg', 0.3).split(',')[1] ?? null;
+          // Calidad 0.75: balance entre detalle para MediaPipe y tamaño de payload
+          return c.toDataURL('image/jpeg', 0.75).split(',')[1] ?? null;
         };
       } catch (err: unknown) {
         const name = (err as { name?: string })?.name ?? '';
@@ -157,7 +156,7 @@ export default function EjercicioSesionWeb() {
     const interval = setInterval(() => {
       const base64 = captureRef.current?.();
       if (base64) sendFrame(base64);
-    }, 333);
+    }, 200); // 5 fps — más fluido y menor probabilidad de perder el movimiento
     return () => clearInterval(interval);
   }, [isRunning, connected, sendFrame]);
 
