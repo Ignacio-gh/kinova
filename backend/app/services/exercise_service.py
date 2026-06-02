@@ -1,19 +1,36 @@
-"""
-exercise_service.py — Servicio del catálogo de ejercicios.
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-Responsabilidad:
-    Lectura del catálogo. Para el MVP no hay creación/edición desde la app.
+from app.schemas.exercise import ExerciseListItem, ExerciseResponse
 
-Funciones planeadas:
-    async def list(filters) -> list[ExerciseListItem]
-        - Filtros: zone, search
 
-    async def get(exercise_id) -> ExerciseResponse
-        - Detalle completo (steps, benefits, video, etc.)
+async def list_exercises(
+    db: AsyncSession,
+    zone: str | None = None,
+    search: str | None = None,
+) -> list[ExerciseResponse]:
+    from app.models.exercise import Exercise
 
-Dependencias:
-    - app.repositories.exercise_repository
-"""
+    query = select(Exercise)
 
-# TODO: async def list_exercises(db, filters)
-# TODO: async def get_exercise(db, exercise_id)
+    if zone:
+        query = query.where(Exercise.zone == zone)
+    if search:
+        query = query.where(Exercise.name.ilike(f"%{search}%"))
+
+    result = await db.execute(query)
+    exercises = result.scalars().all()
+    return [ExerciseResponse.model_validate(e) for e in exercises]
+
+
+async def get_exercise(db: AsyncSession, exercise_id: int) -> ExerciseResponse:
+    from app.models.exercise import Exercise
+
+    result = await db.execute(select(Exercise).where(Exercise.id == exercise_id))
+    exercise = result.scalar_one_or_none()
+
+    if exercise is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ejercicio no encontrado")
+
+    return ExerciseResponse.model_validate(exercise)

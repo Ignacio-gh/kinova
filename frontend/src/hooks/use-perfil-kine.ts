@@ -1,20 +1,46 @@
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { api, clearToken } from '@/services/api';
 
-export const PERFIL_INFO = [
-  { icon: 'person-outline' as const, label: 'Nombre completo', value: 'Dr. Rodríguez' },
-  { icon: 'mail-outline' as const, label: 'Correo', value: 'kinesiologo@kinova.com' },
-  { icon: 'medical-outline' as const, label: 'Especialidad', value: 'Kinesiología' },
-  { icon: 'id-card-outline' as const, label: 'Matrícula', value: 'KIN-4821' },
-];
+interface UserResponse {
+  id: number;
+  full_name: string;
+  email: string;
+  role: string;
+}
 
-export const PERFIL_AJUSTES = [
-  { icon: 'notifications-outline' as const, label: 'Notificaciones' },
-  { icon: 'lock-closed-outline' as const, label: 'Cambiar contraseña' },
-  { icon: 'help-circle-outline' as const, label: 'Ayuda y soporte' },
-];
+interface KineProfile {
+  matricula: string;
+  especialidad: string | null;
+}
 
 export function usePerfilKine() {
   const router = useRouter();
-  const handleLogout = () => router.replace('/');
-  return { handleLogout };
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [kineProfile, setKineProfile] = useState<KineProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get<UserResponse & { kinesiologo_profile: KineProfile | null }>('/api/v1/auth/me')
+      .then((data) => {
+        setUser(data);
+        setKineProfile(data.kinesiologo_profile);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleLogout = async () => {
+    await clearToken();
+    router.replace('/');
+  };
+
+  const perfilInfo = [
+    { icon: 'person-outline' as const, label: 'Nombre completo', value: user?.full_name ?? '...' },
+    { icon: 'mail-outline' as const, label: 'Correo', value: user?.email ?? '...' },
+    { icon: 'medical-outline' as const, label: 'Especialidad', value: kineProfile?.especialidad ?? 'Kinesiología' },
+    { icon: 'id-card-outline' as const, label: 'Matrícula', value: kineProfile?.matricula ?? '...' },
+  ];
+
+  return { perfilInfo, loading, handleLogout };
 }

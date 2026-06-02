@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 
 const C = {
   sidebar: '#071220',
@@ -28,6 +29,14 @@ const NAV_ITEMS: NavItem[] = [
 export function WebSidebarPaciente() {
   const router = useRouter();
   const pathname = usePathname();
+  const { profile, handleLogout } = usePacientePerfil();
+
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : '..';
+  const displayName = profile?.full_name
+    ? profile.full_name.split(' ').slice(0, 2).join(' ')
+    : 'Cargando...';
 
   const isActive = (path: string) => {
     if (path === '/paciente') return pathname === '/paciente';
@@ -52,11 +61,11 @@ export function WebSidebarPaciente() {
       {/* Info del paciente */}
       <View style={s.patientCard}>
         <View style={s.avatarCircle}>
-          <Text style={s.avatarText}>CR</Text>
+          <Text style={s.avatarText}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.patientName}>Carlos R.</Text>
-          <Text style={s.patientSub}>Rehabilitación rodilla</Text>
+          <Text style={s.patientName}>{displayName}</Text>
+          <Text style={s.patientSub} numberOfLines={1}>{profile?.diagnosis ?? ''}</Text>
         </View>
       </View>
 
@@ -91,7 +100,7 @@ export function WebSidebarPaciente() {
         <View style={s.divider} />
         <TouchableOpacity
           style={s.logoutBtn}
-          onPress={() => router.replace('/')}
+          onPress={handleLogout}
           activeOpacity={0.7}
         >
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />

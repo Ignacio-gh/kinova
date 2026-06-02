@@ -11,7 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useBiblioteca, CATEGORY_FILTERS } from '@/hooks/use-biblioteca';
-import { MOCK_PATIENTS } from '@/hooks/use-mis-pacientes';
+import { useMisPacientes } from '@/hooks/use-mis-pacientes';
+import { api } from '@/services/api';
 import type { Exercise } from '@/components/kinesiologo/exercise-card';
 
 const C = {
@@ -44,13 +45,21 @@ const CATEGORY_TEXT: Record<string, string> = {
 };
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const DAY_TO_ENGLISH: Record<string, string> = {
+  Lunes: 'monday', Martes: 'tuesday', Miércoles: 'wednesday',
+  Jueves: 'thursday', Viernes: 'friday', Sábado: 'saturday', Domingo: 'sunday',
+};
 
 export default function BibliotecaWeb() {
   const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
+  const { filtered: allPatients, loading: patientsLoading } = useMisPacientes();
+  const activePatients = allPatients.filter((p) => p.status === 'Activo');
 
   // --- Estados del Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [assignError, setAssignError] = useState('');
+  const [assignSaving, setAssignSaving] = useState(false);
 
   // --- Estados del Formulario ---
   const [patientId, setPatientId] = useState('');
@@ -63,8 +72,6 @@ export default function BibliotecaWeb() {
   // --- Estados de los Dropdowns Personalizados ---
   const [isPatientDropdownOpen, setIsPatientDropdownOpen] = useState(false);
   const [isDayDropdownOpen, setIsDayDropdownOpen] = useState(false);
-
-  const activePatients = MOCK_PATIENTS.filter((p) => p.status === 'Activo');
 
   const handleOpenAssign = (ex: Exercise) => {
     setSelectedExercise(ex);
@@ -85,22 +92,29 @@ export default function BibliotecaWeb() {
     setIsDayDropdownOpen(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setAssignError('');
     if (!patientId || !day) {
-      alert('Por favor, selecciona un paciente y un día.');
+      setAssignError('Seleccioná un paciente y un día.');
       return;
     }
-    // TODO: Conectar con la lógica o el backend para guardar el ejercicio
-    console.log('Asignando:', { 
-      exercise: selectedExercise?.name, 
-      patientId, 
-      day, 
-      sets, 
-      reps, 
-      minAngle, 
-      maxAngle 
-    });
-    handleCloseModal();
+    setAssignSaving(true);
+    try {
+      await api.post('/api/v1/routines/', {
+        patient_id: Number(patientId),
+        exercise_id: Number(selectedExercise!.id),
+        day_of_week: DAY_TO_ENGLISH[day],
+        sets: Number(sets) || 3,
+        reps: Number(reps) || 15,
+        angle_min: minAngle ? Number(minAngle) : null,
+        angle_max: maxAngle ? Number(maxAngle) : null,
+      });
+      handleCloseModal();
+    } catch (e: any) {
+      setAssignError(e.message ?? 'Error al asignar ejercicio.');
+    } finally {
+      setAssignSaving(false);
+    }
   };
 
   return (
@@ -251,14 +265,22 @@ export default function BibliotecaWeb() {
       }}
     >
       <Text style={[s.dropdownText, !patientId && { color: C.gray400 }]}>
-        {patientId ? activePatients.find(p => p.id === patientId)?.name : 'Seleccionar paciente...'}
+        {patientsLoading
+          ? 'Cargando pacientes...'
+          : patientId
+            ? activePatients.find(p => p.id === patientId)?.name
+            : activePatients.length === 0
+              ? 'Sin pacientes activos'
+              : 'Seleccionar paciente...'}
       </Text>
       <Ionicons name={isPatientDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
     </TouchableOpacity>
-    {isPatientDropdownOpen && (
+    {isPatientDropdownOpen && !patientsLoading && (
       <View style={s.dropdownList}>
         <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
-          {activePatients.map(p => (
+          {activePatients.length === 0 ? (
+            <Text style={[s.dropdownText, { padding: 12, color: C.gray400 }]}>No hay pacientes activos</Text>
+          ) : activePatients.map(p => (
             <TouchableOpacity 
               key={p.id} 
               style={s.dropdownItem} 
@@ -364,20 +386,18 @@ export default function BibliotecaWeb() {
             </View>
 
             {/* Modal Footer */}
+            {!!assignError && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
+                <Text style={{ color: '#DC2626', fontSize: 12, flex: 1 }}>{assignError}</Text>
+              </View>
+            )}
             <View style={s.modalFooter}>
-              <TouchableOpacity 
-                style={s.cancelBtn} 
-                activeOpacity={0.7}
-                onPress={handleCloseModal}
-              >
+              <TouchableOpacity style={s.cancelBtn} activeOpacity={0.7} onPress={handleCloseModal}>
                 <Text style={s.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={s.saveBtn} 
-                activeOpacity={0.7}
-                onPress={handleSave}
-              >
-                <Text style={s.saveBtnText}>Guardar</Text>
+              <TouchableOpacity style={[s.saveBtn, assignSaving && { opacity: 0.6 }]} activeOpacity={0.7} onPress={handleSave} disabled={assignSaving}>
+                <Text style={s.saveBtnText}>{assignSaving ? 'Guardando...' : 'Asignar ejercicio'}</Text>
               </TouchableOpacity>
             </View>
 

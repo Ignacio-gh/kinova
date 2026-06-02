@@ -1,17 +1,38 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { api, saveToken } from '@/services/api';
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  role: string;
+}
 
 export function usePacienteLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async () => {
+    setError('');
+    if (!email.trim() || !password) {
+      setError('Ingresá tu email y contraseña.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // TODO: conectar authService.loginPaciente({ email, password })
+      const data = await api.postForm<LoginResponse>('/api/v1/auth/login', {
+        username: email.trim().toLowerCase(),
+        password,
+      });
+
+      await saveToken(data.access_token);
       router.replace('/paciente' as never);
+    } catch (err: any) {
+      setError(err.message ?? 'Email o contraseña incorrectos.');
     } finally {
       setLoading(false);
     }
@@ -19,5 +40,5 @@ export function usePacienteLogin() {
 
   const goBack = () => router.back();
 
-  return { email, setEmail, password, setPassword, loading, handleLogin, goBack };
+  return { email, setEmail, password, setPassword, loading, error, handleLogin, goBack };
 }

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '@/services/api';
 
 export type CalendarExercise = {
   id: string;
@@ -12,30 +13,67 @@ export type CalendarExercise = {
 export const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as const;
 export type Day = (typeof DAYS)[number];
 
-export const ROUTINE: Record<Day, CalendarExercise[]> = {
-  Lun: [
-    { id: 'e1', name: 'Sentadilla Búlgara', series: 3, reps: 20, angle: '60° - 90°', muscle: 'Muslo' },
-    { id: 'e2', name: 'Extensión de Rodilla', series: 3, reps: 15, muscle: 'Rodilla' },
-  ],
-  Mar: [
-    { id: 'e3', name: 'Sentadilla', series: 3, reps: 20, angle: '60° - 90°', muscle: 'Muslo' },
-    { id: 'e4', name: 'Extensión Sentado', series: 3, reps: 15, muscle: 'Rodilla' },
-    { id: 'e5', name: 'Elevación de pierna recta', series: 4, reps: 25, angle: '60° - 90°', muscle: 'Cadera' },
-  ],
-  Mié: [{ id: 'e6', name: 'Puente de Glúteo', series: 4, reps: 25, muscle: 'Glúteo' }],
-  Jue: [],
-  Vie: [{ id: 'e7', name: 'Zancada Frontal', series: 3, reps: 15, angle: '70° - 110°', muscle: 'Muslo' }],
-  Sáb: [],
-  Dom: [],
+const DAY_MAP: Record<string, Day> = {
+  monday: 'Lun', tuesday: 'Mar', wednesday: 'Mié',
+  thursday: 'Jue', friday: 'Vie', saturday: 'Sáb', sunday: 'Dom',
 };
 
-const PRE_COMPLETED = new Set<string>(['e1', 'e2']);
+interface RoutineItem {
+  id: number;
+  exercise: { id: number; name: string; zone: string };
+  day_of_week: string;
+  reps: number;
+  sets: number;
+  angle_min: number | null;
+  angle_max: number | null;
+}
+
+interface WeeklyResponse {
+  monday: RoutineItem[];
+  tuesday: RoutineItem[];
+  wednesday: RoutineItem[];
+  thursday: RoutineItem[];
+  friday: RoutineItem[];
+  saturday: RoutineItem[];
+  sunday: RoutineItem[];
+}
+
+function buildAngle(min: number | null, max: number | null): string | undefined {
+  if (min != null && max != null) return `${min}° - ${max}°`;
+  return undefined;
+}
 
 export function useMiCalendario() {
   const [selectedDay, setSelectedDay] = useState<Day>('Lun');
-  const [completedIds, setCompletedIds] = useState<Set<string>>(PRE_COMPLETED);
+  const [routine, setRoutine] = useState<Record<Day, CalendarExercise[]>>(
+    Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, CalendarExercise[]>
+  );
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
-  const dayExercises = ROUTINE[selectedDay] ?? [];
+  useEffect(() => {
+    api.get<WeeklyResponse>('/api/v1/routines/me/week')
+      .then((data) => {
+        const mapped = Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, CalendarExercise[]>;
+        for (const [backendDay, items] of Object.entries(data)) {
+          const day = DAY_MAP[backendDay];
+          if (!day) continue;
+          mapped[day] = items.map((r) => ({
+            id: String(r.id),
+            name: r.exercise.name,
+            series: r.sets,
+            reps: r.reps,
+            angle: buildAngle(r.angle_min, r.angle_max),
+            muscle: r.exercise.zone,
+          }));
+        }
+        setRoutine(mapped);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dayExercises = routine[selectedDay] ?? [];
 
   const toggleComplete = (id: string) =>
     setCompletedIds((prev) => {
@@ -44,5 +82,5 @@ export function useMiCalendario() {
       return next;
     });
 
-  return { selectedDay, setSelectedDay, completedIds, dayExercises, toggleComplete };
+  return { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete };
 }

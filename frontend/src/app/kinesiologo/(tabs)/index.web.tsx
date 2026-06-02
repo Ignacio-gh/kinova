@@ -1,7 +1,9 @@
-import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useMisPacientes, FILTERS, FILTER_LABELS } from '@/hooks/use-mis-pacientes';
+import { api } from '@/services/api';
 
 const C = {
   bg: '#F1F5F9',
@@ -22,8 +24,60 @@ const C = {
 const adherenceColor = (v: number) =>
   v >= 90 ? C.green : v >= 70 ? C.amber : C.red;
 
+const today = new Date().toISOString().split('T')[0];
+
 export default function MisPacientesWeb() {
-  const { search, setSearch, filter, setFilter, filtered, goToPatient } = useMisPacientes();
+  const { search, setSearch, filter, setFilter, filtered, goToPatient, refetch } = useMisPacientes();
+
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [createdPassword, setCreatedPassword] = useState('');
+  const [createdEmail, setCreatedEmail] = useState('');
+  const [form, setForm] = useState({
+    full_name: '', email: '', password: '', diagnosis: '',
+    treatment_weeks: '12', treatment_start_date: today,
+    phone: '', notes: '',
+  });
+
+  const setField = (key: keyof typeof form) => (val: string) =>
+    setForm((f) => ({ ...f, [key]: val }));
+
+  const closeModal = () => {
+    setShowModal(false);
+    setCreatedPassword('');
+    setCreatedEmail('');
+    setFormError('');
+    setForm({ full_name: '', email: '', password: '', diagnosis: '', treatment_weeks: '12', treatment_start_date: today, phone: '', notes: '' });
+  };
+
+  const handleCreate = async () => {
+    setFormError('');
+    if (!form.full_name.trim() || !form.email.trim() || !form.diagnosis.trim()) {
+      setFormError('Nombre, email y diagnóstico son obligatorios.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const response: any = await api.post('/api/v1/patients', {
+        full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim() || undefined,
+        diagnosis: form.diagnosis.trim(),
+        treatment_weeks: Number(form.treatment_weeks) || 12,
+        treatment_start_date: form.treatment_start_date || today,
+        phone: form.phone.trim() || null,
+        notes: form.notes.trim() || null,
+      });
+      setCreatedPassword(response.temp_password ?? form.password ?? '');
+      setCreatedEmail(form.email.trim().toLowerCase());
+      refetch();
+    } catch (e: any) {
+      setFormError(e.message ?? 'Error al crear paciente.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={s.root}>
@@ -36,7 +90,7 @@ export default function MisPacientesWeb() {
             <Text style={s.pageTitle}>Mis Pacientes</Text>
             <Text style={s.pageSub}>Gestioná y monitoreá el progreso de tus pacientes</Text>
           </View>
-          <TouchableOpacity style={s.addBtn} activeOpacity={0.8}>
+          <TouchableOpacity style={s.addBtn} activeOpacity={0.8} onPress={() => setShowModal(true)}>
             <Ionicons name="add" size={18} color={C.white} />
             <Text style={s.addBtnText}>Agregar paciente</Text>
           </TouchableOpacity>
@@ -173,6 +227,107 @@ export default function MisPacientesWeb() {
           )}
         </ScrollView>
       </View>
+
+      {/* Modal crear paciente */}
+      <Modal visible={showModal} transparent animationType="fade" onRequestClose={closeModal}>
+        <View style={s.overlay}>
+          <View style={s.modalCard}>
+            {createdPassword ? (
+              /* ── Pantalla de éxito: mostrar contraseña ── */
+              <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <Ionicons name="checkmark-circle" size={32} color="#16A34A" />
+                </View>
+                <Text style={{ color: C.navy, fontSize: 20, fontWeight: '800', marginBottom: 6 }}>Paciente creado</Text>
+                <Text style={{ color: C.gray500, fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
+                  Compartí estos datos con el paciente para que pueda ingresar a la app.
+                </Text>
+                <View style={{ backgroundColor: C.bg, borderRadius: 12, padding: 16, width: '100%', marginBottom: 12 }}>
+                  <Text style={{ color: C.gray400, fontSize: 11, fontWeight: '600', marginBottom: 6 }}>EMAIL DE ACCESO</Text>
+                  <Text style={{ color: C.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>{createdEmail}</Text>
+                </View>
+                <View style={{ backgroundColor: C.bg, borderRadius: 12, padding: 16, width: '100%', marginBottom: 24 }}>
+                  <Text style={{ color: C.gray400, fontSize: 11, fontWeight: '600', marginBottom: 6 }}>CONTRASEÑA DE ACCESO</Text>
+                  <Text style={{ color: C.navy, fontSize: 22, fontWeight: '800', letterSpacing: 2, textAlign: 'center' }}>{createdPassword}</Text>
+                </View>
+                <TouchableOpacity style={s.saveBtn} onPress={closeModal}>
+                  <Text style={s.saveBtnText}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* ── Formulario ── */
+              <>
+                <View style={s.modalHeader}>
+                  <Text style={s.modalTitle}>Nuevo paciente</Text>
+                  <TouchableOpacity onPress={closeModal}>
+                    <Ionicons name="close" size={22} color={C.gray400} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={s.row2}>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Nombre completo *</Text>
+                    <TextInput style={s.input} placeholder="Juan Pérez" value={form.full_name} onChangeText={setField('full_name')} />
+                  </View>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Email *</Text>
+                    <TextInput style={s.input} placeholder="paciente@email.com" value={form.email} onChangeText={setField('email')} autoCapitalize="none" keyboardType="email-address" />
+                  </View>
+                </View>
+
+                <View style={s.row2}>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Contraseña (opcional — se genera automáticamente)</Text>
+                    <TextInput style={s.input} placeholder="Dejar vacío para generar" value={form.password} onChangeText={setField('password')} secureTextEntry />
+                  </View>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Diagnóstico *</Text>
+                    <TextInput style={s.input} placeholder="Lesión de rodilla..." value={form.diagnosis} onChangeText={setField('diagnosis')} />
+                  </View>
+                </View>
+
+                <View style={s.row2}>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Semanas de tratamiento</Text>
+                    <TextInput style={s.input} placeholder="12" value={form.treatment_weeks} onChangeText={setField('treatment_weeks')} keyboardType="numeric" />
+                  </View>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Inicio de tratamiento</Text>
+                    <TextInput style={s.input} placeholder="YYYY-MM-DD" value={form.treatment_start_date} onChangeText={setField('treatment_start_date')} />
+                  </View>
+                </View>
+
+                <View style={s.row2}>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Teléfono (opcional)</Text>
+                    <TextInput style={s.input} placeholder="+54 11 1234-5678" value={form.phone} onChangeText={setField('phone')} keyboardType="phone-pad" />
+                  </View>
+                  <View style={[s.fieldGroup, { flex: 1 }]}>
+                    <Text style={s.fieldLabel}>Notas (opcional)</Text>
+                    <TextInput style={s.input} placeholder="Antecedentes..." value={form.notes} onChangeText={setField('notes')} />
+                  </View>
+                </View>
+
+                {!!formError && (
+                  <View style={s.errorBox}>
+                    <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
+                    <Text style={s.errorText}>{formError}</Text>
+                  </View>
+                )}
+
+                <View style={s.modalFooter}>
+                  <TouchableOpacity style={s.cancelBtn} onPress={closeModal}>
+                    <Text style={s.cancelBtnText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleCreate} disabled={saving}>
+                    <Text style={s.saveBtnText}>{saving ? 'Guardando...' : 'Crear paciente'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -256,4 +411,24 @@ const s = StyleSheet.create({
   viewBtnText: { color: C.turquoise, fontSize: 13, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 80, gap: 12 },
   emptyText: { color: C.gray400, fontSize: 15 },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  modalCard: { backgroundColor: C.white, borderRadius: 20, padding: 28, width: 600, maxWidth: '95%' as any },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { color: C.navy, fontSize: 20, fontWeight: '800' },
+  row2: { flexDirection: 'row', gap: 12 },
+  fieldGroup: { marginBottom: 14 },
+  fieldLabel: { color: C.navy, fontSize: 12, fontWeight: '600', marginBottom: 5 },
+  input: {
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 10,
+    height: 42, paddingHorizontal: 12, fontSize: 14, color: C.navy,
+    backgroundColor: C.white, outlineStyle: 'none' as any,
+  },
+  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 8, padding: 10, marginBottom: 12 },
+  errorText: { color: '#DC2626', fontSize: 12, flex: 1 },
+  modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
+  cancelBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: C.border },
+  cancelBtnText: { color: C.gray500, fontSize: 14, fontWeight: '600' },
+  saveBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: C.turquoise },
+  saveBtnText: { color: C.white, fontSize: 14, fontWeight: '700' },
 });

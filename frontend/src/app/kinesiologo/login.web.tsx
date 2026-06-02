@@ -24,7 +24,7 @@ const FEATURES = [
 ];
 
 export default function KinesiologoLoginWeb() {
-  const { email, setEmail, password, setPassword, loading, handleLogin, goBack, goToRegister } =
+  const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack, goToRegister } =
     useKinesiologoLogin();
 
   return (
@@ -124,6 +124,13 @@ export default function KinesiologoLoginWeb() {
               />
             </View>
           </View>
+
+          {!!error && (
+            <View style={s.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          )}
 
           {/* CTA */}
           <TouchableOpacity
@@ -364,6 +371,22 @@ const s = StyleSheet.create({
     color: C.white,
     fontSize: 15,
     fontWeight: '700',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 13,
+    flex: 1,
   },
   dividerRow: {
     flexDirection: 'row',

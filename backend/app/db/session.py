@@ -40,6 +40,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.config.settings import settings
 
@@ -53,9 +54,31 @@ from app.config.settings import settings
 #   - echo: si es True, imprime TODAS las queries SQL en la consola.
 #     Util para debuggear, molesto en produccion. Por eso lo atamos
 #     a settings.DEBUG — en desarrollo se ve, en produccion no.
+# asyncpg requiere SSL explícito para conectar a Supabase (y a PostgreSQL en general).
+# Para SQLite (desarrollo local) no se pasa connect_args.
+_is_postgres = settings.DATABASE_URL.startswith("postgresql")
+
+if _is_postgres:
+    # Supabase Supavisor en Transaction mode (puerto 6543) YA es un pool.
+    # SQLAlchemy no debe tener pool propio encima — usar NullPool para que
+    # cada request tome y devuelva una conexión directamente a Supavisor.
+    # Esto elimina el "doble pool" que causaba 500 intermitentes.
+    import uuid
+    _connect_args = {
+        "ssl": "require",
+        "statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4().hex}__",
+    }
+    _pool_kwargs = {"poolclass": NullPool}
+else:
+    _connect_args = {}
+    _pool_kwargs = {}
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
+    connect_args=_connect_args,
+    **_pool_kwargs,
 )
 
 

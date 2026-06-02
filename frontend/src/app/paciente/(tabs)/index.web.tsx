@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
-import { usePacienteInicio, UPCOMING, type TodayExercise } from '@/hooks/use-paciente-inicio';
+import { usePacienteInicio, type TodayExercise } from '@/hooks/use-paciente-inicio';
+import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 
 const C = {
   bg: '#F1F5F9',
@@ -22,6 +23,7 @@ const C = {
 export default function PacienteInicioWeb() {
   const router = useRouter();
   const {
+    userName,
     exercises,
     completedToday,
     weeklyPercent,
@@ -31,11 +33,19 @@ export default function PacienteInicioWeb() {
     toggleExercise,
     goToCalendar,
   } = usePacienteInicio();
+  const { profile } = usePacientePerfil();
 
   const startExercise = (ex: TodayExercise) =>
     router.push({
       pathname: '/paciente/ejercicio/[id]',
-      params: { id: ex.id, name: ex.name, muscle: ex.muscle, reps: ex.reps, series: ex.series },
+      params: {
+        id: ex.id,
+        name: ex.name,
+        muscle: ex.muscle,
+        evaluatorKey: ex.evaluatorKey ?? '',
+        reps: ex.reps,
+        series: ex.series,
+      },
     } as never);
 
   return (
@@ -46,7 +56,7 @@ export default function PacienteInicioWeb() {
         {/* Topbar */}
         <View style={s.topbar}>
           <View>
-            <Text style={s.greeting}>Bienvenido, Carlos</Text>
+            <Text style={s.greeting}>Bienvenido{userName ? `, ${userName}` : ''}</Text>
             <Text style={s.date}>{today}</Text>
           </View>
           <View style={s.progressPill}>
@@ -158,38 +168,23 @@ export default function PacienteInicioWeb() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.doctorLabel}>Tu kinesiólogo</Text>
-                  <Text style={s.doctorName}>Lic. Ignacio Ghiggi</Text>
+                  <Text style={s.doctorName}>{profile?.kinesiologo_name ?? 'Tu kinesiólogo'}</Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Próximos ejercicios */}
-          <View style={s.card}>
-            <View style={s.cardHeader}>
-              <Text style={s.cardTitle}>Próximos Ejercicios</Text>
-              <TouchableOpacity
-                style={s.calendarBtn}
-                onPress={goToCalendar}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="calendar-outline" size={14} color={C.turquoise} />
-                <Text style={s.calendarBtnText}>Ver rutina completa</Text>
-              </TouchableOpacity>
+          {/* Ver rutina semanal completa */}
+          <TouchableOpacity style={s.calendarBanner} onPress={goToCalendar} activeOpacity={0.85}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.calendarBannerTitle}>Ver rutina semanal completa</Text>
+              <Text style={s.calendarBannerSub}>Revisá todos tus ejercicios asignados por día</Text>
             </View>
-            <View style={s.upcomingGrid}>
-              {UPCOMING.map((u) => (
-                <View key={u.id} style={s.upcomingCard}>
-                  <View style={s.upcomingDay}>
-                    <Text style={s.upcomingDayText}>{u.day}</Text>
-                  </View>
-                  <Text style={s.upcomingName}>{u.name}</Text>
-                  <Text style={s.upcomingMuscle}>{u.muscle}</Text>
-                  <Text style={s.upcomingDetail}>{u.series} series × {u.reps} reps</Text>
-                </View>
-              ))}
+            <View style={s.calendarBannerIcon}>
+              <Ionicons name="calendar-outline" size={22} color={C.turquoise} />
+              <Ionicons name="chevron-forward" size={18} color={C.turquoise} />
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -284,25 +279,12 @@ const s = StyleSheet.create({
   doctorLabel: { color: C.gray400, fontSize: 11 },
   doctorName: { color: C.navy, fontSize: 13, fontWeight: '700', marginTop: 1 },
 
-  calendarBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 1.5, borderColor: C.turquoise,
-    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7,
+  calendarBanner: {
+    backgroundColor: C.white, borderRadius: 16, padding: 24,
+    borderWidth: 1, borderColor: C.turquoise,
+    flexDirection: 'row', alignItems: 'center',
   },
-  calendarBtnText: { color: C.turquoise, fontSize: 13, fontWeight: '600' },
-  upcomingGrid: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
-  upcomingCard: {
-    backgroundColor: C.bg, borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: C.border,
-    minWidth: 180, flex: 1,
-  },
-  upcomingDay: {
-    backgroundColor: C.turquoiseBg, borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 3,
-    alignSelf: 'flex-start', marginBottom: 8,
-  },
-  upcomingDayText: { color: C.turquoise, fontSize: 11, fontWeight: '700' },
-  upcomingName: { color: C.navy, fontSize: 14, fontWeight: '700', marginBottom: 3 },
-  upcomingMuscle: { color: C.gray400, fontSize: 12, marginBottom: 2 },
-  upcomingDetail: { color: C.gray400, fontSize: 12 },
+  calendarBannerTitle: { color: C.navy, fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  calendarBannerSub: { color: C.gray400, fontSize: 13 },
+  calendarBannerIcon: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });

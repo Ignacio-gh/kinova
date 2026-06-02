@@ -86,7 +86,7 @@ async def create_patient(
     from app.core.security import hash_password
     import secrets
 
-    temp_password = secrets.token_urlsafe(12)
+    temp_password = data.password if data.password else secrets.token_urlsafe(12)
 
     user = User(
         email=data.email,
@@ -114,7 +114,9 @@ async def create_patient(
     await db.refresh(profile)
     await db.refresh(user)
 
-    return await _build_patient_response(db, profile, user)
+    resp = await _build_patient_response(db, profile, user)
+    resp.temp_password = temp_password
+    return resp
 
 
 async def get_patient_detail(
@@ -218,10 +220,12 @@ async def get_dashboard(
         TodayExerciseItem(
             routine_id=r.routine_id,
             name=r.exercise.name,
+            zone=r.exercise.zone,
+            evaluator_key=r.exercise.evaluator_key,
             reps=r.reps,
             sets=r.sets,
-            effective_angle_min=r.effective_angle_min,
-            effective_angle_max=r.effective_angle_max,
+            effective_angle_min=r.angle_min,
+            effective_angle_max=r.angle_max,
         )
         for r in today_routines
     ]

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
-import { useMiCalendario, DAYS, ROUTINE } from '@/hooks/use-mi-calendario';
+import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
 
 const C = {
   bg: '#F1F5F9',
@@ -18,7 +18,7 @@ const C = {
 };
 
 export default function MiCalendarioWeb() {
-  const { selectedDay, setSelectedDay, completedIds, dayExercises, toggleComplete } =
+  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, toggleComplete } =
     useMiCalendario();
 
   return (
@@ -37,10 +37,7 @@ export default function MiCalendarioWeb() {
             <View style={s.doctorAvatar}>
               <Ionicons name="person-outline" size={14} color={C.white} />
             </View>
-            <Text style={s.doctorText}>
-              Supervisado por{' '}
-              <Text style={s.doctorName}>Lic. Ignacio Ghiggi</Text>
-            </Text>
+            <Text style={s.doctorText}>Supervisado por tu <Text style={s.doctorName}>kinesiólogo</Text></Text>
           </View>
         </View>
 
@@ -50,8 +47,8 @@ export default function MiCalendarioWeb() {
             <Text style={s.daySelectorTitle}>Semana actual</Text>
             {DAYS.map((day) => {
               const active = selectedDay === day;
-              const hasEx = (ROUTINE[day] ?? []).length > 0;
-              const allDone = hasEx && (ROUTINE[day] ?? []).every((e) => completedIds.has(e.id));
+              const hasEx = (routine[day] ?? []).length > 0;
+              const allDone = hasEx && (routine[day] ?? []).every((e) => completedIds.has(e.id));
               return (
                 <TouchableOpacity
                   key={day}
@@ -74,7 +71,7 @@ export default function MiCalendarioWeb() {
                   )}
                   {hasEx && (
                     <Text style={[s.dayCount, active && s.dayCountActive]}>
-                      {(ROUTINE[day] ?? []).length} ej.
+                      {(routine[day] ?? []).length} ej.
                     </Text>
                   )}
                 </TouchableOpacity>
