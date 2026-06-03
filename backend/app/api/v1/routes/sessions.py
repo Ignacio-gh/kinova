@@ -14,6 +14,8 @@ from app.core.dependencies import (
     verify_patient_belongs_to_kine,
 )
 from app.schemas.session import (
+    CompleteExerciseRequest,
+    CompleteExerciseResponse,
     DashboardStats,
     KineStats,
     SessionExerciseDetail,
@@ -22,6 +24,112 @@ from app.schemas.session import (
 from app.services import adherence_service
 
 router = APIRouter()
+
+
+# ── Completar un ejercicio (lo que faltaba) ──────────────────────────────────
+
+@router.post("/complete-exercise", response_model=CompleteExerciseResponse)
+async def complete_exercise(
+    data: CompleteExerciseRequest,
+    patient=Depends(get_current_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Marca un ejercicio como completado.
+
+    1. Busca o crea una sesion activa para hoy
+    2. Crea un ExerciseExecution con status "completed"
+    3. Cierra la sesion y calcula adherencia
+
+    Esto es lo que llama el frontend cuando el paciente
+    toca "Completado" en un ejercicio.
+    """
+    from datetime import datetime, timezone
+
+    from app.models.routine import Routine
+    from app.models.session import ExerciseExecution, Session
+
+    # Buscar sesion activa de hoy, o crear una nueva
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
+    result = await db.execute(
+        select(Session).where(
+            Session.patient_id == patient.id,
+            Session.status == "active",
+            Session.started_at >= today_start,
+        )
+    )
+    session = result.scalar_one_or_none()
+
+    if session is None:
+        session = Session(
+            patient_id=patient.id,
+            status="active",
+        )
+        db.add(session)
+        await db.flush()
+
+    # Verificar que la rutina existe y es del paciente
+    routine_result = await db.execute(
+        select(Routine).where(
+            Routine.id == data.routine_id,
+            Routine.patient_id == patient.id,
+        )
+    )
+    routine = routine_result.scalar_one_or_none()
+    if routine is None:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rutina no encontrada",
+        )
+
+    # Verificar que no se haya completado ya en esta sesion
+    existing = await db.execute(
+        select(ExerciseExecution).where(
+            ExerciseExecution.session_id == session.id,
+            ExerciseExecution.routine_id == data.routine_id,
+            ExerciseExecution.status == "completed",
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return CompleteExerciseResponse(
+            message="Este ejercicio ya fue completado hoy",
+            exercise_execution_id=existing.scalar_one_or_none().id if existing else 0,
+            session_id=session.id,
+        )
+
+    # Crear la ejecucion completada
+    execution = ExerciseExecution(
+        session_id=session.id,
+        routine_id=data.routine_id,
+        target_reps=routine.reps,
+        completed_reps=data.completed_reps or routine.reps,
+        correct_reps=data.correct_reps,
+        avg_score=data.avg_score,
+        status="completed",
+        ended_at=datetime.now(timezone.utc),
+    )
+    db.add(execution)
+    await db.flush()
+
+    # Actualizar la sesion
+    session.ended_at = datetime.now(timezone.utc)
+    if session.started_at:
+        session.duration_minutes = int(
+            (session.ended_at - session.started_at).total_seconds() / 60
+        )
+    session.status = "completed"
+
+    # Calcular adherencia
+    session.adherence_pct = await adherence_service.calculate_weekly_adherence(
+        db, patient
+    )
+
+    return CompleteExerciseResponse(
+        message="Ejercicio completado",
+        exercise_execution_id=execution.id,
+        session_id=session.id,
+    )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

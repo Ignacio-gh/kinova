@@ -78,10 +78,36 @@ export function usePacienteInicio() {
     })
     .replace(/^\w/, (c) => c.toUpperCase());
 
-  const toggleExercise = (id: string) =>
-    setExercises((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e))
-    );
+  const toggleExercise = async (id: string) => {
+    const exercise = exercises.find((e) => e.id === id);
+    if (!exercise || exercise.completed) return;
+
+    try {
+      await api.post('/api/v1/sessions/complete-exercise', {
+        routine_id: parseInt(id),
+        completed_reps: exercise.reps * exercise.series,
+        correct_reps: exercise.reps * exercise.series,
+        avg_score: 100.0,
+      });
+
+      setExercises((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
+      );
+
+      // Refrescar adherencia desde el backend
+      api.get<DashboardResponse>('/api/v1/patients/me/dashboard')
+        .then((dashboard) => {
+          setAdherencePct(dashboard.adherence_pct);
+        })
+        .catch(console.error);
+    } catch (error) {
+      console.error('Error al completar ejercicio:', error);
+      // Fallback: marcar localmente igual
+      setExercises((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
+      );
+    }
+  };
 
   const goToCalendar = () => router.navigate('/paciente/calendario' as never);
 

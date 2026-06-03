@@ -84,3 +84,16 @@ class KineStats(BaseModel):
     active_patients: int
     total_sessions: int
     avg_adherence: float
+
+
+class CompleteExerciseRequest(BaseModel):
+    routine_id: int
+    completed_reps: int = 0
+    correct_reps: int = 0
+    avg_score: float = 0.0
+
+
+class CompleteExerciseResponse(BaseModel):
+    message: str
+    exercise_execution_id: int
+    session_id: int
