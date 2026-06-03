@@ -1,10 +1,7 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
-import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
-import { useTutorial } from '@/context/TutorialContext';
-import MockCalendario from '@/mock/mock-calendario.web';
+import { useMiCalendario, DAYS, ROUTINE } from '@/mock/mock-use-mi-calendario';
 
 const C = {
   bg: '#F1F5F9',
@@ -21,12 +18,7 @@ const C = {
 };
 
 export default function MiCalendarioWeb() {
-  const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockCalendario />;
-  }
-
-  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, toggleComplete } =
+  const { selectedDay, setSelectedDay, completedIds, dayExercises, toggleComplete } =
     useMiCalendario();
 
   return (
@@ -36,27 +28,30 @@ export default function MiCalendarioWeb() {
       <View style={s.main}>
         {/* Topbar */}
         <View style={s.topbar}>
-          <View>
-            <Text style={s.pageTitle}>Mi Calendario Semanal</Text>
-            <Text style={s.pageSub}>Visualizá y completá tus ejercicios asignados</Text>
-          </View>
+  <View nativeID="tutorial-calendar-title"> {/* <-- AGREGADO */}
+    <Text style={s.pageTitle}>Mi Calendario Semanal</Text>
+    <Text style={s.pageSub}>Visualizá y completá tus ejercicios asignados</Text>
+  </View>
           {/* Médico asignado */}
           <View style={s.doctorBanner}>
             <View style={s.doctorAvatar}>
               <Ionicons name="person-outline" size={14} color={C.white} />
             </View>
-            <Text style={s.doctorText}>Supervisado por tu <Text style={s.doctorName}>kinesiólogo</Text></Text>
+            <Text style={s.doctorText}>
+              Supervisado por{' '}
+              <Text style={s.doctorName}>Lic. Ignacio Ghiggi</Text>
+            </Text>
           </View>
         </View>
 
         <View style={s.body}>
           {/* Selector de días — columna lateral */}
-          <View style={s.daySelector}>
+          <View style={s.daySelector} nativeID="tutorial-calendar-days">
             <Text style={s.daySelectorTitle}>Semana actual</Text>
             {DAYS.map((day) => {
               const active = selectedDay === day;
-              const hasEx = (routine[day] ?? []).length > 0;
-              const allDone = hasEx && (routine[day] ?? []).every((e) => completedIds.has(e.id));
+              const hasEx = (ROUTINE[day] ?? []).length > 0;
+              const allDone = hasEx && (ROUTINE[day] ?? []).every((e) => completedIds.has(e.id));
               return (
                 <TouchableOpacity
                   key={day}
@@ -79,7 +74,7 @@ export default function MiCalendarioWeb() {
                   )}
                   {hasEx && (
                     <Text style={[s.dayCount, active && s.dayCountActive]}>
-                      {(routine[day] ?? []).length} ej.
+                      {(ROUTINE[day] ?? []).length} ej.
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -143,7 +138,10 @@ export default function MiCalendarioWeb() {
 
                       {/* Acciones */}
                       <View style={s.exActions}>
-                        <TouchableOpacity style={s.videoBtn} activeOpacity={0.7}>
+                        <TouchableOpacity 
+                            style={s.videoBtn} 
+                            activeOpacity={0.7} 
+                            {...({ nativeID: 'tutorial-video-demo' } as any)}>
                           <Ionicons name="play-circle-outline" size={16} color={C.turquoise} />
                           <Text style={s.videoBtnText}>Video Demo</Text>
                         </TouchableOpacity>

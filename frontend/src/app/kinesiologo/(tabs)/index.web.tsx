@@ -4,6 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useMisPacientes, FILTERS, FILTER_LABELS } from '@/hooks/use-mis-pacientes';
 import { api } from '@/services/api';
+import React from 'react';
+import { useTutorial } from '@/context/TutorialContext'; // Tu estado global del tutorial
+import MockIndex from '@/mock/mock-index.web';
+
+
+
 
 const C = {
   bg: '#F1F5F9',
@@ -27,6 +33,10 @@ const adherenceColor = (v: number) =>
 const today = new Date().toISOString().split('T')[0];
 
 export default function MisPacientesWeb() {
+   const { isTutorialActive } = useTutorial();
+  if (isTutorialActive) {
+    return <MockIndex />;
+  }
   const { search, setSearch, filter, setFilter, filtered, goToPatient, refetch } = useMisPacientes();
 
   const [showModal, setShowModal] = useState(false);
@@ -78,6 +88,8 @@ export default function MisPacientesWeb() {
       setSaving(false);
     }
   };
+
+  
 
   return (
     <View style={s.root}>
@@ -131,6 +143,7 @@ export default function MisPacientesWeb() {
             })}
           </View>
         </View>
+        
 
         {/* Tabla de pacientes */}
         <ScrollView style={s.tableWrap} showsVerticalScrollIndicator={false}>

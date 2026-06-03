@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 
 const C = {
   sidebar: '#071220',
@@ -29,18 +28,18 @@ const NAV_ITEMS: NavItem[] = [
 export function WebSidebarPaciente() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, handleLogout } = usePacientePerfil();
-
-  const initials = profile?.full_name
-    ? profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '..';
-  const displayName = profile?.full_name
-    ? profile.full_name.split(' ').slice(0, 2).join(' ')
-    : 'Cargando...';
 
   const isActive = (path: string) => {
     if (path === '/paciente') return pathname === '/paciente';
     return pathname.startsWith(path);
+  };
+
+  // Función para disparar el evento global del tutorial
+  const iniciarTutorial = () => {
+    if (typeof window !== 'undefined') {
+      // Disparamos un evento específico para pacientes
+      window.dispatchEvent(new Event('open-tutorial-paciente'));
+    }
   };
 
   return (
@@ -61,11 +60,11 @@ export function WebSidebarPaciente() {
       {/* Info del paciente */}
       <View style={s.patientCard}>
         <View style={s.avatarCircle}>
-          <Text style={s.avatarText}>{initials}</Text>
+          <Text style={s.avatarText}>CR</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.patientName}>{displayName}</Text>
-          <Text style={s.patientSub} numberOfLines={1}>{profile?.diagnosis ?? ''}</Text>
+          <Text style={s.patientName}>Carlos R.</Text>
+          <Text style={s.patientSub}>Rehabilitación rodilla</Text>
         </View>
       </View>
 
@@ -98,9 +97,20 @@ export function WebSidebarPaciente() {
       {/* Footer */}
       <View style={s.footer}>
         <View style={s.divider} />
+        
+        {/* Botón de Ayuda (Nuevo) */}
+        <TouchableOpacity
+          style={s.helpBtn}
+          onPress={iniciarTutorial}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="help-circle-outline" size={18} color={C.textMuted} />
+          <Text style={s.helpText}>Ver tutorial</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={s.logoutBtn}
-          onPress={handleLogout}
+          onPress={() => router.replace('/')}
           activeOpacity={0.7}
         >
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />
@@ -215,6 +225,20 @@ const s = StyleSheet.create({
   },
   footer: {
     gap: 0,
+  },
+  helpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  helpText: {
+    color: C.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
   },
   logoutBtn: {
     flexDirection: 'row',

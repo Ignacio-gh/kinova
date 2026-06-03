@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
@@ -5,6 +6,8 @@ import {
   useHistorialSesiones,
   formatSessionDate,
 } from '@/hooks/use-historial-sesiones';
+import { useTutorial } from '@/context/TutorialContext';
+import MockHistorial from '@/mock/mock-historial.web';
 
 const C = {
   bg: '#F1F5F9',
@@ -27,6 +30,10 @@ const adherenceBg = (v: number) =>
   v >= 90 ? '#F0FDF4' : v >= 60 ? '#FFFBEB' : '#FFF1F2';
 
 export default function HistorialWeb() {
+  const { isTutorialActive } = useTutorial();
+  if (isTutorialActive) {
+    return <MockHistorial />;
+  }
   const { sessions, stats, loading } = useHistorialSesiones();
 
   return (
