@@ -8,8 +8,7 @@ Solo se guarda cuando hay una corrección; los frames "ok" no se persisten.
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -31,7 +30,7 @@ class FeedbackLog(Base):
         Enum("info", "improve", "bad", name="feedback_severity", create_type=False),
         default="info",
     )
-    joint_angles_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    joint_angles_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     execution: Mapped["ExerciseExecution"] = relationship(
         "ExerciseExecution", back_populates="feedback_logs"
