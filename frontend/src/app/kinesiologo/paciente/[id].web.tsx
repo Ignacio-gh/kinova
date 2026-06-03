@@ -4,6 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { api } from '@/services/api';
+import React from 'react';
+import { useTutorial } from '@/context/TutorialContext';
+import MockPatientDetail from '@/mock/mock-[id]';
 
 const C = {
   bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
@@ -26,6 +29,11 @@ function buildAngle(min: number | null, max: number | null) {
 }
 
 export default function PatientDetailWeb() {
+  const { isTutorialActive } = useTutorial();
+
+  if (isTutorialActive) {
+    return <MockPatientDetail />;
+  }
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [selectedDay, setSelectedDay] = useState<Day>('Lun');

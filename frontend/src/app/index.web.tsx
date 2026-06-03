@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useWelcome } from '@/hooks/use-welcome';
+import { useRouter } from 'expo-router';
 
-// Tokens de diseño — consistentes con la paleta de la app
+// Tokens de diseño — consistentes con la paleta de la ap
 const C = {
   navy: '#0A1628',
   navyLight: '#0F2040',
@@ -17,6 +18,7 @@ const C = {
 
 export default function IndexWeb() {
   const { goToPatient, goToKinesiologo, stats } = useWelcome();
+  const router = useRouter();
 
   return (
     <View style={s.root}>
@@ -37,8 +39,15 @@ export default function IndexWeb() {
         </View>
         <View style={s.navLinks}>
           <Text style={s.navLink}>Inicio</Text>
-          <Text style={s.navLink}>Características</Text>
-          <Text style={s.navLink}>Contacto</Text>
+          
+          {/* NUEVO: Convertimos el texto en un botón */}
+          <TouchableOpacity onPress={() => router.push('/caracteristicas')} activeOpacity={0.7}>
+            <Text style={s.navLink}>Características</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => router.push('/contacto')} activeOpacity={0.7}>
+            <Text style={s.navLink}>Contacto</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { usePerfilKine } from '@/hooks/use-perfil-kine';
+import { useRouter } from 'expo-router';
 
 const C = {
   bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
@@ -19,6 +20,7 @@ const PERFIL_AJUSTES = [
 
 export default function MiPerfilWeb() {
   const { perfilInfo, loading, handleLogout, kineStats } = usePerfilKine();
+  const router = useRouter();
 
   const name = perfilInfo.find((i) => i.label === 'Nombre completo')?.value ?? '';
   const email = perfilInfo.find((i) => i.label === 'Correo')?.value ?? '';
@@ -108,7 +110,18 @@ export default function MiPerfilWeb() {
                   <Text style={s.sectionTitle}>Ajustes de la cuenta</Text>
                   <View style={s.infoGrid}>
                     {PERFIL_AJUSTES.map((item) => (
-                      <TouchableOpacity key={item.label} style={s.settingRow} activeOpacity={0.7}>
+                      <TouchableOpacity 
+                        key={item.label} 
+                        style={s.settingRow} 
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          // Condición para navegar a la pantalla de ayuda
+                          if (item.label === 'Ayuda y soporte') {
+                            // IMPORTANTE: Asegúrate de que '/ayuda' coincida con la ruta real de tu archivo AyudaSoporteScreen
+                            router.push('/ayuda'); 
+                          }
+                        }}
+                      >
                         <View style={s.infoIcon}>
                           <Ionicons name={item.icon} size={16} color={C.turquoise} />
                         </View>
