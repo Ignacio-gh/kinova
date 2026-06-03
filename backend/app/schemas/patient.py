@@ -74,6 +74,7 @@ class TodayExerciseItem(BaseModel):
     sets: int
     effective_angle_min: float | None
     effective_angle_max: float | None
+    completed: bool = False
 
 
 class PatientDashboard(BaseModel):

@@ -61,7 +61,7 @@ export function usePacienteInicio() {
             evaluatorKey: e.evaluator_key,
             reps: e.reps,
             series: e.sets,
-            completed: false,
+            completed: e.completed ?? false,
           }))
         );
       })
@@ -70,7 +70,10 @@ export function usePacienteInicio() {
   }, []);
 
   const completedToday = exercises.filter((e) => e.completed).length;
-  const weeklyPercent = Math.round(adherencePct);
+  const totalToday = exercises.length;
+  const weeklyPercent = totalToday > 0
+    ? Math.round((completedToday / totalToday) * 100)
+    : 0;
 
   const today = new Date()
     .toLocaleDateString('es-AR', {
@@ -116,8 +119,8 @@ export function usePacienteInicio() {
     exercises,
     completedToday,
     weeklyPercent,
-    totalWeekly: treatmentWeeks,
-    completedWeekly: currentWeek,
+    totalWeekly: totalToday,
+    completedWeekly: completedToday,
     today,
     loading,
     toggleExercise,

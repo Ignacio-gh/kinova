@@ -223,9 +223,26 @@ async def get_dashboard(
     db: AsyncSession,
     patient,
 ) -> PatientDashboard:
+    from datetime import datetime, timezone
+
+    from app.models.session import ExerciseExecution, Session
+
     today_routines = await routine_service.get_today_routine(db, patient)
     adherence = await adherence_service.calculate_weekly_adherence(db, patient)
     current_week = _current_week(patient.treatment_start_date)
+
+    # Buscar que rutinas se completaron HOY
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
+    completed_result = await db.execute(
+        select(ExerciseExecution.routine_id)
+        .join(Session, Session.id == ExerciseExecution.session_id)
+        .where(
+            Session.patient_id == patient.id,
+            ExerciseExecution.status == "completed",
+            ExerciseExecution.started_at >= today_start,
+        )
+    )
+    completed_routine_ids = {row[0] for row in completed_result.all()}
 
     today_exercises = [
         TodayExerciseItem(
@@ -237,6 +254,7 @@ async def get_dashboard(
             sets=r.sets,
             effective_angle_min=r.angle_min,
             effective_angle_max=r.angle_max,
+            completed=r.routine_id in completed_routine_ids,
         )
         for r in today_routines
     ]
