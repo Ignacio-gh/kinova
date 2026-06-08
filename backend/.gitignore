@@ -22,6 +22,7 @@ build/
 # Environment variables
 .env
 .env.local
+env          # archivo de variables sin punto (nunca subir — tiene credenciales reales)
 
 # IDE
 .vscode/
@@ -39,5 +40,5 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Alembic
-versions/
+# Alembic — las migraciones SÍ deben subir a git
+# versions/  ← NO ignorar esto, es intencional

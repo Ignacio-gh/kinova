@@ -13,17 +13,16 @@ class SquatEvaluator(BaseEvaluator):
     """
     Evaluador de sentadilla.
 
-    Reglas:
-    - Ángulo de rodilla: debe estar dentro del rango efectivo del paciente
-    - Ángulo de tronco: debe mantenerse erguido (> 150° respecto cadera-hombro)
-    - Rodilla no debe pasar la punta del pie (alineación frontal)
+    Reglas clínicas:
+    - Tronco: mantener por encima de 130° (inclinación natural permitida)
+    - Rodilla: no pasar la punta del pie (valgo/colapso)
+    - Rango: respetar angle_min (mínima flexión) y angle_max (máxima flexión)
 
-    Una rep se cuenta cuando la rodilla baja al ángulo mínimo y vuelve
-    a la posición inicial (> 160°).
+    Una rep se cuenta cuando la rodilla baja y vuelve a extenderse (> 160°).
     """
 
-    KNEE_STRAIGHT_THRESHOLD = 160.0  # ángulo considerado "arriba" (parado)
-    TRUNK_MIN_ANGLE = 150.0          # tronco muy inclinado si es menor
+    KNEE_STRAIGHT_THRESHOLD = 160.0
+    TRUNK_MIN_ANGLE = 130.0
 
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
@@ -34,6 +33,7 @@ class SquatEvaluator(BaseEvaluator):
         knee_angle_l = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
         knee_angle_r = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
         knee_angle = (knee_angle_l + knee_angle_r) / 2
+        knee_flexion = round(180 - knee_angle, 1)
 
         hip_mid = ((lm[HIP_L].x + lm[HIP_R].x) / 2, (lm[HIP_L].y + lm[HIP_R].y) / 2)
         shoulder_mid = (
@@ -46,39 +46,54 @@ class SquatEvaluator(BaseEvaluator):
         corrections = []
         status = "perfect"
 
+        # ── Tronco demasiado inclinado ──
         if trunk_angle < self.TRUNK_MIN_ANGLE:
             corrections.append(
-                self._make_correction("tronco", "Mantené el tronco más erguido", "warning")
+                self._make_correction(
+                    "tronco",
+                    f"Llevá el pecho hacia arriba y la mirada al frente — "
+                    f"tronco a {round(trunk_angle)}°, mantenerlo por encima de {round(self.TRUNK_MIN_ANGLE)}°",
+                    "warning",
+                )
             )
             status = "improve"
 
+        # ── Rodilla pasa la punta del pie ──
         knee_over_toe_l = lm[KNEE_L].x > lm[ANKLE_L].x + 0.05
         knee_over_toe_r = lm[KNEE_R].x < lm[ANKLE_R].x - 0.05
         if knee_over_toe_l or knee_over_toe_r:
             corrections.append(
-                self._make_correction("rodilla", "La rodilla no debe pasar la punta del pie", "warning")
+                self._make_correction(
+                    "rodilla",
+                    "Alineá las rodillas con los pies, no dejes que pasen la punta",
+                    "warning",
+                )
             )
             status = "improve"
 
-        if self.angle_max is not None and knee_angle < (180 - self.angle_max):
+        # ── Flexión supera el máximo permitido por el kinesiólogo ──
+        if self.angle_max is not None and knee_flexion > self.angle_max:
             corrections.append(
                 self._make_correction(
                     "rodilla",
-                    f"Estás doblando más de lo permitido ({self.angle_max}°)",
+                    f"Estás bajando demasiado — flexión a {knee_flexion}°, "
+                    f"tu kinesiólogo puso un máximo de {self.angle_max}°",
                     "error",
                 )
             )
             status = "bad"
 
+        # ── No baja lo suficiente (mínimo requerido) ──
         if (
             self._phase == "down"
             and self.angle_min is not None
-            and knee_angle > (180 - self.angle_min)
+            and knee_flexion < self.angle_min
         ):
             corrections.append(
                 self._make_correction(
                     "rodilla",
-                    f"Bajá un poco más, el mínimo es {self.angle_min}°",
+                    f"Bajá un poco más — estás a {knee_flexion}° de flexión, "
+                    f"necesitás llegar al menos a {self.angle_min}°",
                     "warning",
                 )
             )

@@ -1,31 +1,37 @@
 """
-feedback_log.py — Registro de correcciones puntuales durante una ejecución.
+feedback_log.py — Correcciones puntuales del motor de pose.
 
 Tabla: feedback_logs
-
-Responsabilidad:
-    Cada vez que el motor de pose detecta una corrección (ej: "rodilla
-    pasando el pie"), se guarda un registro. Permite al kine revisar
-    después qué errores tuvo el paciente durante una sesión.
-
-Campos planeados:
-    - id (PK)
-    - exercise_execution_id (FK exercise_executions)
-    - timestamp (datetime, momento exacto del frame)
-    - correction_type (string, ej: "knee_past_toe", "trunk_lean")
-    - message (string, mensaje que se le mostró al paciente)
-    - severity: enum ("info" | "improve" | "bad")
-    - joint_angles_snapshot (JSON, ángulos en ese momento)
-
-Frecuencia:
-    Solo se loguea cuando hay corrección. No se guardan los frames "ok"
-    para no inflar la DB.
-
-Relaciones:
-    - exercise_execution: N-a-1 con ExerciseExecution
+Log inmutable: solo se insertan registros, nunca se modifican.
+Solo se guarda cuando hay una corrección; los frames "ok" no se persisten.
 """
 
-# TODO: from sqlalchemy.orm import Mapped, mapped_column, relationship
-# TODO: from sqlalchemy import Integer, String, DateTime, JSON, Enum, ForeignKey
-# TODO: from app.models.base import Base
-# TODO: class FeedbackLog(Base): __tablename__ = "feedback_logs"
+from datetime import datetime
+
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base
+
+
+class FeedbackLog(Base):
+    __tablename__ = "feedback_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    exercise_execution_id: Mapped[int] = mapped_column(
+        ForeignKey("exercise_executions.id"), index=True
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    correction_type: Mapped[str] = mapped_column(String(100))
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    severity: Mapped[str] = mapped_column(
+        Enum("info", "improve", "bad", name="feedback_severity", create_type=False),
+        default="info",
+    )
+    joint_angles_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    execution: Mapped["ExerciseExecution"] = relationship(
+        "ExerciseExecution", back_populates="feedback_logs"
+    )

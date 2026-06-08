@@ -45,17 +45,34 @@ from app.config.settings import settings
 
 
 # ── 1. ENGINE (el motor de conexion) ──────────────────────────
-# create_async_engine recibe la URL de la base de datos y crea
-# el motor asincrono.
+# Conexión directa a Supabase (db.*.supabase.co:5432) sin pgbouncer.
+# SQLAlchemy mantiene un pool de conexiones persistentes → las queries
+# reutilizan conexiones ya abiertas y responden en ~50ms en vez de ~3s.
 #
-# Parametros:
-#   - settings.DATABASE_URL: viene del .env (lo que hicimos en paso 1)
-#   - echo: si es True, imprime TODAS las queries SQL en la consola.
-#     Util para debuggear, molesto en produccion. Por eso lo atamos
-#     a settings.DEBUG — en desarrollo se ve, en produccion no.
+# pool_size=5      → hasta 5 conexiones simultáneas abiertas
+# max_overflow=10  → hasta 10 conexiones adicionales en picos de tráfico
+# pool_pre_ping    → testea la conexión antes de usarla (reconecta si cayó)
+_is_postgres = settings.DATABASE_URL.startswith("postgresql")
+
+_connect_args = {"ssl": "require"} if _is_postgres else {}
+_pool_kwargs = (
+    {
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_pre_ping": True,
+        # Recicla conexiones idle cada 30 min para evitar errores de conexión
+        # muerta cuando Supabase cierra el lado del servidor tras inactividad.
+        "pool_recycle": 1800,
+    }
+    if _is_postgres
+    else {}
+)
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
+    connect_args=_connect_args,
+    **_pool_kwargs,
 )
 
 

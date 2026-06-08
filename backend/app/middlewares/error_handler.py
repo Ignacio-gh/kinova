@@ -97,13 +97,12 @@ def setup_exception_handlers(app: FastAPI) -> None:
     # error feo o un traceback de Python.
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
-        # Aca si loggeamos con error (es algo inesperado, hay que verlo)
         logger.error(
             "%s %s → Error inesperado: %s",
             request.method,
             request.url.path,
             str(exc),
-            exc_info=True,  # incluye el traceback completo en el log
+            exc_info=True,
         )
 
         return JSONResponse(
