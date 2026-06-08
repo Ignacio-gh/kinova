@@ -4,6 +4,12 @@
  * Detecta cuál lado del cuerpo es más visible (izq o der)
  * y dibuja UNA sola cadena de puntos conectados para ese lado.
  *
+ * COLOREO POR SEGMENTO:
+ *   Cada segmento del esqueleto (hombro→cadera, cadera→rodilla, rodilla→tobillo)
+ *   se colorea independientemente según las correcciones del evaluador.
+ *   Si el tronco está mal pero las piernas bien, solo hombro→cadera se pone
+ *   amarillo/rojo y el resto queda verde.
+ *
  * Sentadilla          → hombro – cadera – rodilla – tobillo
  * Extensión rodilla   → cadera – rodilla – tobillo
  * Elevación p. recta  → hombro – cadera – rodilla – tobillo
@@ -37,8 +43,6 @@ const CHAIN: Record<string, JointName[]> = {
 };
 
 // ─── Definición de los arcos de ángulo ───────────────────────────────────────
-// vertex = articulación donde está el ángulo
-// a, b   = los dos extremos del ángulo
 
 type ArcDef = { label: string; vertex: JointName; a: JointName; b: JointName };
 
@@ -66,6 +70,39 @@ const COLOR: Record<string, string> = {
   improve: '#FACC15',
   bad:     '#F87171',
 };
+
+// ─── Mapeo: joint de corrección → segmentos afectados ─────────────────────────
+// Cada segmento se identifica como "jointA-jointB" (siguiendo la cadena).
+// Cuando el evaluador devuelve una corrección con joint="tronco", los segmentos
+// shoulder-hip se colorean según la severidad.
+
+const JOINT_TO_SEGMENTS: Record<string, string[]> = {
+  tronco:  ['shoulder-hip'],
+  rodilla: ['hip-knee', 'knee-ankle'],
+  cadera:  ['shoulder-hip', 'hip-knee'],
+  sistema: [],
+};
+
+type Correction = { joint: string; message: string; severity: string };
+
+function getSegmentColors(corrections: Correction[]): Map<string, string> {
+  const segColors = new Map<string, string>();
+
+  for (const corr of corrections) {
+    const segments = JOINT_TO_SEGMENTS[corr.joint] ?? [];
+    const color = corr.severity === 'error' ? COLOR.bad : COLOR.improve;
+
+    for (const seg of segments) {
+      const current = segColors.get(seg);
+      // error (rojo) tiene prioridad sobre warning (amarillo)
+      if (!current || (corr.severity === 'error' && current !== COLOR.bad)) {
+        segColors.set(seg, color);
+      }
+    }
+  }
+
+  return segColors;
+}
 
 // ─── Helper: path SVG del arco + posición de la etiqueta ─────────────────────
 
@@ -106,28 +143,26 @@ type Props = {
   landmarks:    Record<string, PoseLandmark>;
   angles:       Record<string, number>;
   status:       'perfect' | 'improve' | 'bad';
+  corrections?: Correction[];
   width:        number;
   height:       number;
   exerciseKey:  string;
   frontCamera?: boolean;
 };
 
-// Umbral de visibilidad para dibujar un punto.
-// 0.15 es más permisivo que el default de MediaPipe (0.5), permitiendo
-// mostrar puntos detectados aunque la confianza sea baja.
 const MIN_V = 0.15;
 
 export function PoseSkeletonOverlay({
-  landmarks, angles, status, width, height, exerciseKey, frontCamera = true,
+  landmarks, angles, status, corrections = [], width, height, exerciseKey, frontCamera = true,
 }: Props) {
-  const color = COLOR[status] ?? COLOR.perfect;
+  const defaultColor = COLOR[status] ?? COLOR.perfect;
+  const segmentColors = getSegmentColors(corrections);
+
   const px = (x: number) => (frontCamera ? 1 - x : x) * width;
   const py = (y: number) => y * height;
   const lm  = (i: number) => landmarks[String(i)];
 
-  // ── Elegir el lado más visible ──────────────────────────────────────────────
-  // Suma todos los joints disponibles (shoulder incluido) para elegir
-  // el lado con mejor visibilidad global.
+  // ── Elegir el lado más visible ──
   const leftScore  = Object.values(IDX.left ).reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
   const rightScore = Object.values(IDX.right).reduce((s, i) => s + (lm(i)?.v ?? 0), 0);
   const side = leftScore >= rightScore ? IDX.left : IDX.right;
@@ -135,7 +170,6 @@ export function PoseSkeletonOverlay({
   const chain     = CHAIN[exerciseKey]  ?? CHAIN.default;
   const angleDefs = ANGLES[exerciseKey] ?? ANGLES.default;
 
-  // Posiciones en píxeles de cada joint en la cadena (filtradas por visibilidad)
   const chainPts = chain.map((name) => {
     const l = lm(side[name]);
     if (!l || l.v < MIN_V) return null;
@@ -149,19 +183,22 @@ export function PoseSkeletonOverlay({
     >
       <Svg width={width} height={height}>
 
-        {/* ── LÍNEAS ─────────────────────────────────────────── */}
+        {/* ── LÍNEAS (coloreadas por segmento) ────────────────── */}
         {chainPts.map((pt, i) => {
           if (!pt) return null;
-          const next = chainPts.slice(i + 1).find(Boolean); // siguiente visible
+          const next = chainPts[i + 1];
           if (!next) return null;
+
+          // Determinar el color de este segmento específico
+          const segKey = `${pt.name}-${next.name}`;
+          const segColor = segmentColors.get(segKey) ?? defaultColor;
+
           return (
             <G key={`seg-${i}`}>
-              {/* sombra para contraste */}
               <Line x1={pt.x} y1={pt.y} x2={next.x} y2={next.y}
                 stroke="rgba(0,0,0,0.65)" strokeWidth={9} strokeLinecap="round" />
-              {/* línea en el color del estado */}
               <Line x1={pt.x} y1={pt.y} x2={next.x} y2={next.y}
-                stroke={color} strokeWidth={5} strokeLinecap="round" />
+                stroke={segColor} strokeWidth={5} strokeLinecap="round" />
             </G>
           );
         })}
@@ -184,33 +221,50 @@ export function PoseSkeletonOverlay({
           );
           if (!arc) return null;
 
+          // Color del arco = peor color de los segmentos que tocan ese vértice
+          const segA = `${def.a}-${def.vertex}`;
+          const segB = `${def.vertex}-${def.b}`;
+          const arcColor = segmentColors.get(segA) ?? segmentColors.get(segB) ?? defaultColor;
+
           const LW = 68;  const LH = 32;
           return (
             <G key={`arc-${def.label}`}>
               <Path d={arc.d} fill="none"
-                stroke={color} strokeWidth={2.5} strokeDasharray="6,3" opacity={0.95} />
+                stroke={arcColor} strokeWidth={2.5} strokeDasharray="6,3" opacity={0.95} />
               <Rect x={arc.lx - LW/2} y={arc.ly - LH/2}
                 width={LW} height={LH} fill="rgba(0,0,0,0.78)" rx={9} />
               <SvgText x={arc.lx} y={arc.ly + 7}
-                textAnchor="middle" fill={color} fontSize={17} fontWeight="bold">
+                textAnchor="middle" fill={arcColor} fontSize={17} fontWeight="bold">
                 {Math.round(angleValue)}°
               </SvgText>
             </G>
           );
         })}
 
-        {/* ── PUNTOS ─────────────────────────────────────────── */}
+        {/* ── PUNTOS (color del peor segmento adyacente) ──────── */}
         {chainPts.map((pt, i) => {
           if (!pt) return null;
+
+          // Color del punto = peor color de los segmentos que lo tocan
+          const prev = chainPts[i - 1];
+          const next = chainPts[i + 1];
+          const segPrev = prev ? `${prev.name}-${pt.name}` : '';
+          const segNext = next ? `${pt.name}-${next.name}` : '';
+          const colorPrev = segPrev ? segmentColors.get(segPrev) : undefined;
+          const colorNext = segNext ? segmentColors.get(segNext) : undefined;
+          // Rojo > amarillo > default
+          const dotColor = (colorPrev === COLOR.bad || colorNext === COLOR.bad)
+            ? COLOR.bad
+            : (colorPrev === COLOR.improve || colorNext === COLOR.improve)
+              ? COLOR.improve
+              : defaultColor;
+
           return (
             <G key={`dot-${i}`}>
-              {/* halo */}
               <Circle cx={pt.x} cy={pt.y} r={16}
-                fill="none" stroke={color} strokeWidth={2} opacity={0.25} />
-              {/* sombra */}
+                fill="none" stroke={dotColor} strokeWidth={2} opacity={0.25} />
               <Circle cx={pt.x} cy={pt.y} r={10} fill="rgba(0,0,0,0.6)" />
-              {/* punto principal */}
-              <Circle cx={pt.x} cy={pt.y} r={8} fill={color} />
+              <Circle cx={pt.x} cy={pt.y} r={8} fill={dotColor} />
             </G>
           );
         })}

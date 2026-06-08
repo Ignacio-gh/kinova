@@ -138,20 +138,22 @@ export default function EjercicioSesionWeb() {
   const {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
-    sendFrame, connected, landmarks, angles, wsStatus, evaluatorKey,
+    sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
   } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // Landmarks persistentes — el esqueleto no desaparece entre frames
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);
   const [stableAngles, setStableAngles]       = useState<typeof angles>(null);
   const [stableStatus, setStableStatus]       = useState<'perfect' | 'improve' | 'bad'>('perfect');
+  const [stableCorrections, setStableCorrections] = useState<typeof rawCorrections>([]);
   useEffect(() => {
     if (landmarks && Object.keys(landmarks).length > 0) {
       setStableLandmarks(landmarks);
       if (angles)   setStableAngles(angles);
       if (wsStatus) setStableStatus(wsStatus);
+      setStableCorrections(rawCorrections);
     }
-  }, [landmarks, angles, wsStatus]);
+  }, [landmarks, angles, wsStatus, rawCorrections]);
 
   // ── Captura periódica de frames para el WebSocket (~3 fps) ──
   useEffect(() => {
@@ -198,6 +200,7 @@ export default function EjercicioSesionWeb() {
             landmarks={stableLandmarks}
             angles={stableAngles ?? {}}
             status={stableStatus}
+            corrections={stableCorrections}
             width={cameraPanelSize.width}
             height={cameraPanelSize.height}
             exerciseKey={evaluatorKey}
@@ -243,15 +246,19 @@ export default function EjercicioSesionWeb() {
 
       {/* ══════════ LADO DERECHO — panel de feedback ══════════ */}
       <View style={s.rightPanel}>
-        {/* Header de estado */}
-        <View style={[
-          s.statusHeader,
-          { backgroundColor: currentFeedback ? STATUS_HEADER_BG[currentFeedback.status] : '#16A34A' },
-        ]}>
-          <Text style={s.statusHeaderText}>
-            {currentFeedback ? STATUS_LABEL[currentFeedback.status] : '✓  ¡Postura Correcta!'}
-          </Text>
-        </View>
+        {/* Header de estado — usa el peor status de todas las correcciones */}
+        {(() => {
+          const worstStatus = currentFeedback.some(f => f.status === 'incorrect')
+            ? 'incorrect' as const
+            : currentFeedback.some(f => f.status === 'warning')
+              ? 'warning' as const
+              : 'correct' as const;
+          return (
+            <View style={[s.statusHeader, { backgroundColor: STATUS_HEADER_BG[worstStatus] }]}>
+              <Text style={s.statusHeaderText}>{STATUS_LABEL[worstStatus]}</Text>
+            </View>
+          );
+        })()}
 
         <ScrollView
           style={s.rightScroll}
@@ -284,29 +291,30 @@ export default function EjercicioSesionWeb() {
             </>
           )}
 
-          {/* Feedback en tiempo real */}
+          {/* Feedback en tiempo real — muestra TODAS las correcciones */}
           <Text style={[s.sectionTitle, { marginTop: 20 }]}>Feedback en Tiempo Real</Text>
-          {currentFeedback && (
-            <View style={[
+          {currentFeedback.map((fb, idx) => (
+            <View key={idx} style={[
               s.feedbackCard,
               {
-                backgroundColor: STATUS_BG[currentFeedback.status],
-                borderColor:     STATUS_BORDER[currentFeedback.status],
+                backgroundColor: STATUS_BG[fb.status],
+                borderColor:     STATUS_BORDER[fb.status],
+                marginBottom: 8,
               },
             ]}>
               <View style={s.feedbackCardTop}>
-                <View style={[s.feedbackDot, { backgroundColor: STATUS_COLOR[currentFeedback.status] }]} />
-                <Text style={[s.feedbackStatus, { color: STATUS_COLOR[currentFeedback.status] }]}>
-                  {currentFeedback.status === 'correct'
+                <View style={[s.feedbackDot, { backgroundColor: STATUS_COLOR[fb.status] }]} />
+                <Text style={[s.feedbackStatus, { color: STATUS_COLOR[fb.status] }]}>
+                  {fb.status === 'correct'
                     ? 'CORRECTO'
-                    : currentFeedback.status === 'warning'
+                    : fb.status === 'warning'
                     ? 'ATENCIÓN'
                     : 'INCORRECTO'}
                 </Text>
               </View>
-              <Text style={s.feedbackMessage}>{currentFeedback.message}</Text>
+              <Text style={s.feedbackMessage}>{fb.message}</Text>
             </View>
-          )}
+          ))}
 
           {/* Leyenda */}
           <View style={s.legendSection}>
