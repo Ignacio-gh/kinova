@@ -120,12 +120,15 @@ export default function EjercicioSesionWeb() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
+    angleMin: string; angleMax: string;
   }>();
 
   const name         = params.name    ?? 'Ejercicio';
   const muscle       = params.muscle  ?? '';
   const targetReps   = Number(params.reps    ?? 10);
   const targetSeries = Number(params.series  ?? 3);
+  const angleMin     = params.angleMin ? Number(params.angleMin) : null;
+  const angleMax     = params.angleMax ? Number(params.angleMax) : null;
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraPanelSize, setCameraPanelSize] = useState({ width: 0, height: 0 });
@@ -136,7 +139,7 @@ export default function EjercicioSesionWeb() {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
     sendFrame, connected, landmarks, angles, wsStatus, evaluatorKey,
-  } = useEjercicioSesion(name, muscle, targetReps, targetSeries);
+  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // Landmarks persistentes — el esqueleto no desaparece entre frames
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);

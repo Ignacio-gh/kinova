@@ -104,7 +104,15 @@ export default function PacienteInicio() {
   const startExercise = (ex: typeof exercises[0]) =>
     router.push({
       pathname: '/paciente/ejercicio/[id]',
-      params: { id: ex.id, name: ex.name, muscle: ex.muscle, reps: ex.reps, series: ex.series },
+      params: {
+        id: ex.id,
+        name: ex.name,
+        muscle: ex.muscle,
+        reps: ex.reps,
+        series: ex.series,
+        angleMin: ex.angleMin != null ? String(ex.angleMin) : '',
+        angleMax: ex.angleMax != null ? String(ex.angleMax) : '',
+      },
     } as never);
 
   return (

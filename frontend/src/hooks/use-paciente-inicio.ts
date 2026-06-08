@@ -10,6 +10,8 @@ export type TodayExercise = {
   reps: number;
   series: number;
   completed: boolean;
+  angleMin: number | null;
+  angleMax: number | null;
 };
 
 interface DashboardResponse {
@@ -62,6 +64,8 @@ export function usePacienteInicio() {
             reps: e.reps,
             series: e.sets,
             completed: e.completed ?? false,
+            angleMin: e.effective_angle_min ?? null,
+            angleMax: e.effective_angle_max ?? null,
           }))
         );
       })

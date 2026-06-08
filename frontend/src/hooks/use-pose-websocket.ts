@@ -43,7 +43,12 @@ export type PoseWSFeedback = {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) {
+export function usePoseWebSocket(
+  evaluatorKey: string | null,
+  enabled: boolean,
+  angleMin: number | null = null,
+  angleMax: number | null = null,
+) {
   const wsRef = useRef<WebSocket | null>(null);
   const [feedback, setFeedback] = useState<PoseWSFeedback | null>(null);
   const [connected, setConnected] = useState(false);
@@ -54,7 +59,12 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
     if (!evaluatorKey || !enabled) return;
 
     const wsBase = BASE_URL.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
-    const url = `${wsBase}/api/v1/pose/ws/${evaluatorKey}`;
+    // Armar query params con los ángulos del paciente (vienen de la rutina)
+    const qp = new URLSearchParams();
+    if (angleMin != null) qp.set('angle_min', String(angleMin));
+    if (angleMax != null) qp.set('angle_max', String(angleMax));
+    const qs = qp.toString();
+    const url = `${wsBase}/api/v1/pose/ws/${evaluatorKey}${qs ? `?${qs}` : ''}`;
     console.log('[PoseWS] conectando a', url);
 
     const ws = new WebSocket(url);
@@ -93,7 +103,7 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
       wsRef.current = null;
       sendingRef.current = false;
     };
-  }, [evaluatorKey, enabled]);
+  }, [evaluatorKey, enabled, angleMin, angleMax]);
 
   const sendFrame = useCallback((base64: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN && !sendingRef.current) {

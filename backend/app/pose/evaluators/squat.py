@@ -23,7 +23,10 @@ class SquatEvaluator(BaseEvaluator):
     """
 
     KNEE_STRAIGHT_THRESHOLD = 160.0  # ángulo considerado "arriba" (parado)
-    TRUNK_MIN_ANGLE = 150.0          # tronco muy inclinado si es menor
+    TRUNK_MIN_ANGLE = 130.0          # tronco muy inclinado si es menor
+    # 150° era demasiado estricto — en una sentadilla real el tronco
+    # se inclina naturalmente hacia adelante. 130° permite esa inclinación
+    # normal y solo alerta cuando realmente se está "cayendo" hacia adelante.
 
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks

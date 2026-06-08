@@ -118,6 +118,8 @@ export function useEjercicioSesion(
   muscle: string,
   targetReps: number,
   targetSeries: number,
+  angleMin: number | null = null,
+  angleMax: number | null = null,
 ) {
   const router = useRouter();
   const dbKey = resolveExerciseKey(exerciseName);
@@ -134,7 +136,7 @@ export function useEjercicioSesion(
   const [mockSeries, setMockSeries] = useState(1);
 
   // WebSocket de pose
-  const { feedback, connected, sendFrame } = usePoseWebSocket(evaluatorKey, isRunning);
+  const { feedback, connected, sendFrame } = usePoseWebSocket(evaluatorKey, isRunning, angleMin, angleMax);
 
   // Guardamos el total_reps previo para detectar nuevas reps
   const prevTotalReps = useRef(0);

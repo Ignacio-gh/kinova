@@ -52,6 +52,8 @@ export default function PacienteInicioWeb() {
         evaluatorKey: ex.evaluatorKey ?? '',
         reps: ex.reps,
         series: ex.series,
+        angleMin: ex.angleMin != null ? String(ex.angleMin) : '',
+        angleMax: ex.angleMax != null ? String(ex.angleMax) : '',
       },
     } as never);
 
