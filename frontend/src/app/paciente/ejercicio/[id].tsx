@@ -177,6 +177,8 @@ export default function EjercicioSesion() {
           facing="back"
           mute
           animateShutter={false}
+          pictureSize="640x480"
+          enableTorch={false}
         />
 
         {/* Esqueleto: se muestra con los últimos landmarks válidos
