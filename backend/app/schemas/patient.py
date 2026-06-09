@@ -9,6 +9,7 @@ from app.schemas.user import UserResponse
 class PatientCreate(BaseModel):
     full_name: str
     email: EmailStr
+    password: str | None = Field(None, min_length=8)  # si no se envía, se genera uno
     phone: str | None = None
     birth_date: date | None = None
     diagnosis: str
@@ -45,6 +46,7 @@ class PatientResponse(BaseModel):
     adherence_pct: float | None = None
     last_session_at: datetime | None = None
     created_at: datetime
+    temp_password: str | None = None  # solo se envía al crear
 
     model_config = {"from_attributes": True}
 
@@ -66,10 +68,13 @@ class PatientListItem(BaseModel):
 class TodayExerciseItem(BaseModel):
     routine_id: int
     name: str
+    zone: str
+    evaluator_key: str | None
     reps: int
     sets: int
     effective_angle_min: float | None
     effective_angle_max: float | None
+    completed: bool = False
 
 
 class PatientDashboard(BaseModel):
@@ -77,3 +82,14 @@ class PatientDashboard(BaseModel):
     adherence_pct: float
     current_week: int
     treatment_weeks: int
+
+
+class PatientSelfProfile(BaseModel):
+    """Perfil del paciente para su propia vista (sidebar, inicio)."""
+    full_name: str
+    email: str
+    diagnosis: str
+    treatment_weeks: int
+    current_week: int
+    status: str
+    kinesiologo_name: str | None = None

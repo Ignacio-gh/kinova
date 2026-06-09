@@ -1,37 +1,51 @@
 """
-routine.py — Asignación de un ejercicio a un paciente para un día.
+routine.py — Asignación de un ejercicio a un paciente para un día de la semana.
 
 Tabla: routines
-
-Responsabilidad:
-    Representa "este paciente, los lunes, hace este ejercicio, con
-    estas reps/series y este rango angular default".
-
-Campos planeados:
-    - id (PK)
-    - patient_id (FK patient_profiles)
-    - exercise_id (FK exercises)
-    - assigned_by_kinesiologo_id (FK kinesiologo_profiles)
-    - day_of_week: enum ("monday", "tuesday", ..., "sunday")
-    - reps (int)
-    - sets (int)
-    - default_angle_min (float, opcional)
-    - default_angle_max (float, opcional)
-    - is_active (bool, soft delete)
-    - created_at, updated_at
-
-Relaciones:
-    - patient: N-a-1 con PatientProfile
-    - exercise: N-a-1 con Exercise
-    - assigned_by: N-a-1 con KinesiologoProfile
-    - progressions: 1-a-N con RoutineProgression
-
-Nota sobre defaults vs progresión:
-    Los ángulos default se usan si NO hay progresión definida para la
-    semana actual del paciente. La progresión los sobrescribe.
+Cada fila = "este paciente hace este ejercicio los lunes, X reps, Y series".
+angle_min / angle_max son los ángulos por defecto; RoutineProgression los sobrescribe
+semana a semana si el kine define una progresión.
 """
 
-# TODO: from sqlalchemy.orm import Mapped, mapped_column, relationship
-# TODO: from sqlalchemy import Integer, Float, Boolean, ForeignKey, Enum
-# TODO: from app.models.base import Base, TimestampMixin
-# TODO: class Routine(Base, TimestampMixin): __tablename__ = "routines"
+from sqlalchemy import Boolean, Enum, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base, TimestampMixin
+
+
+class Routine(Base, TimestampMixin):
+    __tablename__ = "routines"
+    __table_args__ = (
+        # Cubre "rutinas de un paciente por día" (query más frecuente del pose engine)
+        Index("ix_routines_patient_day", "patient_id", "day_of_week", "is_active"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"), index=True)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"))
+    assigned_by_kinesiologo_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kinesiologo_profiles.id"), nullable=True
+    )
+    day_of_week: Mapped[str] = mapped_column(
+        Enum("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+             name="day_of_week", create_type=False)
+    )
+    reps: Mapped[int] = mapped_column(Integer, default=10)
+    sets: Mapped[int] = mapped_column(Integer, default=3)
+    # ORM attributes usan angle_min/angle_max para coincidir con los schemas Pydantic.
+    # Las columnas reales en PostgreSQL se llaman default_angle_min / default_angle_max.
+    angle_min: Mapped[float | None] = mapped_column("default_angle_min", nullable=True)
+    angle_max: Mapped[float | None] = mapped_column("default_angle_max", nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    patient: Mapped["PatientProfile"] = relationship(
+        "PatientProfile", back_populates="routines"
+    )
+    exercise: Mapped["Exercise"] = relationship("Exercise", back_populates="routines")
+    assigned_by: Mapped["KinesiologoProfile | None"] = relationship("KinesiologoProfile")
+    progressions: Mapped[list["RoutineProgression"]] = relationship(
+        "RoutineProgression", back_populates="routine", cascade="all, delete-orphan"
+    )
+    executions: Mapped[list["ExerciseExecution"]] = relationship(
+        "ExerciseExecution", back_populates="routine"
+    )
