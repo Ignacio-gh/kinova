@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { usePerfilKine, PERFIL_INFO, PERFIL_AJUSTES } from '@/hooks/use-perfil-kine';
+import { usePerfilKine, PERFIL_AJUSTES } from '@/hooks/use-perfil-kine';
 
 type SettingRowProps = {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -42,7 +42,7 @@ function SettingRow({ icon, label, value, onPress, danger = false }: SettingRowP
 }
 
 export default function MiPerfil() {
-  const { handleLogout } = usePerfilKine();
+  const { handleLogout, perfilInfo } = usePerfilKine();
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -87,7 +87,7 @@ export default function MiPerfil() {
           <Text className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">
             Información
           </Text>
-          {PERFIL_INFO.map((item) => (
+          {(perfilInfo ?? []).map((item) => (
             <SettingRow key={item.label} icon={item.icon} label={item.label} value={item.value} />
           ))}
         </View>

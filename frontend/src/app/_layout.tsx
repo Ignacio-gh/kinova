@@ -1,11 +1,16 @@
 import '@/global.css';
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { TutorialProvider, useTutorial } from '@/context/TutorialContext'; // <-- Importamos useTutorial también
 
 import { TutorialOverlay } from '@/components/tutorialOverlay';
 import type { TutorialStep } from '@/components/tutorialOverlay';
+
+// El tutorial usa selectores CSS (#tutorial-logo, etc) y eventos del DOM,
+// así que solo tiene sentido en web. En mobile lo desactivamos completamente.
+const IS_WEB = Platform.OS === 'web';
 
 // 1. CREAMOS UN COMPONENTE INTERNO CON TODA TU LÓGICA
 function RootLayoutContent() {
@@ -23,15 +28,15 @@ function RootLayoutContent() {
   }, [pathname]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (IS_WEB) {
       const hasSeen = localStorage.getItem('tutorial_visto');
       setIsTutorialActive(hasSeen !== 'true');
     }
   }, []);
 
-  // Escuchadores dinámicos para ambos roles
+  // Escuchadores dinámicos para ambos roles (solo web — usa window events)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (IS_WEB) {
       const handleOpenKine = () => {
         router.push('/kinesiologo');
         setTimeout(() => setIsTutorialActive(true), 400);
@@ -41,10 +46,10 @@ function RootLayoutContent() {
         router.push('/paciente');
         setTimeout(() => setIsTutorialActive(true), 400);
       };
-      
+
       window.addEventListener('open-tutorial', handleOpenKine);
       window.addEventListener('open-tutorial-paciente', handleOpenPaciente);
-      
+
       return () => {
         window.removeEventListener('open-tutorial', handleOpenKine);
         window.removeEventListener('open-tutorial-paciente', handleOpenPaciente);
@@ -54,7 +59,7 @@ function RootLayoutContent() {
 
   const closeTutorial = () => {
     setIsTutorialActive(false);
-    if (typeof window !== 'undefined') {
+    if (IS_WEB) {
       localStorage.setItem('tutorial_visto', 'true');
     }
   };
@@ -205,7 +210,7 @@ function RootLayoutContent() {
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
-      {isTutorialActive === true && (
+      {IS_WEB && isTutorialActive === true && (
         <TutorialOverlay steps={steps} onClose={closeTutorial} />
       )}
     </>

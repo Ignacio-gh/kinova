@@ -1,10 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { PatientsProvider } from '@/context/PatientsContext';
 
 type IconProps = { color: string; size: number };
 
 export default function KinesiologoTabsLayout() {
   return (
+    <PatientsProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -52,5 +54,6 @@ export default function KinesiologoTabsLayout() {
         }}
       />
     </Tabs>
+    </PatientsProvider>
   );
 }

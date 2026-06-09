@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -17,7 +17,8 @@ export default function AyudaSoporteScreen() {
   const router = useRouter();
 
   const openTutorial = () => {
-    if (typeof window !== 'undefined') {
+    // El tutorial existe solo en la app web (usa eventos del DOM)
+    if (Platform.OS === 'web') {
       window.dispatchEvent(new Event('open-tutorial'));
     }
   };

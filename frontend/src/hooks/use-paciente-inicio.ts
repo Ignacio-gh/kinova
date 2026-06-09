@@ -2,6 +2,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
 
+// Mientras no haya endpoint de "próximos ejercicios" exportamos un array vacío
+// para que el componente que lo consume no rompa con "map of undefined".
+export type UpcomingExercise = {
+  id: string;
+  name: string;
+  muscle: string;
+  day: string;
+  reps: number;
+  series: number;
+};
+export const UPCOMING: UpcomingExercise[] = [];
+
 export type TodayExercise = {
   id: string;
   name: string;

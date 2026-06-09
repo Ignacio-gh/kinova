@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useMiCalendario, DAYS, ROUTINE } from '@/hooks/use-mi-calendario';
+import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
 import type { CalendarExercise } from '@/hooks/use-mi-calendario';
 
 type ExerciseCardProps = {
@@ -85,7 +85,7 @@ function CalendarExerciseCard({ exercise, completed, onToggle }: ExerciseCardPro
 }
 
 export default function MiCalendario() {
-  const { selectedDay, setSelectedDay, completedIds, dayExercises, toggleComplete } =
+  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, toggleComplete } =
     useMiCalendario();
 
   return (
@@ -130,10 +130,10 @@ export default function MiCalendario() {
           >
             {DAYS.map((day) => {
               const active = selectedDay === day;
-              const hasExercises = (ROUTINE[day] ?? []).length > 0;
+              const hasExercises = (routine[day] ?? []).length > 0;
               const dayCompleted =
                 hasExercises &&
-                (ROUTINE[day] ?? []).every((e) => completedIds.has(e.id));
+                (routine[day] ?? []).every((e) => completedIds.has(e.id));
 
               return (
                 <TouchableOpacity

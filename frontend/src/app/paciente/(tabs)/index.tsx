@@ -209,7 +209,13 @@ export default function PacienteInicio() {
             </View>
 
             <Text className="text-gray-500 text-sm">
-              ¡Excelente trabajo! Estás al {weeklyPercent}% de tu objetivo semanal.
+              {weeklyPercent === 0
+                ? 'Todavía no completaste ejercicios esta semana. ¡Arrancá hoy!'
+                : weeklyPercent < 50
+                ? `Vas al ${weeklyPercent}% de tu objetivo semanal. ¡Seguí adelante!`
+                : weeklyPercent < 100
+                ? `¡Muy bien! Estás al ${weeklyPercent}% de tu objetivo semanal.`
+                : '¡Excelente! Completaste todos tus ejercicios de la semana.'}
             </Text>
           </View>
 
@@ -225,7 +231,13 @@ export default function PacienteInicio() {
           >
             <Text className="text-navy font-bold text-lg mb-3">Próximos Ejercicios</Text>
 
-            {UPCOMING.map((u, index) => (
+            {(!UPCOMING || UPCOMING.length === 0) && (
+              <Text className="text-gray-400 text-sm py-2">
+                No hay próximos ejercicios programados.
+              </Text>
+            )}
+
+            {(UPCOMING ?? []).map((u, index) => (
               <View
                 key={u.id}
                 className="flex-row items-center py-3"

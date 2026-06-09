@@ -20,6 +20,13 @@ export interface KineStats {
   avg_adherence: number;
 }
 
+// Sección de ajustes estática (no depende de datos del usuario)
+export const PERFIL_AJUSTES = [
+  { icon: 'notifications-outline' as const, label: 'Notificaciones' },
+  { icon: 'lock-closed-outline' as const, label: 'Privacidad y seguridad' },
+  { icon: 'help-circle-outline' as const, label: 'Ayuda y soporte' },
+];
+
 export function usePerfilKine() {
   const router = useRouter();
   const [user, setUser] = useState<UserResponse | null>(null);
