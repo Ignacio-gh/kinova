@@ -1,6 +1,19 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Modal, TextInput } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { api } from '@/services/api';
@@ -8,25 +21,124 @@ import React from 'react';
 import { useTutorial } from '@/context/TutorialContext';
 import MockPatientDetail from '@/mock/mock-[id]';
 
-const C = {
-  bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
-  turquoise: '#00A896', turquoiseDim: 'rgba(0,168,150,0.10)',
-  gray100: '#F3F4F6', gray200: '#E5E7EB', gray400: '#9CA3AF',
-  gray500: '#6B7280', border: '#E5E7EB',
-  green: '#16A34A', amber: '#F59E0B', red: '#EF4444',
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+
+type RoutineExercise = {
+  id: string;
+  name: string;
+  series: number;
+  reps: number;
+  angle?: string;
+  muscle: string;
+  completed: boolean;
 };
 
-const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as const;
+type Patient = {
+  id: string;
+  name: string;
+  diagnosis: string;
+  period: string;
+  adherence: number;
+  status: 'Activo' | 'Finalizado';
+  medicalNotes: string;
+  durationWeeks: number;
+};
+
+const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
 type Day = (typeof DAYS)[number];
 
 const DAY_MAP: Record<string, Day> = {
-  monday: 'Lun', tuesday: 'Mar', wednesday: 'Mié',
-  thursday: 'Jue', friday: 'Vie', saturday: 'Sáb', sunday: 'Dom',
+  monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
+  thursday: 'Jueves', friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo',
 };
 
-function buildAngle(min: number | null, max: number | null) {
-  return min != null && max != null ? `${min}° - ${max}°` : null;
+function mapApiRoutine(w: Record<string, any[]>): Record<Day, RoutineExercise[]> {
+  const mapped = Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, RoutineExercise[]>;
+  for (const [backendDay, items] of Object.entries(w)) {
+    const day = DAY_MAP[backendDay];
+    if (!day) continue;
+    mapped[day] = items.map((r) => ({
+      id: String(r.id),
+      name: r.exercise.name,
+      series: r.sets,
+      reps: r.reps,
+      angle: r.angle_min != null && r.angle_max != null ? `${r.angle_min}° - ${r.angle_max}°` : undefined,
+      muscle: r.exercise.zone,
+      completed: false,
+    }));
+  }
+  return mapped;
 }
+
+function mapApiPatient(p: any): Patient {
+  const start = p.treatment_start_date
+    ? new Date(p.treatment_start_date).toLocaleDateString('es-AR') : '-';
+  const end = p.treatment_start_date && p.treatment_weeks
+    ? new Date(new Date(p.treatment_start_date).getTime() + p.treatment_weeks * 7 * 86400000).toLocaleDateString('es-AR')
+    : '-';
+  return {
+    id: String(p.id),
+    name: p.user.full_name,
+    diagnosis: p.diagnosis,
+    period: `${start} al ${end}`,
+    adherence: Math.round(p.adherence_pct ?? 0),
+    status: p.status === 'activo' ? 'Activo' : 'Finalizado',
+    medicalNotes: p.notes ?? 'Sin notas clínicas.',
+    durationWeeks: p.treatment_weeks ?? 0,
+  };
+}
+
+// ─── Sub-componente ──────────────────────────────────────────────────────────
+
+function CompactRoutineCard({
+  exercise,
+  cardId,
+  statusId,
+  onEdit,
+  onDelete,
+}: {
+  exercise: RoutineExercise;
+  cardId?: string;
+  statusId?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <View style={s.routineCard} nativeID={cardId}>
+      <View style={s.cardTopHeader}>
+        <Text style={s.cardExerciseName} numberOfLines={1}>{exercise.name}</Text>
+        <View nativeID={statusId}>
+          <Ionicons
+            name={exercise.completed ? 'checkmark-circle' : 'close-circle-outline'}
+            size={16}
+            color={exercise.completed ? '#16A34A' : '#9CA3AF'}
+          />
+        </View>
+      </View>
+      <Text style={s.cardExerciseDetails}>
+        {exercise.series}×{exercise.reps} reps
+      </Text>
+      {exercise.angle && exercise.angle !== '-' && (
+        <Text style={s.cardAngle}>∢ {exercise.angle}</Text>
+      )}
+      <View style={s.cardBottomRow}>
+        <View style={s.muscleTag}>
+          <Text style={s.muscleTagText}>{exercise.muscle}</Text>
+        </View>
+        <View style={s.actionsRow}>
+          <TouchableOpacity onPress={onEdit} hitSlop={6}>
+            <Ionicons name="pencil-outline" size={14} color="#00A896" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} hitSlop={6}>
+            <Ionicons name="trash-outline" size={14} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function PatientDetailWeb() {
   const { isTutorialActive } = useTutorial();
@@ -34,402 +146,423 @@ export default function PatientDetailWeb() {
   if (isTutorialActive) {
     return <MockPatientDetail />;
   }
+
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [selectedDay, setSelectedDay] = useState<Day>('Lun');
-  const [patient, setPatient] = useState<any>(null);
-  const [routine, setRoutine] = useState<Record<Day, any[]>>(
-    Object.fromEntries(DAYS.map((d) => [d, []])) as any
+
+  const {
+    id,
+    newExerciseName,
+    newExerciseDay,
+    newExerciseSets,
+    newExerciseReps,
+    newExerciseMuscle,
+    newExerciseAngle,
+  } = useLocalSearchParams<any>();
+
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [weeks, setWeeks] = useState(0);
+  const [routine, setRoutine] = useState<Record<Day, RoutineExercise[]>>(
+    Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, RoutineExercise[]>
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  // Edit modal
-  const [editRoutine, setEditRoutine] = useState<any>(null);
+
+  // --- ESTADOS PARA EL MODAL DE EDICIÓN ---
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingData, setEditingData] = useState<{ day: Day; exId: string } | null>(null);
+
+  const [editName, setEditName] = useState('');
+  const [editSets, setEditSets] = useState('');
+  const [editReps, setEditReps] = useState('');
   const [editMinAngle, setEditMinAngle] = useState('');
   const [editMaxAngle, setEditMaxAngle] = useState('');
-  const [editReps, setEditReps] = useState('');
-  const [editSets, setEditSets] = useState('');
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState('');
+
+  const fetchRoutine = useCallback(async () => {
+    if (!id) return;
+    const w = await api.get<Record<string, any[]>>(`/api/v1/routines/patient/${id}`);
+    setRoutine(mapApiRoutine(w));
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
     Promise.all([
       api.get<any>(`/api/v1/patients/${id}`),
-      api.get<any>(`/api/v1/routines/patient/${id}`),
+      api.get<Record<string, any[]>>(`/api/v1/routines/patient/${id}`),
     ])
       .then(([p, w]) => {
-        setPatient(p);
-        const mapped: any = Object.fromEntries(DAYS.map((d) => [d, []]));
-        for (const [day, items] of Object.entries(w) as [string, any[]][]) {
-          const d = DAY_MAP[day];
-          if (d) mapped[d] = items;
-        }
-        setRoutine(mapped);
+        const mapped = mapApiPatient(p);
+        setPatient(mapped);
+        setWeeks(mapped.durationWeeks);
+        setRoutine(mapApiRoutine(w));
       })
-      .catch((e) => setError(e.message ?? 'Error al cargar'))
+      .catch((e) => setError(e.message ?? 'Error al cargar el paciente'))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const openEdit = (r: any) => {
-    setEditRoutine(r);
-    setEditMinAngle(r.angle_min != null ? String(r.angle_min) : '');
-    setEditMaxAngle(r.angle_max != null ? String(r.angle_max) : '');
-    setEditReps(String(r.reps));
-    setEditSets(String(r.sets));
-    setEditError('');
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editRoutine) return;
-    setEditSaving(true);
-    setEditError('');
-    try {
-      await api.put(`/api/v1/routines/${editRoutine.id}`, {
-        reps: Number(editReps) || editRoutine.reps,
-        sets: Number(editSets) || editRoutine.sets,
-        angle_min: editMinAngle !== '' ? Number(editMinAngle) : null,
-        angle_max: editMaxAngle !== '' ? Number(editMaxAngle) : null,
+  useEffect(() => {
+    if (newExerciseName && newExerciseDay) {
+      fetchRoutine().catch(console.error);
+      router.setParams({
+        newExerciseName: '', newExerciseDay: '', newExerciseSets: '',
+        newExerciseReps: '', newExerciseMuscle: '', newExerciseAngle: '',
       });
-      // Refresh routine
-      const w = await api.get<any>(`/api/v1/routines/patient/${id}`);
-      const mapped: any = Object.fromEntries(DAYS.map((d) => [d, []]));
-      for (const [day, items] of Object.entries(w) as [string, any[]][]) {
-        const d = DAY_MAP[day];
-        if (d) mapped[d] = items;
+    }
+  }, [newExerciseName, newExerciseDay]);
+
+  // --- LÓGICA DE BORRADO ---
+  const handleDeleteExercise = async (day: Day, exId: string) => {
+    const confirmed = window.confirm('¿Estás seguro que querés borrar este ejercicio?');
+    if (confirmed) {
+      try {
+        await api.delete(`/api/v1/routines/${exId}`);
+        await fetchRoutine();
+      } catch (e: any) {
+        alert(e.message ?? 'Error al eliminar');
       }
-      setRoutine(mapped);
-      setEditRoutine(null);
-    } catch (e: any) {
-      setEditError(e.message ?? 'Error al guardar');
-    } finally {
-      setEditSaving(false);
     }
   };
 
-  const handleDelete = async (routineId: number) => {
-    // eslint-disable-next-line no-restricted-globals
-    if (!confirm('¿Eliminar este ejercicio de la rutina?')) return;
-    try {
-      await api.delete(`/api/v1/routines/${routineId}`);
-      const w = await api.get<any>(`/api/v1/routines/patient/${id}`);
-      const mapped: any = Object.fromEntries(DAYS.map((d) => [d, []]));
-      for (const [day, items] of Object.entries(w) as [string, any[]][]) {
-        const d = DAY_MAP[day];
-        if (d) mapped[d] = items;
+  // --- LÓGICA DE APERTURA DE MODAL Y PARSEO DE ÁNGULOS ---
+  const handleOpenEdit = (day: Day, ex: RoutineExercise) => {
+    setEditingData({ day, exId: ex.id });
+    setEditName(ex.name);
+    setEditSets(ex.series.toString());
+    setEditReps(ex.reps.toString());
+
+    let min = '';
+    let max = '';
+    if (ex.angle && ex.angle !== '-') {
+      const angleString = ex.angle.replace(/°/g, '');
+      const parts = angleString.split('-');
+      if (parts.length === 2) {
+        min = parts[0].trim();
+        max = parts[1].trim();
       }
-      setRoutine(mapped);
-    } catch (e: any) {
-      alert(e.message ?? 'Error al eliminar');
+    }
+    setEditMinAngle(min);
+    setEditMaxAngle(max);
+    setIsEditModalOpen(true);
+  };
+
+  // --- LÓGICA DE GUARDADO DE EDICIÓN ---
+  const handleSaveEdit = async () => {
+    const confirmed = window.confirm('¿Estás seguro que querés editar este ejercicio?');
+    if (confirmed && editingData) {
+      try {
+        await api.put(`/api/v1/routines/${editingData.exId}`, {
+          sets: Number(editSets) || undefined,
+          reps: Number(editReps) || undefined,
+          angle_min: editMinAngle !== '' ? Number(editMinAngle) : null,
+          angle_max: editMaxAngle !== '' ? Number(editMaxAngle) : null,
+        });
+        await fetchRoutine();
+        setIsEditModalOpen(false);
+      } catch (e: any) {
+        alert(e.message ?? 'Error al guardar');
+      }
     }
   };
 
   if (loading) {
     return (
-      <View style={s.root}>
+      <View style={s.webRoot}>
         <WebSidebarKine />
-        <View style={s.center}><ActivityIndicator size="large" color={C.turquoise} /></View>
+        <View style={s.centerView}>
+          <ActivityIndicator size="large" color="#00A896" />
+        </View>
       </View>
     );
   }
 
   if (error || !patient) {
     return (
-      <View style={s.root}>
+      <View style={s.webRoot}>
         <WebSidebarKine />
-        <View style={s.center}>
-          <Ionicons name="alert-circle-outline" size={40} color={C.gray400} />
-          <Text style={{ color: C.gray400, marginTop: 12 }}>{error || 'Paciente no encontrado'}</Text>
+        <View style={s.centerView}>
+          <Text style={s.emptyViewText}>{error || 'Paciente no encontrado'}</Text>
         </View>
       </View>
     );
   }
 
-  const adherence = Math.round(patient.adherence_pct ?? 0);
-  const adherenceColor = adherence >= 90 ? C.green : adherence >= 70 ? C.amber : C.red;
-  const isActive = patient.status === 'activo';
-
-  const startDate = patient.treatment_start_date
-    ? new Date(patient.treatment_start_date).toLocaleDateString('es-AR') : '-';
-  const endDate = patient.treatment_start_date && patient.treatment_weeks
-    ? new Date(new Date(patient.treatment_start_date).getTime() + patient.treatment_weeks * 7 * 86400000).toLocaleDateString('es-AR')
-    : '-';
-
-  const dayExercises = routine[selectedDay] ?? [];
+  const isActive = patient.status === 'Activo';
+  const adherenceColor = patient.adherence >= 90 ? '#16A34A' : '#00A896';
 
   return (
-    <View style={s.root}>
+    <View style={s.webRoot}>
       <WebSidebarKine />
-      <View style={s.main}>
-        {/* Topbar */}
-        <View style={s.topbar}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={18} color={C.gray500} />
-            <Text style={s.backText}>Mis Pacientes</Text>
-          </TouchableOpacity>
-        </View>
 
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 36, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-          {/* ── Header del paciente ── */}
-          <View style={s.headerCard}>
-            <View style={s.avatarLg}>
-              <Text style={s.avatarLgText}>
-                {patient.user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+      <SafeAreaView style={s.root}>
+        <StatusBar style="dark" />
+
+        {/* Cabecera Fija */}
+        <View style={s.headerContainer}>
+          <TouchableOpacity
+            style={s.backBtnRow}
+            onPress={() => router.push('/')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={18} color="#6B7280" />
+            <Text style={s.backBtnText}>Volver a Pacientes</Text>
+          </TouchableOpacity>
+
+          <View style={s.patientInfoRow}>
+            <View style={s.flex1}>
+              <Text style={s.patientName} nativeID="tutorial-patient-name">{patient.name}</Text>
+              <Text style={s.patientDiagnosis}>
+                {patient.diagnosis} • Post-operatorio, {weeks} semanas
+              </Text>
+              <Text style={s.patientPeriodText}>Período: {patient.period}</Text>
+            </View>
+            <View style={s.itemsEnd}>
+              <Text style={s.adherenceTitleText}>Adherencia Global</Text>
+              <Text style={[s.adherencePercentage, { color: adherenceColor }]}>
+                {patient.adherence}%
               </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={s.nameRow}>
-                <Text style={s.patientName}>{patient.user.full_name}</Text>
-                <View style={[s.statusBadge, { borderColor: isActive ? C.turquoise : C.gray400 }]}>
-                  <View style={[s.statusDot, { backgroundColor: isActive ? C.turquoise : C.gray400 }]} />
-                  <Text style={[s.statusText, { color: isActive ? C.turquoise : C.gray400 }]}>
-                    {isActive ? 'Activo' : 'Finalizado'}
+          </View>
+        </View>
+
+        <ScrollView style={s.flex1} showsVerticalScrollIndicator={false}>
+          <View style={s.notesPaddingWrapper}>
+            <View style={s.notesCard}>
+              <Text style={s.notesTitle}>Notas médicas:</Text>
+              <Text style={s.notesText}>{patient.medicalNotes}</Text>
+            </View>
+
+            <View style={s.controlsCard}>
+              <View nativeID="tutorial-duration">
+                <Text style={s.controlSectionTitle}>Duración</Text>
+                <View style={s.counterRow}>
+                  <TouchableOpacity style={s.counterBtn} onPress={() => setWeeks(prev => Math.max(1, prev - 1))}>
+                    <Text style={s.counterBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={s.counterValueText}>{weeks} Sem.</Text>
+                  <TouchableOpacity style={s.counterBtn} onPress={() => setWeeks(prev => prev + 1)}>
+                    <Text style={s.counterBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={s.itemsEnd} nativeID="tutorial-status">
+                <Text style={s.controlSectionTitle}>Estado</Text>
+                <View style={[s.statusBadgeContainer, { borderColor: isActive ? '#00A896' : '#9CA3AF' }]}>
+                  <View style={[s.statusDot, { backgroundColor: isActive ? '#00A896' : '#9CA3AF' }]} />
+                  <Text style={[s.statusBadgeText, { color: isActive ? '#00A896' : '#9CA3AF' }]}>
+                    {patient.status}
                   </Text>
                 </View>
               </View>
-              <Text style={s.diagText}>{patient.diagnosis}</Text>
-              <Text style={s.emailText}>{patient.user.email}</Text>
-            </View>
-            <View style={s.adherenceBox}>
-              <Text style={s.adherenceLabel}>Adherencia</Text>
-              <Text style={[s.adherenceVal, { color: adherenceColor }]}>{adherence}%</Text>
-              <Text style={s.weekText}>Semana {patient.current_week}/{patient.treatment_weeks}</Text>
             </View>
           </View>
 
-          {/* ── Info cards ── */}
-          <View style={s.infoGrid}>
-            <View style={s.infoCard}>
-              <Text style={s.infoLabel}>Inicio</Text>
-              <Text style={s.infoVal}>{startDate}</Text>
-            </View>
-            <View style={s.infoCard}>
-              <Text style={s.infoLabel}>Fin estimado</Text>
-              <Text style={s.infoVal}>{endDate}</Text>
-            </View>
-            <View style={s.infoCard}>
-              <Text style={s.infoLabel}>Duración</Text>
-              <Text style={s.infoVal}>{patient.treatment_weeks} semanas</Text>
-            </View>
-            <View style={s.infoCard}>
-              <Text style={s.infoLabel}>Teléfono</Text>
-              <Text style={s.infoVal}>{patient.phone ?? 'No registrado'}</Text>
-            </View>
-          </View>
+          <View style={s.calendarWrapper}>
+            <Text style={s.sectionTitle} nativeID="tutorial-planning">
+              Planificación de Rutina Semanal
+            </Text>
 
-          {patient.notes ? (
-            <View style={s.notesCard}>
-              <Text style={s.notesLabel}>Notas clínicas</Text>
-              <Text style={s.notesText}>{patient.notes}</Text>
-            </View>
-          ) : null}
-
-          {/* ── Rutina semanal ── */}
-          <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>Rutina Semanal</Text>
-          </View>
-
-          {/* Selector de días */}
-          <View style={s.daySelector}>
-            {DAYS.map((day) => {
-              const active = selectedDay === day;
-              const count = (routine[day] ?? []).length;
-              return (
-                <TouchableOpacity
-                  key={day}
-                  style={[s.dayBtn, active && s.dayBtnActive]}
-                  onPress={() => setSelectedDay(day)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[s.dayBtnText, active && s.dayBtnTextActive]}>{day}</Text>
-                  {count > 0 && (
-                    <View style={[s.dayCount, { backgroundColor: active ? 'rgba(255,255,255,0.3)' : C.turquoiseDim }]}>
-                      <Text style={[s.dayCountText, { color: active ? C.white : C.turquoise }]}>{count}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Ejercicios del día */}
-          {dayExercises.length === 0 ? (
-            <View style={s.empty}>
-              <Ionicons name="calendar-outline" size={36} color={C.gray200} />
-              <Text style={s.emptyText}>Sin ejercicios para {selectedDay}</Text>
-            </View>
-          ) : (
-            <View style={s.exGrid}>
-              {dayExercises.map((r: any) => {
-                const angle = buildAngle(r.angle_min, r.angle_max);
+            <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={s.kanbanScrollContent}>
+              {DAYS.map((day) => {
+                const dayExercises = routine[day] || [];
                 return (
-                  <View key={r.id} style={s.exCard}>
-                    <View style={s.exCardHead}>
-                      <Text style={s.exName}>{r.exercise.name}</Text>
-                      <View style={s.zoneBadge}>
-                        <Text style={s.zoneText}>{r.exercise.zone}</Text>
-                      </View>
+                  <View key={day} style={s.kanbanColumn}>
+                    <View style={s.columnHeader}>
+                      <Text style={s.columnHeaderTitle}>{day}</Text>
+                      <Text style={s.columnHeaderCounter}>({dayExercises.length})</Text>
                     </View>
-                    <Text style={s.exDetail}>{r.sets} series × {r.reps} reps</Text>
-                    {angle && <Text style={[s.exDetail, { color: C.turquoise }]}>Ángulo: {angle}</Text>}
-                    <View style={s.exActions}>
-                      <TouchableOpacity style={s.editBtn} onPress={() => openEdit(r)} activeOpacity={0.7}>
-                        <Ionicons name="pencil-outline" size={14} color={C.turquoise} />
-                        <Text style={s.editBtnText}>Editar</Text>
+
+                    <View nativeID={day === 'Lunes' ? 'tutorial-assign-btn' : undefined}>
+                      <TouchableOpacity
+                        style={s.assignBtn}
+                        onPress={() => router.push({
+                          pathname: '/kinesiologo/biblioteca',
+                          params: { patientId: patient.id, day },
+                        })}
+                      >
+                        <Ionicons name="add" size={16} color="#00A896" />
+                        <Text style={s.assignBtnText}>Asignar</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={s.deleteBtn} onPress={() => handleDelete(r.id)} activeOpacity={0.7}>
-                        <Ionicons name="trash-outline" size={14} color={C.red} />
-                        <Text style={s.deleteBtnText}>Eliminar</Text>
-                      </TouchableOpacity>
+                    </View>
+
+                    <View style={s.flex1}>
+                      {dayExercises.length === 0 ? (
+                        <View style={s.emptyColumnContent}>
+                          <Ionicons name="calendar-outline" size={24} color="#D1D5DB" />
+                          <Text style={s.emptyColumnText}>Sin ejercicios</Text>
+                        </View>
+                      ) : (
+                        dayExercises.map((exercise) => (
+                          <CompactRoutineCard
+                            key={exercise.id}
+                            exercise={exercise}
+                            cardId={exercise.name === 'Puente de Glúteo' ? 'tutorial-exercise-card' : undefined}
+                            statusId={exercise.name === 'Puente de Glúteo' ? 'tutorial-exercise-status' : undefined}
+                            onEdit={() => handleOpenEdit(day, exercise)}
+                            onDelete={() => handleDeleteExercise(day, exercise.id)}
+                          />
+                        ))
+                      )}
                     </View>
                   </View>
                 );
               })}
-            </View>
-          )}
+            </ScrollView>
+          </View>
+        </ScrollView>
 
-          {/* Modal editar ejercicio */}
-          <Modal visible={!!editRoutine} transparent animationType="fade" onRequestClose={() => setEditRoutine(null)}>
-            <View style={s.overlay}>
-              <View style={s.editModal}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <Text style={s.editModalTitle}>Editar ejercicio</Text>
-                  <TouchableOpacity onPress={() => setEditRoutine(null)}>
-                    <Ionicons name="close" size={22} color={C.gray400} />
-                  </TouchableOpacity>
+        {/* Modal para editar ejercicio */}
+        <Modal
+          visible={isEditModalOpen}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsEditModalOpen(false)}
+        >
+          <View style={s.modalOverlay}>
+            <View style={s.modalContent}>
+              <View style={s.modalHeader}>
+                <View>
+                  <Text style={s.modalTitle}>Editar Ejercicio</Text>
+                  <Text style={s.modalSub}>{editName}</Text>
                 </View>
-                {editRoutine && (
-                  <Text style={{ color: C.turquoise, fontWeight: '700', marginBottom: 16 }}>{editRoutine.exercise?.name}</Text>
-                )}
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.editLabel}>Series</Text>
-                    <TextInput style={s.editInput} value={editSets} onChangeText={setEditSets} keyboardType="numeric" />
+                <TouchableOpacity onPress={() => setIsEditModalOpen(false)} hitSlop={10}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={s.modalBody}>
+                <View style={s.row}>
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.label}>SERIES</Text>
+                    <TextInput
+                      style={s.input}
+                      keyboardType="numeric"
+                      value={editSets}
+                      onChangeText={setEditSets}
+                    />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.editLabel}>Repeticiones</Text>
-                    <TextInput style={s.editInput} value={editReps} onChangeText={setEditReps} keyboardType="numeric" />
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.label}>REPETICIONES</Text>
+                    <TextInput
+                      style={s.input}
+                      keyboardType="numeric"
+                      value={editReps}
+                      onChangeText={setEditReps}
+                    />
                   </View>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.editLabel}>Ángulo mínimo (°)</Text>
-                    <TextInput style={s.editInput} value={editMinAngle} onChangeText={setEditMinAngle} keyboardType="numeric" placeholder="ej: 60" />
+
+                <View style={s.row}>
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.label}>ÁNGULO MÍNIMO (°)</Text>
+                    <TextInput
+                      style={s.input}
+                      keyboardType="numeric"
+                      value={editMinAngle}
+                      onChangeText={setEditMinAngle}
+                      placeholder="Ej: 60"
+                    />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.editLabel}>Ángulo máximo (°)</Text>
-                    <TextInput style={s.editInput} value={editMaxAngle} onChangeText={setEditMaxAngle} keyboardType="numeric" placeholder="ej: 90" />
+                  <View style={[s.inputGroup, { flex: 1 }]}>
+                    <Text style={s.label}>ÁNGULO MÁXIMO (°)</Text>
+                    <TextInput
+                      style={s.input}
+                      keyboardType="numeric"
+                      value={editMaxAngle}
+                      onChangeText={setEditMaxAngle}
+                      placeholder="Ej: 90"
+                    />
                   </View>
-                </View>
-                {!!editError && (
-                  <Text style={{ color: '#DC2626', fontSize: 13, marginBottom: 12 }}>{editError}</Text>
-                )}
-                <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
-                  <TouchableOpacity style={s.cancelBtn} onPress={() => setEditRoutine(null)}>
-                    <Text style={s.cancelBtnText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[s.saveBtn, editSaving && { opacity: 0.6 }]} onPress={handleSaveEdit} disabled={editSaving}>
-                    <Text style={s.saveBtnText}>{editSaving ? 'Guardando...' : 'Guardar cambios'}</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
+
+              <View style={s.modalFooter}>
+                <TouchableOpacity
+                  style={s.cancelBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setIsEditModalOpen(false)}
+                >
+                  <Text style={s.cancelBtnText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={s.saveBtn}
+                  activeOpacity={0.7}
+                  onPress={handleSaveEdit}
+                >
+                  <Text style={s.saveBtnText}>Guardar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </Modal>
-        </ScrollView>
-      </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, flexDirection: 'row', minHeight: '100vh' as any, backgroundColor: C.bg },
-  main: { flex: 1, flexDirection: 'column', overflow: 'hidden' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  topbar: {
-    paddingHorizontal: 36, paddingVertical: 20,
-    backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.border,
-  },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { color: C.gray500, fontSize: 14, fontWeight: '500' },
+  webRoot: { flex: 1, flexDirection: 'row', minHeight: '100vh' as any, backgroundColor: '#F1F5F9' } as ViewStyle,
+  root: { flex: 1, backgroundColor: '#F1F5F9' } as ViewStyle,
+  flex1: { flex: 1 } as ViewStyle,
+  centerView: { flex: 1, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  itemsEnd: { alignItems: 'flex-end' } as ViewStyle,
+  actionsRow: { flexDirection: 'row', gap: 8 } as ViewStyle,
+  emptyViewText: { color: '#9CA3AF', fontSize: 14 } as TextStyle,
+  headerContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' } as ViewStyle,
+  backBtnRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 } as ViewStyle,
+  backBtnText: { color: '#6B7280', fontSize: 14, marginLeft: 8, fontWeight: '500' } as TextStyle,
+  patientInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' } as ViewStyle,
+  patientName: { color: '#002B49', fontSize: 26, fontWeight: '800' } as TextStyle,
+  patientDiagnosis: { color: '#00A896', fontSize: 14, fontWeight: '600', marginTop: 2 } as TextStyle,
+  patientPeriodText: { color: '#9CA3AF', fontSize: 12, marginTop: 4 } as TextStyle,
+  adherenceTitleText: { color: '#9CA3AF', fontSize: 12 } as TextStyle,
+  adherencePercentage: { fontSize: 28, fontWeight: '800', marginTop: 2 } as TextStyle,
+  notesPaddingWrapper: { paddingHorizontal: 24, marginTop: 16, marginBottom: 16 } as ViewStyle,
+  notesCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 } as ViewStyle,
+  notesTitle: { color: '#9CA3AF', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 } as TextStyle,
+  notesText: { color: '#6B7280', fontSize: 13, lineHeight: 18 } as TextStyle,
+  controlsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E5E7EB' } as ViewStyle,
+  controlSectionTitle: { color: '#9CA3AF', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 } as TextStyle,
+  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
+  counterBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  counterBtnText: { color: '#4B5563', fontSize: 16, fontWeight: '700' } as TextStyle,
+  counterValueText: { color: '#002B49', fontWeight: '700', fontSize: 15 } as TextStyle,
+  statusBadgeContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1.5 } as ViewStyle,
+  statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 } as ViewStyle,
+  statusBadgeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' } as TextStyle,
+  calendarWrapper: { paddingHorizontal: 24, marginBottom: 32 } as ViewStyle,
+  sectionTitle: { color: '#002B49', fontSize: 18, fontWeight: '700', marginBottom: 12 } as TextStyle,
+  kanbanScrollContent: { gap: 12, paddingBottom: 16, flexDirection: 'row' } as ViewStyle,
+  kanbanColumn: { width: 220, backgroundColor: '#E5E7EB', borderRadius: 16, padding: 10, minHeight: 380, flexDirection: 'column' } as ViewStyle,
+  columnHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 } as ViewStyle,
+  columnHeaderTitle: { color: '#002B49', fontSize: 14, fontWeight: '700' } as TextStyle,
+  columnHeaderCounter: { color: '#6B7280', fontSize: 12, fontWeight: '600' } as TextStyle,
+  assignBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 36, backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1.5, borderColor: '#00A896', marginBottom: 10 } as ViewStyle,
+  assignBtnText: { color: '#00A896', fontSize: 12, fontWeight: '600' } as TextStyle,
+  routineCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.03)' } as ViewStyle,
+  cardTopHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 } as ViewStyle,
+  cardExerciseName: { color: '#002B49', fontSize: 13, fontWeight: '700', flex: 1, marginRight: 8 } as TextStyle,
+  cardExerciseDetails: { color: '#6B7280', fontSize: 12, marginTop: 1 } as TextStyle,
+  cardAngle: { color: '#00A896', fontSize: 12, fontWeight: '500', marginTop: 2 } as TextStyle,
+  cardBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 } as ViewStyle,
+  muscleTag: { backgroundColor: 'rgba(0,168,150,0.08)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 } as ViewStyle,
+  muscleTagText: { color: '#00A896', fontSize: 10, fontWeight: '600' } as TextStyle,
+  emptyColumnContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 6 } as ViewStyle,
+  emptyColumnText: { color: '#9CA3AF', fontSize: 12, fontWeight: '500' } as TextStyle,
 
-  headerCard: {
-    backgroundColor: C.white, borderRadius: 20, padding: 28,
-    flexDirection: 'row', alignItems: 'center', gap: 20,
-    borderWidth: 1, borderColor: C.border, marginBottom: 16,
-  },
-  avatarLg: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: C.turquoiseDim, alignItems: 'center', justifyContent: 'center',
-  },
-  avatarLgText: { color: C.turquoise, fontWeight: '800', fontSize: 24 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  patientName: { color: C.navy, fontSize: 22, fontWeight: '800' },
-  diagText: { color: C.gray500, fontSize: 14, marginBottom: 2 },
-  emailText: { color: C.gray400, fontSize: 13 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 },
-  statusDot: { width: 7, height: 7, borderRadius: 4 },
-  statusText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  adherenceBox: { alignItems: 'flex-end' },
-  adherenceLabel: { color: C.gray400, fontSize: 11, fontWeight: '600' },
-  adherenceVal: { fontSize: 36, fontWeight: '800' },
-  weekText: { color: C.gray400, fontSize: 12 },
-
-  infoGrid: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  infoCard: {
-    flex: 1, backgroundColor: C.white, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: C.border,
-  },
-  infoLabel: { color: C.gray400, fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' },
-  infoVal: { color: C.navy, fontSize: 15, fontWeight: '700' },
-
-  notesCard: {
-    backgroundColor: C.white, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: C.border, marginBottom: 24,
-  },
-  notesLabel: { color: C.gray400, fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' },
-  notesText: { color: C.gray500, fontSize: 14, lineHeight: 22 },
-
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  sectionTitle: { color: C.navy, fontSize: 18, fontWeight: '800' },
-
-  daySelector: { flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
-  dayBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border,
-  },
-  dayBtnActive: { backgroundColor: C.turquoise, borderColor: C.turquoise },
-  dayBtnText: { color: C.navy, fontSize: 13, fontWeight: '600' },
-  dayBtnTextActive: { color: C.white },
-  dayCount: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
-  dayCountText: { fontSize: 11, fontWeight: '700' },
-
-  empty: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyText: { color: C.gray400, fontSize: 14 },
-
-  exGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  exCard: {
-    backgroundColor: C.white, borderRadius: 14, padding: 18,
-    borderWidth: 1, borderColor: C.border, minWidth: 260, flex: 1,
-  },
-  exCardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8, gap: 8 },
-  exName: { color: C.navy, fontSize: 15, fontWeight: '700', flex: 1 },
-  zoneBadge: { backgroundColor: C.turquoiseDim, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  zoneText: { color: C.turquoise, fontSize: 11, fontWeight: '600' },
-  exDetail: { color: C.gray500, fontSize: 13, marginTop: 2 },
-  exActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  editBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1.5, borderColor: C.turquoise, borderRadius: 8, paddingVertical: 8 },
-  editBtnText: { color: C.turquoise, fontSize: 12, fontWeight: '600' },
-  deleteBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1.5, borderColor: C.red, borderRadius: 8, paddingVertical: 8 },
-  deleteBtnText: { color: C.red, fontSize: 12, fontWeight: '600' },
-
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
-  editModal: { backgroundColor: C.white, borderRadius: 20, padding: 28, width: 480, maxWidth: '95%' as any },
-  editModalTitle: { color: C.navy, fontSize: 18, fontWeight: '800' },
-  editLabel: { color: C.navy, fontSize: 12, fontWeight: '600', marginBottom: 5 },
-  editInput: { borderWidth: 1.5, borderColor: C.border, borderRadius: 10, height: 42, paddingHorizontal: 12, fontSize: 14, color: C.navy, backgroundColor: C.white, outlineStyle: 'none' as any },
-  cancelBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: C.border },
-  cancelBtnText: { color: C.gray500, fontSize: 14, fontWeight: '600' },
-  saveBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: C.turquoise },
-  saveBtnText: { color: C.white, fontSize: 14, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 43, 73, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 20, width: '100%', maxWidth: 480, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 24, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#F3F4F6' },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#002B49' },
+  modalSub: { fontSize: 14, color: '#00A896', fontWeight: '600', marginTop: 4 },
+  modalBody: { padding: 24, gap: 16 },
+  row: { flexDirection: 'row', gap: 16 },
+  inputGroup: { gap: 8 },
+  label: { fontSize: 12, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 },
+  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 14, height: 44, fontSize: 14, color: '#002B49', outlineStyle: 'none' as any },
+  modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, padding: 24, paddingTop: 0 },
+  cancelBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+  cancelBtnText: { color: '#6B7280', fontWeight: '600', fontSize: 14 },
+  saveBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: '#00A896' },
+  saveBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
 });
