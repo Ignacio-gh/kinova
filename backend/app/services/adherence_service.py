@@ -17,7 +17,7 @@ async def calculate_weekly_adherence(
     # TODO (modelos Agus): from app.models.routine import Routine
     # TODO (modelos Agus): from app.models.session import ExerciseExecution
     from app.models.routine import Routine
-    from app.models.session import Session, ExerciseExecution
+    from app.models.session import ExerciseExecution
 
     assigned_result = await db.execute(
         select(func.count()).where(
@@ -31,11 +31,8 @@ async def calculate_weekly_adherence(
         return 0.0
 
     completed_result = await db.execute(
-        select(func.count())
-        .select_from(ExerciseExecution)
-        .join(Session, Session.id == ExerciseExecution.session_id)
-        .where(
-            Session.patient_id == patient.id,
+        select(func.count()).where(
+            ExerciseExecution.patient_id == patient.id,
             ExerciseExecution.status == "completed",
         )
     )
@@ -92,11 +89,8 @@ async def get_dashboard_stats(
     )
 
     completed_result = await db.execute(
-        select(func.count())
-        .select_from(ExerciseExecution)
-        .join(Session, Session.id == ExerciseExecution.session_id)
-        .where(
-            Session.patient_id == patient.id,
+        select(func.count()).where(
+            ExerciseExecution.patient_id == patient.id,
             ExerciseExecution.status == "completed",
         )
     )

@@ -19,7 +19,7 @@ from app.schemas.auth import (
     RegisterKinesiologoRequest,
     RegisterPatientRequest,
 )
-from app.schemas.user import KineProfileInfo, MeResponse, UserResponse
+from app.schemas.user import UserResponse
 from app.services import auth_service
 
 router = APIRouter()
@@ -88,30 +88,12 @@ async def login(
     )
 
 
-@router.get("/me", response_model=MeResponse)
-async def get_me(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Devuelve datos del usuario logueado + perfil según su rol."""
-    from sqlalchemy import select
-    from app.models.kinesiologo import KinesiologoProfile
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """
+    Devuelve los datos del usuario logueado.
 
-    kine_profile = None
-    if current_user.role == "kinesiologo":
-        result = await db.execute(
-            select(KinesiologoProfile).where(KinesiologoProfile.user_id == current_user.id)
-        )
-        profile = result.scalar_one_or_none()
-        if profile:
-            kine_profile = KineProfileInfo.model_validate(profile)
-
-    return MeResponse(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=current_user.full_name,
-        role=current_user.role,
-        is_active=current_user.is_active,
-        created_at=current_user.created_at,
-        kinesiologo_profile=kine_profile,
-    )
+    El frontend llama a esto al cargar la app para saber
+    quien esta logueado y a que pantalla redirigir.
+    """
+    return current_user

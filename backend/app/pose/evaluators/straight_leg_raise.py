@@ -18,12 +18,16 @@ class StraightLegRaiseEvaluator(BaseEvaluator):
     Evaluador de elevación de pierna recta acostado.
 
     El paciente está acostado boca arriba. Levanta una pierna
-    manteniéndola recta mientras la otra permanece doblada.
+    manteniéndola recta mientras la otra permanece doblada (pie apoyado).
 
-    Reglas clínicas:
-    - La rodilla DEBE permanecer estirada (es lo más importante)
-    - No superar la elevación máxima (angle_max)
-    - Alcanzar la elevación mínima (angle_min)
+    Ángulo medido: tobillo → cadera → hombro (flexión de cadera).
+    - Pierna en el suelo: ~180° (alineados)
+    - Pierna levantada 45°: ~135°
+
+    Reglas:
+    - La rodilla debe permanecer recta durante todo el movimiento
+    - No debe superar el ángulo máximo permitido (angle_max = elevación máxima)
+    - Debe alcanzar el ángulo mínimo requerido (angle_min = elevación mínima)
 
     Una rep = pierna abajo → sube → vuelve abajo.
     """
@@ -38,6 +42,7 @@ class StraightLegRaiseEvaluator(BaseEvaluator):
         hip_angle_l = calculate_angle(pt(ANKLE_L), pt(HIP_L), pt(SHOULDER_L))
         hip_angle_r = calculate_angle(pt(ANKLE_R), pt(HIP_R), pt(SHOULDER_R))
 
+        # La pierna levantada es la que tiene menor ángulo landmark (más elevada)
         if hip_angle_l < hip_angle_r:
             hip_angle = hip_angle_l
             knee_angle = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
@@ -45,48 +50,45 @@ class StraightLegRaiseEvaluator(BaseEvaluator):
             hip_angle = hip_angle_r
             knee_angle = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
 
-        hip_elevation = round(180 - hip_angle, 1)
-
         corrections = []
         status = "perfect"
 
-        # ── Rodilla doblada (error crítico en este ejercicio) ──
+        # Verifica que la rodilla esté recta (es lo más importante de este ejercicio)
         if knee_angle < KNEE_STRAIGHT_THRESHOLD:
             corrections.append(
                 self._make_correction(
                     "rodilla",
-                    f"Mantené la rodilla completamente estirada — "
-                    f"está doblada a {round(180 - knee_angle)}°",
+                    "Mantené la rodilla completamente estirada",
                     "error",
                 )
             )
             status = "bad"
 
-        # ── Elevación supera el máximo permitido ──
-        if self.angle_max is not None and hip_elevation > self.angle_max:
+        # Verifica que no suba más de lo permitido (angle_max = elevación máxima en grados)
+        if self.angle_max is not None and hip_angle < (180 - self.angle_max):
             corrections.append(
                 self._make_correction(
                     "cadera",
-                    f"No subas tanto la pierna — elevación a {hip_elevation}°, "
-                    f"tu kinesiólogo puso un máximo de {self.angle_max}°",
+                    f"No subas la pierna más de {self.angle_max}°",
                     "error",
                 )
             )
             if status != "bad":
                 status = "bad"
 
-        # ── No eleva lo suficiente ──
-        if self._phase == "up" and self.angle_min is not None and hip_elevation < self.angle_min:
-            corrections.append(
-                self._make_correction(
-                    "cadera",
-                    f"Subí un poco más la pierna — estás a {hip_elevation}°, "
-                    f"tu objetivo es llegar a {self.angle_min}°",
-                    "warning",
+        # En la fase de elevación, verifica que llegue al mínimo
+        if self._phase == "up" and self.angle_min is not None:
+            required_landmark = 180 - self.angle_min
+            if hip_angle > required_landmark:
+                corrections.append(
+                    self._make_correction(
+                        "cadera",
+                        f"Subí un poco más la pierna, el objetivo es {self.angle_min}°",
+                        "warning",
+                    )
                 )
-            )
-            if status == "perfect":
-                status = "improve"
+                if status == "perfect":
+                    status = "improve"
 
         new_phase = "up" if hip_angle < RAISED_THRESHOLD else "down"
         rep_counted = self._count_rep(new_phase)

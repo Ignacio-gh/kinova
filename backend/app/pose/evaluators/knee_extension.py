@@ -17,10 +17,10 @@ class KneeExtensionEvaluator(BaseEvaluator):
     El paciente arranca sentado con la rodilla doblada (~90°) y estira
     hacia la extensión completa (~180° landmark).
 
-    Reglas clínicas:
-    - Debe alcanzar la extensión mínima requerida (angle_min)
+    Reglas:
+    - Debe alcanzar la extensión mínima requerida (angle_min de la progresión)
     - No debe superar la flexión máxima permitida (angle_max)
-    - Movimiento controlado, sin impulso
+    - El tronco debe mantenerse erguido durante el movimiento
 
     Una rep = dobla la rodilla → estira completamente.
     """
@@ -28,7 +28,7 @@ class KneeExtensionEvaluator(BaseEvaluator):
     def __init__(self, angle_min: float | None, angle_max: float | None):
         super().__init__(angle_min, angle_max)
         self._phase = "down"  # arranca sentado (rodilla doblada)
-        self._peak_extension = 180.0
+        self._peak_extension = 180.0  # guarda la máxima extensión alcanzada en la rep actual
 
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
@@ -39,38 +39,38 @@ class KneeExtensionEvaluator(BaseEvaluator):
         knee_angle_l = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
         knee_angle_r = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
         knee_angle = (knee_angle_l + knee_angle_r) / 2
-        knee_flexion = round(180 - knee_angle, 1)
 
+        # Actualiza la extensión máxima alcanzada en la fase "up"
         if self._phase == "up":
             self._peak_extension = min(self._peak_extension, knee_angle)
 
         corrections = []
         status = "perfect"
 
-        # ── Flexión supera el máximo permitido ──
-        if self.angle_max is not None and knee_flexion > self.angle_max:
+        # Verifica que no doble más de lo permitido (angle_max = flexión máxima)
+        if self.angle_max is not None and knee_angle < (180 - self.angle_max):
             corrections.append(
                 self._make_correction(
                     "rodilla",
-                    f"No dobles tanto la rodilla — estás a {knee_flexion}° de flexión, "
-                    f"tu kinesiólogo puso un máximo de {self.angle_max}°",
+                    f"No dobles más de {self.angle_max}°",
                     "error",
                 )
             )
             status = "bad"
 
-        # ── No extiende lo suficiente ──
-        if self._phase == "up" and self.angle_min is not None and knee_flexion > self.angle_min:
-            corrections.append(
-                self._make_correction(
-                    "rodilla",
-                    f"Estirá más la pierna — estás a {knee_flexion}° de flexión, "
-                    f"necesitás llegar a menos de {self.angle_min}°",
-                    "warning",
+        # En la fase de extensión, verifica que llegue al mínimo requerido
+        if self._phase == "up" and self.angle_min is not None:
+            required_landmark = 180 - self.angle_min
+            if knee_angle < required_landmark:
+                corrections.append(
+                    self._make_correction(
+                        "rodilla",
+                        f"Estirá más la pierna, tenés que llegar a {self.angle_min}° de flexión",
+                        "warning",
+                    )
                 )
-            )
-            if status == "perfect":
-                status = "improve"
+                if status == "perfect":
+                    status = "improve"
 
         new_phase = "up" if knee_angle > BENT_THRESHOLD else "down"
 

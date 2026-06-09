@@ -11,7 +11,6 @@ from app.schemas.patient import (
     PatientDashboard,
     PatientListItem,
     PatientResponse,
-    PatientSelfProfile,
     PatientStatusUpdate,
     PatientUpdate,
 )
@@ -37,41 +36,6 @@ async def create_patient(
     db: AsyncSession = Depends(get_db),
 ):
     return await patient_service.create_patient(db, kine, data)
-
-
-@router.get("/me/profile", response_model=PatientSelfProfile)
-async def get_my_profile(
-    patient=Depends(get_current_patient),
-    db: AsyncSession = Depends(get_db),
-):
-    from sqlalchemy import select
-    from app.models.user import User
-    from app.models.kinesiologo import KinesiologoProfile
-    from app.services.patient_service import _current_week
-
-    user_result = await db.execute(select(User).where(User.id == patient.user_id))
-    user = user_result.scalar_one_or_none()
-
-    kine_name = None
-    if patient.kinesiologo_id:
-        kine_result = await db.execute(
-            select(User)
-            .join(KinesiologoProfile, KinesiologoProfile.user_id == User.id)
-            .where(KinesiologoProfile.id == patient.kinesiologo_id)
-        )
-        kine_user = kine_result.scalar_one_or_none()
-        if kine_user:
-            kine_name = kine_user.full_name
-
-    return PatientSelfProfile(
-        full_name=user.full_name if user else '',
-        email=user.email if user else '',
-        diagnosis=patient.diagnosis,
-        treatment_weeks=patient.treatment_weeks,
-        current_week=_current_week(patient.treatment_start_date),
-        status=patient.status,
-        kinesiologo_name=kine_name,
-    )
 
 
 @router.get("/me/dashboard", response_model=PatientDashboard)

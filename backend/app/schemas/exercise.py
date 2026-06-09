@@ -8,7 +8,6 @@ class ExerciseResponse(BaseModel):
     description: str | None = None
     steps: list[str] = []
     benefits: list[str] = []
-    target_muscles: list[str] = []
     image_url: str | None = None
     video_url: str | None = None
     evaluator_key: str | None = None

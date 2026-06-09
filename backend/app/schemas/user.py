@@ -26,16 +26,3 @@ class UserResponse(UserBase):
     created_at: datetime
 
     model_config = {"from_attributes": True}
-
-
-class KineProfileInfo(BaseModel):
-    matricula: str
-    especialidad: str | None = None
-    credencial_url: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class MeResponse(UserResponse):
-    """Respuesta enriquecida de /auth/me — incluye el perfil según el rol."""
-    kinesiologo_profile: KineProfileInfo | None = None

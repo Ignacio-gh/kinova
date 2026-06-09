@@ -1,76 +1,43 @@
 """
-session.py — Sesiones de ejercicio y ejecuciones individuales.
+session.py — Sesiones de ejercicio realizadas por el paciente.
 
 Tablas: sessions, exercise_executions
 
-Una Session agrupa todas las ejecuciones de una apertura de la app.
-Cada ExerciseExecution registra un ejercicio realizado dentro de esa sesión.
+Responsabilidad:
+    Registrar cada vez que el paciente abre la app y ejecuta uno o más
+    ejercicios. Permite calcular adherencia, ver historial, y al kine
+    revisar el progreso.
+
+Modelo conceptual:
+    Session (1 por apertura de app)
+      └── ExerciseExecution (N, una por ejercicio realizado en esa sesión)
+            └── FeedbackLog (N, correcciones puntuales — ver feedback_log.py)
+
+Session — Campos planeados:
+    - id (PK)
+    - patient_id (FK patient_profiles)
+    - started_at (datetime)
+    - ended_at (datetime, nullable mientras está activa)
+    - duration_minutes (int, calculado al cerrar)
+    - status: enum ("active" | "completed" | "abandoned")
+    - adherence_pct (float, % completado vs asignado, calculado al cerrar)
+
+ExerciseExecution — Campos planeados:
+    - id (PK)
+    - session_id (FK sessions)
+    - routine_id (FK routines)  → para saber qué se intentó hacer
+    - started_at, ended_at
+    - target_reps, completed_reps, correct_reps
+    - effective_angle_min, effective_angle_max  → ángulos vigentes en esa semana
+    - avg_score (float 0-100)
+    - status: enum ("active" | "completed" | "abandoned")
+
+Relaciones:
+    - Session ─< ExerciseExecution ─< FeedbackLog
 """
 
-from datetime import datetime
-
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.models.base import Base, TimestampMixin
-
-
-class Session(Base, TimestampMixin):
-    __tablename__ = "sessions"
-    __table_args__ = (
-        # Cubre "sesiones de un paciente" y "sesión activa de un paciente"
-        Index("ix_sessions_patient_status", "patient_id", "status"),
-    )
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"), index=True)
-    started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    status: Mapped[str] = mapped_column(
-        Enum("active", "completed", "abandoned", name="session_status", create_type=False),
-        default="active",
-    )
-    adherence_pct: Mapped[float | None] = mapped_column(nullable=True)
-
-    patient: Mapped["PatientProfile"] = relationship(
-        "PatientProfile", back_populates="sessions"
-    )
-    executions: Mapped[list["ExerciseExecution"]] = relationship(
-        "ExerciseExecution", back_populates="session", cascade="all, delete-orphan"
-    )
-
-
-class ExerciseExecution(Base, TimestampMixin):
-    __tablename__ = "exercise_executions"
-    __table_args__ = (
-        # Cubre "ejecuciones de una sesión" y conteo semanal por paciente
-        Index("ix_exercise_executions_session_status", "session_id", "status"),
-        Index("ix_exercise_executions_started_at", "started_at"),
-    )
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"), index=True)
-    routine_id: Mapped[int | None] = mapped_column(ForeignKey("routines.id"), nullable=True)
-    started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    target_reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    completed_reps: Mapped[int] = mapped_column(Integer, default=0)
-    correct_reps: Mapped[int] = mapped_column(Integer, default=0)
-    effective_angle_min: Mapped[float | None] = mapped_column(nullable=True)
-    effective_angle_max: Mapped[float | None] = mapped_column(nullable=True)
-    avg_score: Mapped[float | None] = mapped_column(nullable=True)
-    status: Mapped[str] = mapped_column(
-        Enum("active", "completed", "abandoned", name="execution_status", create_type=False),
-        default="active",
-    )
-
-    session: Mapped["Session"] = relationship("Session", back_populates="executions")
-    routine: Mapped["Routine | None"] = relationship("Routine", back_populates="executions")
-    feedback_logs: Mapped[list["FeedbackLog"]] = relationship(
-        "FeedbackLog", back_populates="execution", cascade="all, delete-orphan"
-    )
+# TODO: from sqlalchemy.orm import Mapped, mapped_column, relationship
+# TODO: from sqlalchemy import Integer, Float, DateTime, Enum, ForeignKey
+# TODO: from app.models.base import Base, TimestampMixin
+# TODO: class Session(Base, TimestampMixin): __tablename__ = "sessions"
+# TODO: class ExerciseExecution(Base, TimestampMixin): __tablename__ = "exercise_executions"

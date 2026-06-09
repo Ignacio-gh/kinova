@@ -1,27 +1,25 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+"""
+exercises.py — Endpoints del catálogo de ejercicios.
 
-from app.core.dependencies import get_current_user, get_db
-from app.schemas.exercise import ExerciseResponse
-from app.services import exercise_service
+Responsabilidad:
+    Exponer el catálogo de ejercicios (read-only para el MVP).
+    El catálogo se carga inicialmente con un seed en `scripts/seed_exercises.py`.
 
-router = APIRouter()
+Endpoints planeados:
+    GET    /exercises/                   — Lista del catálogo (filtros: zona, búsqueda)
+    GET    /exercises/{id}               — Detalle de un ejercicio
 
+Dependencias:
+    - app.schemas.exercise
+    - app.services.exercise_service
+    - app.core.dependencies (get_current_user)
 
-@router.get("/", response_model=list[ExerciseResponse])
-async def list_exercises(
-    zone: str | None = Query(None),
-    search: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
-):
-    return await exercise_service.list_exercises(db, zone, search)
+Nota:
+    Para el MVP no se permite que el kine cree ejercicios desde la app.
+    Es un catálogo controlado, curado por el equipo.
+"""
 
-
-@router.get("/{exercise_id}", response_model=ExerciseResponse)
-async def get_exercise(
-    exercise_id: int,
-    db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
-):
-    return await exercise_service.get_exercise(db, exercise_id)
+# TODO: from fastapi import APIRouter, Depends, Query
+# TODO: router = APIRouter()
+# TODO: GET / con filtros (zone, search) → exercise_service.list
+# TODO: GET /{id} → exercise_service.get

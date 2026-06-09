@@ -1,7 +1,5 @@
-from datetime import date, datetime
-
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.patient import (
@@ -13,6 +11,8 @@ from app.schemas.patient import (
     PatientUpdate,
     TodayExerciseItem,
 )
+from datetime import date
+
 from app.services import adherence_service, routine_service
 
 
@@ -48,19 +48,8 @@ async def list_for_kinesiologo(
 
     items = []
     for profile, user in rows:
-        from app.models.session import Session
-
         adherence = await adherence_service.calculate_weekly_adherence(db, profile)
         current_week = _current_week(profile.treatment_start_date)
-
-        last_session_result = await db.execute(
-            select(func.max(Session.started_at)).where(
-                Session.patient_id == profile.id,
-                Session.status == "completed",
-            )
-        )
-        last_session_at: datetime | None = last_session_result.scalar_one_or_none()
-
         items.append(
             PatientListItem(
                 id=profile.id,
@@ -71,7 +60,7 @@ async def list_for_kinesiologo(
                 current_week=current_week,
                 treatment_weeks=profile.treatment_weeks,
                 adherence_pct=adherence,
-                last_session_at=last_session_at,
+                last_session_at=None,  # TODO: traer de session_repository
             )
         )
     return items
@@ -97,7 +86,7 @@ async def create_patient(
     from app.core.security import hash_password
     import secrets
 
-    temp_password = data.password if data.password else secrets.token_urlsafe(12)
+    temp_password = secrets.token_urlsafe(12)
 
     user = User(
         email=data.email,
@@ -125,9 +114,7 @@ async def create_patient(
     await db.refresh(profile)
     await db.refresh(user)
 
-    resp = await _build_patient_response(db, profile, user)
-    resp.temp_password = temp_password
-    return resp
+    return await _build_patient_response(db, profile, user)
 
 
 async def get_patient_detail(
@@ -223,38 +210,18 @@ async def get_dashboard(
     db: AsyncSession,
     patient,
 ) -> PatientDashboard:
-    from datetime import datetime, timezone
-
-    from app.models.session import ExerciseExecution, Session
-
     today_routines = await routine_service.get_today_routine(db, patient)
     adherence = await adherence_service.calculate_weekly_adherence(db, patient)
     current_week = _current_week(patient.treatment_start_date)
-
-    # Buscar que rutinas se completaron HOY
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
-    completed_result = await db.execute(
-        select(ExerciseExecution.routine_id)
-        .join(Session, Session.id == ExerciseExecution.session_id)
-        .where(
-            Session.patient_id == patient.id,
-            ExerciseExecution.status == "completed",
-            ExerciseExecution.started_at >= today_start,
-        )
-    )
-    completed_routine_ids = {row[0] for row in completed_result.all()}
 
     today_exercises = [
         TodayExerciseItem(
             routine_id=r.routine_id,
             name=r.exercise.name,
-            zone=r.exercise.zone,
-            evaluator_key=r.exercise.evaluator_key,
             reps=r.reps,
             sets=r.sets,
-            effective_angle_min=r.angle_min,
-            effective_angle_max=r.angle_max,
-            completed=r.routine_id in completed_routine_ids,
+            effective_angle_min=r.effective_angle_min,
+            effective_angle_max=r.effective_angle_max,
         )
         for r in today_routines
     ]
@@ -268,19 +235,10 @@ async def get_dashboard(
 
 
 async def _build_patient_response(db, profile, user) -> PatientResponse:
-    from app.models.session import Session
     from app.schemas.user import UserResponse
 
     adherence = await adherence_service.calculate_weekly_adherence(db, profile)
     current_week = _current_week(profile.treatment_start_date)
-
-    last_session_result = await db.execute(
-        select(func.max(Session.started_at)).where(
-            Session.patient_id == profile.id,
-            Session.status == "completed",
-        )
-    )
-    last_session_at = last_session_result.scalar_one_or_none()
 
     return PatientResponse(
         id=profile.id,
@@ -295,6 +253,6 @@ async def _build_patient_response(db, profile, user) -> PatientResponse:
         status=profile.status,
         current_week=current_week,
         adherence_pct=adherence,
-        last_session_at=last_session_at,
+        last_session_at=None,  # TODO: traer de session_repository
         created_at=profile.created_at,
     )
