@@ -160,10 +160,12 @@ class PoseDetector:
         if image is None:
             return None
 
-        # Reducir a máximo 640px en el lado largo para acelerar MediaPipe
+        # Reducir a máximo 480px en el lado largo para acelerar MediaPipe.
+        # Con frames de móvil que vienen ya pequeños (~360x640 a quality 0.15),
+        # esto suele no aplicar — pero es safety net para frames grandes.
         h, w = image.shape[:2]
-        if max(h, w) > 640:
-            scale = 640 / max(h, w)
+        if max(h, w) > 480:
+            scale = 480 / max(h, w)
             image = cv2.resize(image, (int(w * scale), int(h * scale)))
 
         return self.detect_from_array(image)

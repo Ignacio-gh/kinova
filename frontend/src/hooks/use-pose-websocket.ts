@@ -54,6 +54,7 @@ export function usePoseWebSocket(
   const [connected, setConnected] = useState(false);
   const sendingRef = useRef(false);
   const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sentAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (!evaluatorKey || !enabled) {
@@ -83,8 +84,12 @@ export function usePoseWebSocket(
         clearTimeout(sendTimeoutRef.current);
         sendTimeoutRef.current = null;
       }
+      const rtt = sentAtRef.current ? Date.now() - sentAtRef.current : 0;
       try {
-        setFeedback(JSON.parse(event.data) as PoseWSFeedback);
+        const parsed = JSON.parse(event.data) as PoseWSFeedback;
+        setFeedback(parsed);
+        const lmCount = parsed.landmarks ? Object.keys(parsed.landmarks).length : 0;
+        console.log(`[PoseWS] feedback rtt=${rtt}ms status=${parsed.status} landmarks=${lmCount}`);
       } catch {
         // ignorar frames malformados
       } finally {
@@ -113,13 +118,15 @@ export function usePoseWebSocket(
   const sendFrame = useCallback((base64: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN && !sendingRef.current) {
       sendingRef.current = true;
+      sentAtRef.current = Date.now();
 
-      // Timeout de seguridad: si el backend no responde en 3s, liberamos el bloqueo
+      // Timeout de seguridad: si el backend no responde en 2s, liberamos el bloqueo
       // para que el siguiente frame pueda enviarse (evita deadlock).
       if (sendTimeoutRef.current) clearTimeout(sendTimeoutRef.current);
       sendTimeoutRef.current = setTimeout(() => {
+        console.warn('[PoseWS] timeout esperando respuesta — liberando lock');
         sendingRef.current = false;
-      }, 3000);
+      }, 2000);
 
       wsRef.current.send(JSON.stringify({ frame: base64 }));
     }

@@ -112,18 +112,22 @@ export default function EjercicioSesion() {
   const captureFrame = useCallback(async () => {
     if (capturingRef.current || !cameraRef.current) return;
     capturingRef.current = true;
+    const t0 = Date.now();
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.35,
+        quality: 0.15,            // calidad mínima para que MediaPipe procese rápido
         base64: true,
-        skipProcessing: true,
+        skipProcessing: true,     // no rotar/procesar — usar la foto cruda
         exif: false,
-      });
+        imageType: 'jpg',
+        shutterSound: false,
+      } as any);
       if (!photo?.base64) {
         console.warn('[Camera] foto sin base64');
         return;
       }
-      console.log('[Camera] frame ok, bytes≈', Math.round(photo.base64.length / 1024), 'KB');
+      const dt = Date.now() - t0;
+      console.log(`[Camera] frame ${Math.round(photo.base64.length / 1024)}KB capturado en ${dt}ms`);
       sendFrame(photo.base64);
     } catch (err) {
       console.warn('[Camera] error capturando frame:', err);
@@ -134,7 +138,9 @@ export default function EjercicioSesion() {
 
   useEffect(() => {
     if (!isRunning || !connected) return;
-    const interval = setInterval(captureFrame, 800); // ~2 fps
+    // Intervalo bajo — el throttle real lo controla sendingRef en el WS
+    // (no manda siguiente frame hasta recibir respuesta del anterior).
+    const interval = setInterval(captureFrame, 200);
     return () => clearInterval(interval);
   }, [isRunning, connected, captureFrame]);
 
