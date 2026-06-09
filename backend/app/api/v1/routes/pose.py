@@ -99,6 +99,17 @@ async def pose_websocket(
     evaluator = evaluator_class(angle_min=angle_min, angle_max=angle_max)
     detector = PoseDetector()
 
+    # ── Buffer de suavizado temporal (EMA) ──
+    # Cada landmark nuevo se mezcla con su valor previo para evitar saltos
+    # bruscos cuando MediaPipe duda entre frames. alpha=0.55 ⇒ ~55% del frame
+    # actual + 45% del histórico. Más bajo = más suave pero más perezoso.
+    # MAX_JUMP rechaza saltos grandes (típicamente "se cambió de pierna")
+    # y los reemplaza por el valor suavizado anterior — efectivamente
+    # ignora un frame outlier.
+    smoothed_landmarks: dict[int, dict[str, float]] = {}
+    SMOOTH_ALPHA = 0.55
+    MAX_JUMP = 0.15  # 15% del frame: si un landmark salta más, lo descartamos
+
     # ── Aceptar la conexion ──
     await websocket.accept()
     logger.info(
@@ -137,16 +148,61 @@ async def pose_websocket(
                 })
                 continue
 
-            # Evaluar con el evaluador del ejercicio
-            result = evaluator.evaluate(detection["all_landmarks"])
+            # ── Aplicar EMA + rechazo de saltos a TODOS los landmarks ──
+            # Esto evita que el esqueleto tiemble o "se cambie de pierna"
+            # cuando MediaPipe duda entre frames.
+            raw_landmarks = detection["all_landmarks"]
+            for idx in range(len(raw_landmarks)):
+                rx = float(raw_landmarks[idx].x)
+                ry = float(raw_landmarks[idx].y)
+                rv = float(raw_landmarks[idx].visibility)
 
-            # Serializar los landmarks clave para que el frontend dibuje el esqueleto
-            lm_list = detection["all_landmarks"]
+                prev = smoothed_landmarks.get(idx)
+                if prev is None:
+                    # Primer frame: usar el valor crudo
+                    smoothed_landmarks[idx] = {"x": rx, "y": ry, "v": rv}
+                else:
+                    # Detectar salto anómalo (probablemente cambio de pierna)
+                    dx = abs(rx - prev["x"])
+                    dy = abs(ry - prev["y"])
+                    if dx > MAX_JUMP or dy > MAX_JUMP:
+                        # Salto demasiado grande — ignorar este frame para ese landmark
+                        # (mantener el valor suavizado anterior)
+                        continue
+                    # Mezcla EMA estándar
+                    smoothed_landmarks[idx] = {
+                        "x": SMOOTH_ALPHA * rx + (1 - SMOOTH_ALPHA) * prev["x"],
+                        "y": SMOOTH_ALPHA * ry + (1 - SMOOTH_ALPHA) * prev["y"],
+                        "v": SMOOTH_ALPHA * rv + (1 - SMOOTH_ALPHA) * prev["v"],
+                    }
+
+            # ── Construir una vista "tipo MediaPipe" con valores suavizados ──
+            # para que los evaluadores existentes funcionen sin cambios.
+            class _SmoothLM:
+                __slots__ = ("x", "y", "visibility")
+                def __init__(self, x: float, y: float, v: float) -> None:
+                    self.x = x
+                    self.y = y
+                    self.visibility = v
+
+            smoothed_list = [
+                _SmoothLM(
+                    smoothed_landmarks[i]["x"],
+                    smoothed_landmarks[i]["y"],
+                    smoothed_landmarks[i]["v"],
+                )
+                for i in range(len(raw_landmarks))
+            ]
+
+            # Evaluar con landmarks suavizados — más estables → menos falsos positivos
+            result = evaluator.evaluate(smoothed_list)
+
+            # Serializar los landmarks clave (ya suavizados) para el frontend
             landmarks_payload = {
                 str(idx): {
-                    "x": round(float(lm_list[idx].x), 4),
-                    "y": round(float(lm_list[idx].y), 4),
-                    "v": round(float(lm_list[idx].visibility), 2),
+                    "x": round(smoothed_landmarks[idx]["x"], 4),
+                    "y": round(smoothed_landmarks[idx]["y"], 4),
+                    "v": round(smoothed_landmarks[idx]["v"], 2),
                 }
                 for idx in SKELETON_LANDMARK_INDICES
             }
