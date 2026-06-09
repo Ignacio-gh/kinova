@@ -9,7 +9,7 @@ Cada ExerciseExecution registra un ejercicio realizado dentro de esa sesión.
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -17,9 +17,13 @@ from app.models.base import Base, TimestampMixin
 
 class Session(Base, TimestampMixin):
     __tablename__ = "sessions"
+    __table_args__ = (
+        # Cubre "sesiones de un paciente" y "sesión activa de un paciente"
+        Index("ix_sessions_patient_status", "patient_id", "status"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"))
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"), index=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -41,9 +45,14 @@ class Session(Base, TimestampMixin):
 
 class ExerciseExecution(Base, TimestampMixin):
     __tablename__ = "exercise_executions"
+    __table_args__ = (
+        # Cubre "ejecuciones de una sesión" y conteo semanal por paciente
+        Index("ix_exercise_executions_session_status", "session_id", "status"),
+        Index("ix_exercise_executions_started_at", "started_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"))
+    session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"), index=True)
     routine_id: Mapped[int | None] = mapped_column(ForeignKey("routines.id"), nullable=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

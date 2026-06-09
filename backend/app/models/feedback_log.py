@@ -19,10 +19,10 @@ class FeedbackLog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     exercise_execution_id: Mapped[int] = mapped_column(
-        ForeignKey("exercise_executions.id")
+        ForeignKey("exercise_executions.id"), index=True
     )
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True), server_default=func.now(), index=True
     )
     correction_type: Mapped[str] = mapped_column(String(100))
     message: Mapped[str | None] = mapped_column(Text, nullable=True)

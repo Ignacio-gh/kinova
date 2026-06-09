@@ -20,7 +20,7 @@ class RoutineProgression(Base, TimestampMixin):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    routine_id: Mapped[int] = mapped_column(ForeignKey("routines.id"))
+    routine_id: Mapped[int] = mapped_column(ForeignKey("routines.id"), index=True)
     week_number: Mapped[int] = mapped_column(Integer)
     angle_min: Mapped[float | None] = mapped_column(nullable=True)
     angle_max: Mapped[float | None] = mapped_column(nullable=True)

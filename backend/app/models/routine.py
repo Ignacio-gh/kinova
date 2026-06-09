@@ -7,7 +7,7 @@ angle_min / angle_max son los ángulos por defecto; RoutineProgression los sobre
 semana a semana si el kine define una progresión.
 """
 
-from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Enum, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -15,9 +15,13 @@ from app.models.base import Base, TimestampMixin
 
 class Routine(Base, TimestampMixin):
     __tablename__ = "routines"
+    __table_args__ = (
+        # Cubre "rutinas de un paciente por día" (query más frecuente del pose engine)
+        Index("ix_routines_patient_day", "patient_id", "day_of_week", "is_active"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"))
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patient_profiles.id"), index=True)
     exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"))
     assigned_by_kinesiologo_id: Mapped[int | None] = mapped_column(
         ForeignKey("kinesiologo_profiles.id"), nullable=True

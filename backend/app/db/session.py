@@ -56,7 +56,14 @@ _is_postgres = settings.DATABASE_URL.startswith("postgresql")
 
 _connect_args = {"ssl": "require"} if _is_postgres else {}
 _pool_kwargs = (
-    {"pool_size": 5, "max_overflow": 10, "pool_pre_ping": True}
+    {
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_pre_ping": True,
+        # Recicla conexiones idle cada 30 min para evitar errores de conexión
+        # muerta cuando Supabase cierra el lado del servidor tras inactividad.
+        "pool_recycle": 1800,
+    }
     if _is_postgres
     else {}
 )
