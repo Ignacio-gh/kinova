@@ -56,8 +56,12 @@ export function usePoseWebSocket(
   const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!evaluatorKey || !enabled) return;
+    if (!evaluatorKey || !enabled) {
+      console.log('[PoseWS] efecto sin conectar — evaluatorKey:', evaluatorKey, 'enabled:', enabled);
+      return;
+    }
 
+    console.log('[PoseWS] efecto iniciando — evaluatorKey:', evaluatorKey, 'angleMin:', angleMin, 'angleMax:', angleMax);
     const wsBase = BASE_URL.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
     // Armar query params con los ángulos del paciente (vienen de la rutina)
     const qp = new URLSearchParams();
@@ -99,6 +103,7 @@ export function usePoseWebSocket(
     };
 
     return () => {
+      console.log('[PoseWS] cleanup — cerrando WS (cambió dep o unmount)');
       ws.close();
       wsRef.current = null;
       sendingRef.current = false;

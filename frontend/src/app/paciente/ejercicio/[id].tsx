@@ -7,8 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as VideoThumbnails from 'expo-video-thumbnails';
-import * as FileSystem from 'expo-file-system';
 import { useEjercicioSesion, type PostureStatus } from '@/hooks/use-ejercicio-sesion';
 import { PoseSkeletonOverlay } from '@/components/PoseSkeletonOverlay';
 
@@ -106,53 +104,37 @@ export default function EjercicioSesion() {
     }
   }, [landmarks, angles, wsStatus, rawCorrections]);
 
-  // ── Captura silenciosa de frames via video (~1 fps) ──
-  // Usamos recordAsync en lugar de takePictureAsync para evitar
-  // el sonido del obturador en Android (que es a nivel sistema y
-  // no se puede silenciar con props). La grabación de video no
-  // emite ese sonido. Extraemos un frame del clip con VideoThumbnails.
+  // ── Captura de frames via foto (~2 fps) ──
+  // takePictureAsync con base64:true no necesita permiso de micrófono
+  // y es mucho más rápido (~100ms) que recordAsync (~300ms+).
   const capturingRef = useRef(false);
 
   const captureFrame = useCallback(async () => {
     if (capturingRef.current || !cameraRef.current) return;
     capturingRef.current = true;
-    let videoUri: string | undefined;
     try {
-      // Iniciar grabación silenciosa
-      const recordingPromise = cameraRef.current.recordAsync({ maxDuration: 2 });
-
-      // Detener después de 300 ms — suficiente para que Android inicialice
-      await new Promise((r) => setTimeout(r, 300));
-      cameraRef.current.stopRecording();
-
-      const result = await recordingPromise;
-      videoUri = result?.uri;
-      if (!videoUri) return;
-
-      // Extraer el primer frame del video
-      const thumb = await VideoThumbnails.getThumbnailAsync(videoUri, {
-        time: 0,
-        quality: 0.4,
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.35,
+        base64: true,
+        skipProcessing: true,
+        exif: false,
       });
-      if (!thumb?.uri) return;
-
-      // Leer como base64 y enviar al backend
-      const base64 = await FileSystem.readAsStringAsync(thumb.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      sendFrame(base64);
-    } catch {
-      // ignorar errores de captura puntual
+      if (!photo?.base64) {
+        console.warn('[Camera] foto sin base64');
+        return;
+      }
+      console.log('[Camera] frame ok, bytes≈', Math.round(photo.base64.length / 1024), 'KB');
+      sendFrame(photo.base64);
+    } catch (err) {
+      console.warn('[Camera] error capturando frame:', err);
     } finally {
-      // Limpiar archivos temporales
-      if (videoUri) FileSystem.deleteAsync(videoUri, { idempotent: true }).catch(() => {});
       capturingRef.current = false;
     }
   }, [sendFrame]);
 
   useEffect(() => {
     if (!isRunning || !connected) return;
-    const interval = setInterval(captureFrame, 1200); // ~1 fps
+    const interval = setInterval(captureFrame, 800); // ~2 fps
     return () => clearInterval(interval);
   }, [isRunning, connected, captureFrame]);
 
