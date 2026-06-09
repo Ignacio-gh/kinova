@@ -69,12 +69,15 @@ export default function EjercicioSesion() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
+    angleMin: string; angleMax: string;
   }>();
 
   const name        = params.name     ?? 'Ejercicio';
   const muscle      = params.muscle   ?? '';
   const targetReps   = Number(params.reps    ?? 10);
   const targetSeries = Number(params.series  ?? 3);
+  const angleMin     = params.angleMin ? Number(params.angleMin) : null;
+  const angleMax     = params.angleMax ? Number(params.angleMax) : null;
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -82,8 +85,8 @@ export default function EjercicioSesion() {
   const {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
-    sendFrame, connected, landmarks, angles, wsStatus, evaluatorKey,
-  } = useEjercicioSesion(name, muscle, targetReps, targetSeries);
+    sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
+  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // Dimensiones del contenedor de cámara para el overlay SVG
   const [cameraSize, setCameraSize] = useState({ width: 0, height: 0 });
@@ -93,13 +96,15 @@ export default function EjercicioSesion() {
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);
   const [stableAngles, setStableAngles]       = useState<typeof angles>(null);
   const [stableStatus, setStableStatus]       = useState<'perfect' | 'improve' | 'bad'>('perfect');
+  const [stableCorrections, setStableCorrections] = useState<typeof rawCorrections>([]);
   useEffect(() => {
     if (landmarks && Object.keys(landmarks).length > 0) {
       setStableLandmarks(landmarks);
       if (angles)   setStableAngles(angles);
       if (wsStatus) setStableStatus(wsStatus);
+      setStableCorrections(rawCorrections);
     }
-  }, [landmarks, angles, wsStatus]);
+  }, [landmarks, angles, wsStatus, rawCorrections]);
 
   // ── Captura silenciosa de frames via video (~1 fps) ──
   // Usamos recordAsync en lugar de takePictureAsync para evitar
@@ -193,6 +198,7 @@ export default function EjercicioSesion() {
             landmarks={stableLandmarks}
             angles={stableAngles ?? {}}
             status={stableStatus}
+            corrections={stableCorrections}
             width={cameraSize.width}
             height={cameraSize.height}
             exerciseKey={evaluatorKey}
@@ -228,27 +234,26 @@ export default function EjercicioSesion() {
           </TouchableOpacity>
         </View>
 
-        {/* Banner de estado */}
-        {currentFeedback && (
-          <Animated.View
-            style={[
-              s.statusBanner,
-              {
-                backgroundColor: STATUS_BG[currentFeedback.status],
-                transform: [{ scale: pulseAnim }],
-              },
-            ]}
-          >
-            <Ionicons
-              name={STATUS_ICON[currentFeedback.status]}
-              size={18}
-              color={STATUS_COLOR[currentFeedback.status]}
-            />
-            <Text style={[s.statusBannerText, { color: STATUS_COLOR[currentFeedback.status] }]}>
-              {currentFeedback.message}
-            </Text>
-          </Animated.View>
-        )}
+        {/* Banner de estado — muestra la primera corrección */}
+        {currentFeedback.length > 0 && (() => {
+          const fb = currentFeedback[0];
+          return (
+            <Animated.View
+              style={[
+                s.statusBanner,
+                {
+                  backgroundColor: STATUS_BG[fb.status],
+                  transform: [{ scale: pulseAnim }],
+                },
+              ]}
+            >
+              <Ionicons name={STATUS_ICON[fb.status]} size={18} color={STATUS_COLOR[fb.status]} />
+              <Text style={[s.statusBannerText, { color: STATUS_COLOR[fb.status] }]}>
+                {fb.message}
+              </Text>
+            </Animated.View>
+          );
+        })()}
 
         {/* Botón pausa */}
         <TouchableOpacity style={s.pauseBtn} onPress={togglePause} activeOpacity={0.8}>
@@ -258,12 +263,19 @@ export default function EjercicioSesion() {
 
       {/* ── Panel inferior ── */}
       <View style={s.panel}>
-        {currentFeedback && (
-          <View style={[s.postureHeader, { backgroundColor: STATUS_COLOR[currentFeedback.status] }]}>
-            <Ionicons name={STATUS_ICON[currentFeedback.status]} size={18} color="#FFFFFF" />
-            <Text style={s.postureHeaderText}>{STATUS_LABEL[currentFeedback.status]}</Text>
-          </View>
-        )}
+        {currentFeedback.length > 0 && (() => {
+          const worstStatus = currentFeedback.some(f => f.status === 'incorrect')
+            ? 'incorrect' as const
+            : currentFeedback.some(f => f.status === 'warning')
+              ? 'warning' as const
+              : 'correct' as const;
+          return (
+            <View style={[s.postureHeader, { backgroundColor: STATUS_COLOR[worstStatus] }]}>
+              <Ionicons name={STATUS_ICON[worstStatus]} size={18} color="#FFFFFF" />
+              <Text style={s.postureHeaderText}>{STATUS_LABEL[worstStatus]}</Text>
+            </View>
+          );
+        })()}
 
         <ScrollView style={s.panelScroll} showsVerticalScrollIndicator={false}>
           <Text style={s.sectionTitle}>Pasos a seguir</Text>

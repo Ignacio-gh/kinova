@@ -43,17 +43,28 @@ export type PoseWSFeedback = {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) {
+export function usePoseWebSocket(
+  evaluatorKey: string | null,
+  enabled: boolean,
+  angleMin: number | null = null,
+  angleMax: number | null = null,
+) {
   const wsRef = useRef<WebSocket | null>(null);
   const [feedback, setFeedback] = useState<PoseWSFeedback | null>(null);
   const [connected, setConnected] = useState(false);
   const sendingRef = useRef(false);
+  const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!evaluatorKey || !enabled) return;
 
     const wsBase = BASE_URL.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
-    const url = `${wsBase}/api/v1/pose/ws/${evaluatorKey}`;
+    // Armar query params con los ángulos del paciente (vienen de la rutina)
+    const qp = new URLSearchParams();
+    if (angleMin != null) qp.set('angle_min', String(angleMin));
+    if (angleMax != null) qp.set('angle_max', String(angleMax));
+    const qs = qp.toString();
+    const url = `${wsBase}/api/v1/pose/ws/${evaluatorKey}${qs ? `?${qs}` : ''}`;
     console.log('[PoseWS] conectando a', url);
 
     const ws = new WebSocket(url);
@@ -64,6 +75,10 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
       setConnected(true);
     };
     ws.onmessage = (event) => {
+      if (sendTimeoutRef.current) {
+        clearTimeout(sendTimeoutRef.current);
+        sendTimeoutRef.current = null;
+      }
       try {
         setFeedback(JSON.parse(event.data) as PoseWSFeedback);
       } catch {
@@ -88,11 +103,19 @@ export function usePoseWebSocket(evaluatorKey: string | null, enabled: boolean) 
       wsRef.current = null;
       sendingRef.current = false;
     };
-  }, [evaluatorKey, enabled]);
+  }, [evaluatorKey, enabled, angleMin, angleMax]);
 
   const sendFrame = useCallback((base64: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN && !sendingRef.current) {
       sendingRef.current = true;
+
+      // Timeout de seguridad: si el backend no responde en 3s, liberamos el bloqueo
+      // para que el siguiente frame pueda enviarse (evita deadlock).
+      if (sendTimeoutRef.current) clearTimeout(sendTimeoutRef.current);
+      sendTimeoutRef.current = setTimeout(() => {
+        sendingRef.current = false;
+      }, 3000);
+
       wsRef.current.send(JSON.stringify({ frame: base64 }));
     }
   }, []);

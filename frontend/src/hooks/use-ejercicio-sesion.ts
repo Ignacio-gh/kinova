@@ -29,77 +29,96 @@ function resolveEvaluatorKey(name: string): string | null {
 
 // ─── Mapeo de estado del backend al estado de UI ──────────────────────────────
 
-function wsFeedbackToItem(fb: PoseWSFeedback): FeedbackItem {
+function wsFeedbackToItems(fb: PoseWSFeedback): FeedbackItem[] {
   const statusMap: Record<string, PostureStatus> = {
     perfect: 'correct',
     improve: 'warning',
     bad:     'incorrect',
   };
-  const status: PostureStatus = statusMap[fb.status] ?? 'correct';
-  const defaultMsg: Record<PostureStatus, string> = {
-    correct:   '¡Postura correcta! Seguí así.',
-    warning:   'Pequeños ajustes necesarios.',
-    incorrect: 'Corregí la postura ahora.',
-  };
-  const message = fb.corrections.length > 0
-    ? fb.corrections[0].message
-    : defaultMsg[status];
-  return { status, message };
+  const globalStatus: PostureStatus = statusMap[fb.status] ?? 'correct';
+
+  if (fb.corrections.length === 0) {
+    return [{ status: 'correct', message: '¡Postura correcta! Seguí así.' }];
+  }
+
+  // Devolver TODAS las correcciones, cada una con su severidad
+  return fb.corrections.map((c) => {
+    const st: PostureStatus = c.severity === 'error' ? 'incorrect' : 'warning';
+    return { status: st, message: c.message };
+  });
 }
 
 // ─── Mock data (fallback cuando el backend no está disponible) ────────────────
-
-const DEFAULT_STEPS: ExerciseStep[] = [
-  { number: 1, text: 'Mantené la espalda recta en todo momento' },
-  { number: 2, text: 'Bajá lentamente y de forma controlada' },
-  { number: 3, text: 'No bloquees las rodillas en la extensión' },
-  { number: 4, text: 'Mantené el peso en el talón delantero' },
-  { number: 5, text: 'Controlá la respiración durante el movimiento' },
-];
 
 const EXERCISE_DB: Record<string, {
   steps: ExerciseStep[];
   feedbackCycle: FeedbackItem[];
 }> = {
   sentadilla: {
-    steps: DEFAULT_STEPS,
+    steps: [
+      { number: 1, text: 'Posicionate de perfil a la cámara, pies al ancho de hombros' },
+      { number: 2, text: 'Bajá como si te sentaras en una silla, llevando la cola hacia atrás' },
+      { number: 3, text: 'Las rodillas deben seguir la línea de los pies, sin colapsar hacia adentro' },
+      { number: 4, text: 'Mantené el pecho elevado y la mirada al frente durante todo el movimiento' },
+      { number: 5, text: 'Subí controlando, sin impulso — exhalá al subir, inhalá al bajar' },
+    ],
     feedbackCycle: [
-      { status: 'correct',   message: 'Alineá la rodilla con el tobillo' },
-      { status: 'correct',   message: 'Espalda recta, ¡excelente!' },
-      { status: 'warning',   message: 'Bajá un poco más lento' },
-      { status: 'correct',   message: 'Rango de movimiento correcto' },
-      { status: 'incorrect', message: 'Rodilla doblando hacia adentro' },
-      { status: 'correct',   message: 'Postura general correcta' },
-      { status: 'warning',   message: 'Mantené el core activo' },
-      { status: 'correct',   message: '¡Excelente serie!' },
+      { status: 'correct',   message: 'Buen rango de movimiento, seguí así' },
+      { status: 'correct',   message: 'Postura del tronco correcta' },
+      { status: 'warning',   message: 'Intentá bajar un poco más lento' },
+      { status: 'correct',   message: 'Rodillas bien alineadas' },
+      { status: 'incorrect', message: 'Llevá el pecho hacia arriba' },
+      { status: 'correct',   message: 'Excelente control del movimiento' },
     ],
   },
   extension: {
     steps: [
-      { number: 1, text: 'Sentate con la espalda apoyada en el respaldo' },
-      { number: 2, text: 'Extendé la pierna hasta la posición horizontal' },
-      { number: 3, text: 'Mantené 2 segundos en la extensión completa' },
-      { number: 4, text: 'Bajá controlando el movimiento' },
-      { number: 5, text: 'No soltés el peso de golpe' },
+      { number: 1, text: 'Sentate con la espalda bien apoyada en el respaldo' },
+      { number: 2, text: 'Extendé la pierna lentamente hasta la posición horizontal' },
+      { number: 3, text: 'Mantené 2 segundos en la extensión completa antes de bajar' },
+      { number: 4, text: 'Bajá controlando el descenso — no sueltes de golpe' },
+      { number: 5, text: 'Mantené el muslo apoyado en el asiento, no levantes la cola' },
     ],
     feedbackCycle: [
       { status: 'correct',   message: 'Extensión completa correcta' },
-      { status: 'warning',   message: 'Extendé un poco más la rodilla' },
-      { status: 'correct',   message: 'Mantené ese rango de movimiento' },
-      { status: 'incorrect', message: 'Velocidad muy alta en el descenso' },
-      { status: 'correct',   message: 'Control excéntrico perfecto' },
-      { status: 'warning',   message: 'Apoyá mejor la espalda' },
+      { status: 'warning',   message: 'Estirá un poco más la pierna' },
+      { status: 'correct',   message: 'Buen rango de movimiento' },
+      { status: 'incorrect', message: 'Bajá más lento, controlá el descenso' },
+      { status: 'correct',   message: 'Control del movimiento perfecto' },
+      { status: 'warning',   message: 'Apoyá mejor la espalda en el respaldo' },
+    ],
+  },
+  elevacion: {
+    steps: [
+      { number: 1, text: 'Acostate boca arriba con una pierna doblada y el pie apoyado' },
+      { number: 2, text: 'Mantené la pierna de trabajo completamente estirada' },
+      { number: 3, text: 'Subí la pierna lentamente hasta el ángulo indicado por tu kinesiólogo' },
+      { number: 4, text: 'Mantené 2 segundos arriba y bajá controlando' },
+      { number: 5, text: 'No levantes la cadera ni la espalda baja del piso' },
+    ],
+    feedbackCycle: [
+      { status: 'correct',   message: 'Buena elevación, rodilla estirada' },
+      { status: 'warning',   message: 'Mantené la rodilla bien estirada' },
+      { status: 'correct',   message: 'Rango de movimiento correcto' },
+      { status: 'incorrect', message: 'Rodilla doblándose, estirá más' },
+      { status: 'correct',   message: 'Excelente control de la pierna' },
     ],
   },
   default: {
-    steps: DEFAULT_STEPS,
+    steps: [
+      { number: 1, text: 'Posicionate de perfil a la cámara' },
+      { number: 2, text: 'Realizá el movimiento de forma lenta y controlada' },
+      { number: 3, text: 'Respetá el rango de movimiento indicado' },
+      { number: 4, text: 'Controlá la respiración durante el ejercicio' },
+      { number: 5, text: 'Si sentís dolor, detenete inmediatamente' },
+    ],
     feedbackCycle: [
       { status: 'correct',   message: 'Buena postura general' },
       { status: 'correct',   message: 'Seguí así, muy bien' },
       { status: 'warning',   message: 'Controlá la velocidad del movimiento' },
       { status: 'correct',   message: 'Rango de movimiento adecuado' },
-      { status: 'incorrect', message: 'Corregí la alineación del tronco' },
-      { status: 'correct',   message: '¡Excelente ejecución!' },
+      { status: 'incorrect', message: 'Corregí la alineación del cuerpo' },
+      { status: 'correct',   message: 'Excelente ejecución' },
     ],
   },
 };
@@ -108,6 +127,8 @@ function resolveExerciseKey(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes('sentadilla')) return 'sentadilla';
   if (lower.includes('extensi'))    return 'extension';
+  if (lower.includes('elevaci') || lower.includes('pierna recta') || lower.includes('slr'))
+    return 'elevacion';
   return 'default';
 }
 
@@ -118,6 +139,8 @@ export function useEjercicioSesion(
   muscle: string,
   targetReps: number,
   targetSeries: number,
+  angleMin: number | null = null,
+  angleMax: number | null = null,
 ) {
   const router = useRouter();
   const dbKey = resolveExerciseKey(exerciseName);
@@ -134,10 +157,17 @@ export function useEjercicioSesion(
   const [mockSeries, setMockSeries] = useState(1);
 
   // WebSocket de pose
-  const { feedback, connected, sendFrame } = usePoseWebSocket(evaluatorKey, isRunning);
+  const { feedback, connected, sendFrame } = usePoseWebSocket(evaluatorKey, isRunning, angleMin, angleMax);
 
   // Guardamos el total_reps previo para detectar nuevas reps
   const prevTotalReps = useRef(0);
+
+  // Últimos landmarks válidos — se mantienen aunque el siguiente frame
+  // no detecte ningún punto, evitando que el esqueleto desaparezca y reaparezca.
+  const stableLandmarksRef = useRef<Record<string, PoseLandmark>>({});
+  if (feedback?.landmarks && Object.keys(feedback.landmarks).length > 0) {
+    stableLandmarksRef.current = feedback.landmarks;
+  }
 
   // ── Reloj ──
   useEffect(() => {
@@ -200,14 +230,18 @@ export function useEjercicioSesion(
     ? Math.min(Math.floor(feedback.total_reps / targetReps) + 1, targetSeries)
     : mockSeries;
 
-  // Feedback de postura (real o mock)
-  const currentFeedback: FeedbackItem | null = connected && feedback
-    ? wsFeedbackToItem(feedback)
-    : db.feedbackCycle[mockFeedbackIndex];
+  // Feedback de postura (real o mock) — ahora es un array con TODAS las correcciones
+  const currentFeedback: FeedbackItem[] = connected && feedback
+    ? wsFeedbackToItems(feedback)
+    : [db.feedbackCycle[mockFeedbackIndex]];
 
-  // Landmarks y ángulos (solo disponibles con WebSocket conectado)
+  // Correcciones crudas del backend (para colorear el skeleton por segmento)
+  const rawCorrections = connected && feedback ? feedback.corrections : [];
+
+  // Landmarks: usa los del feedback actual, o los últimos válidos si no hay detección.
+  // Esto evita que el esqueleto "parpadee" cuando un frame no detecta al paciente.
   const landmarks: Record<string, PoseLandmark> | null = connected
-    ? (feedback?.landmarks ?? null)
+    ? (Object.keys(stableLandmarksRef.current).length > 0 ? stableLandmarksRef.current : null)
     : null;
   const angles: Record<string, number> | null = connected
     ? (feedback?.angles ?? null)
@@ -241,6 +275,7 @@ export function useEjercicioSesion(
     landmarks,
     angles,
     wsStatus,
+    rawCorrections,
     evaluatorKey: evaluatorKey ?? 'default',
   };
 }

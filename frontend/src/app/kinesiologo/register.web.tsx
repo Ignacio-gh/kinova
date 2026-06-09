@@ -26,9 +26,10 @@ export default function KinesiologoRegisterWeb() {
   const {
     name, setName,
     email, setEmail,
+    matricula, setMatricula,
     password, setPassword,
     confirmPassword, setConfirmPassword,
-    loading,
+    loading, error,
     handleRegister,
     goBack,
     goToLogin,
@@ -127,6 +128,22 @@ export default function KinesiologoRegisterWeb() {
               </View>
             </View>
 
+            {/* Matrícula */}
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Matrícula profesional</Text>
+              <View style={s.inputWrap}>
+                <Ionicons name="id-card-outline" size={18} color={C.gray400} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  placeholder="MN-12345"
+                  placeholderTextColor={C.gray400}
+                  value={matricula}
+                  onChangeText={setMatricula}
+                  autoCapitalize="characters"
+                />
+              </View>
+            </View>
+
             {/* Row: contraseñas en 2 columnas */}
             <View style={s.row2}>
               <View style={[s.fieldGroup, { flex: 1 }]}>
@@ -158,6 +175,13 @@ export default function KinesiologoRegisterWeb() {
                 </View>
               </View>
             </View>
+
+            {!!error && (
+              <View style={s.errorBox}>
+                <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+                <Text style={s.errorText}>{error}</Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={s.btn}
@@ -255,6 +279,12 @@ const s = StyleSheet.create({
     gap: 8, marginTop: 8,
   },
   btnText: { color: C.white, fontSize: 15, fontWeight: '700' },
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 10, padding: 12, marginBottom: 12,
+  },
+  errorText: { color: '#DC2626', fontSize: 13, flex: 1 },
   terms: { color: C.gray400, fontSize: 12, textAlign: 'center', marginTop: 14, lineHeight: 20 },
   termLink: { color: C.turquoise, fontWeight: '500' },
   dividerRow: {

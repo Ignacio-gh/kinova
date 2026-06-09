@@ -71,24 +71,23 @@ function WebCamera({
         const node = containerRef.current as unknown as HTMLDivElement | null;
         node?.appendChild(video);
 
-        // Canvas oculto para captura de frames a baja resolución
+        // Canvas oculto para captura — resolución mayor y mejor calidad JPEG
         canvas = document.createElement('canvas');
-        canvas.width  = 320;
-        canvas.height = 240;
+        canvas.width  = 480;
+        canvas.height = 360;
         canvas.style.display = 'none';
         document.body.appendChild(canvas);
         canvasRef.current = canvas;
 
-        // Función de captura que usa el canvas
         captureRef.current = () => {
           const v = videoRef.current;
           const c = canvasRef.current;
           if (!v || !c || v.readyState < 2) return null;
           const ctx = c.getContext('2d');
           if (!ctx) return null;
-          // Cámara trasera: sin espejo
           ctx.drawImage(v, 0, 0, c.width, c.height);
-          return c.toDataURL('image/jpeg', 0.3).split(',')[1] ?? null;
+          // Calidad 0.75: balance entre detalle para MediaPipe y tamaño de payload
+          return c.toDataURL('image/jpeg', 0.75).split(',')[1] ?? null;
         };
       } catch (err: unknown) {
         const name = (err as { name?: string })?.name ?? '';
@@ -121,12 +120,15 @@ export default function EjercicioSesionWeb() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
+    angleMin: string; angleMax: string;
   }>();
 
   const name         = params.name    ?? 'Ejercicio';
   const muscle       = params.muscle  ?? '';
   const targetReps   = Number(params.reps    ?? 10);
   const targetSeries = Number(params.series  ?? 3);
+  const angleMin     = params.angleMin ? Number(params.angleMin) : null;
+  const angleMax     = params.angleMax ? Number(params.angleMax) : null;
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraPanelSize, setCameraPanelSize] = useState({ width: 0, height: 0 });
@@ -136,20 +138,22 @@ export default function EjercicioSesionWeb() {
   const {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
-    sendFrame, connected, landmarks, angles, wsStatus, evaluatorKey,
-  } = useEjercicioSesion(name, muscle, targetReps, targetSeries);
+    sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
+  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // Landmarks persistentes — el esqueleto no desaparece entre frames
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);
   const [stableAngles, setStableAngles]       = useState<typeof angles>(null);
   const [stableStatus, setStableStatus]       = useState<'perfect' | 'improve' | 'bad'>('perfect');
+  const [stableCorrections, setStableCorrections] = useState<typeof rawCorrections>([]);
   useEffect(() => {
     if (landmarks && Object.keys(landmarks).length > 0) {
       setStableLandmarks(landmarks);
       if (angles)   setStableAngles(angles);
       if (wsStatus) setStableStatus(wsStatus);
+      setStableCorrections(rawCorrections);
     }
-  }, [landmarks, angles, wsStatus]);
+  }, [landmarks, angles, wsStatus, rawCorrections]);
 
   // ── Captura periódica de frames para el WebSocket (~3 fps) ──
   useEffect(() => {
@@ -157,7 +161,7 @@ export default function EjercicioSesionWeb() {
     const interval = setInterval(() => {
       const base64 = captureRef.current?.();
       if (base64) sendFrame(base64);
-    }, 333);
+    }, 200); // 5 fps — más fluido y menor probabilidad de perder el movimiento
     return () => clearInterval(interval);
   }, [isRunning, connected, sendFrame]);
 
@@ -196,6 +200,7 @@ export default function EjercicioSesionWeb() {
             landmarks={stableLandmarks}
             angles={stableAngles ?? {}}
             status={stableStatus}
+            corrections={stableCorrections}
             width={cameraPanelSize.width}
             height={cameraPanelSize.height}
             exerciseKey={evaluatorKey}
@@ -241,15 +246,19 @@ export default function EjercicioSesionWeb() {
 
       {/* ══════════ LADO DERECHO — panel de feedback ══════════ */}
       <View style={s.rightPanel}>
-        {/* Header de estado */}
-        <View style={[
-          s.statusHeader,
-          { backgroundColor: currentFeedback ? STATUS_HEADER_BG[currentFeedback.status] : '#16A34A' },
-        ]}>
-          <Text style={s.statusHeaderText}>
-            {currentFeedback ? STATUS_LABEL[currentFeedback.status] : '✓  ¡Postura Correcta!'}
-          </Text>
-        </View>
+        {/* Header de estado — usa el peor status de todas las correcciones */}
+        {(() => {
+          const worstStatus = currentFeedback.some(f => f.status === 'incorrect')
+            ? 'incorrect' as const
+            : currentFeedback.some(f => f.status === 'warning')
+              ? 'warning' as const
+              : 'correct' as const;
+          return (
+            <View style={[s.statusHeader, { backgroundColor: STATUS_HEADER_BG[worstStatus] }]}>
+              <Text style={s.statusHeaderText}>{STATUS_LABEL[worstStatus]}</Text>
+            </View>
+          );
+        })()}
 
         <ScrollView
           style={s.rightScroll}
@@ -282,29 +291,30 @@ export default function EjercicioSesionWeb() {
             </>
           )}
 
-          {/* Feedback en tiempo real */}
+          {/* Feedback en tiempo real — muestra TODAS las correcciones */}
           <Text style={[s.sectionTitle, { marginTop: 20 }]}>Feedback en Tiempo Real</Text>
-          {currentFeedback && (
-            <View style={[
+          {currentFeedback.map((fb, idx) => (
+            <View key={idx} style={[
               s.feedbackCard,
               {
-                backgroundColor: STATUS_BG[currentFeedback.status],
-                borderColor:     STATUS_BORDER[currentFeedback.status],
+                backgroundColor: STATUS_BG[fb.status],
+                borderColor:     STATUS_BORDER[fb.status],
+                marginBottom: 8,
               },
             ]}>
               <View style={s.feedbackCardTop}>
-                <View style={[s.feedbackDot, { backgroundColor: STATUS_COLOR[currentFeedback.status] }]} />
-                <Text style={[s.feedbackStatus, { color: STATUS_COLOR[currentFeedback.status] }]}>
-                  {currentFeedback.status === 'correct'
+                <View style={[s.feedbackDot, { backgroundColor: STATUS_COLOR[fb.status] }]} />
+                <Text style={[s.feedbackStatus, { color: STATUS_COLOR[fb.status] }]}>
+                  {fb.status === 'correct'
                     ? 'CORRECTO'
-                    : currentFeedback.status === 'warning'
+                    : fb.status === 'warning'
                     ? 'ATENCIÓN'
                     : 'INCORRECTO'}
                 </Text>
               </View>
-              <Text style={s.feedbackMessage}>{currentFeedback.message}</Text>
+              <Text style={s.feedbackMessage}>{fb.message}</Text>
             </View>
-          )}
+          ))}
 
           {/* Leyenda */}
           <View style={s.legendSection}>

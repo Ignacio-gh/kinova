@@ -9,67 +9,33 @@ import {
   Modal 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useBiblioteca, CATEGORY_FILTERS } from '@/hooks/use-biblioteca';
-import { useMisPacientes } from '@/hooks/use-mis-pacientes';
-import { api } from '@/services/api';
+import { MOCK_PATIENTS } from '@/mock/mock-use-mis-pacientes';
 import type { Exercise } from '@/components/kinesiologo/exercise-card';
-import React from 'react';
-import { useTutorial } from '@/context/TutorialContext';
-import MockBiblioteca from '@/mock/mock-biblioteca.web';
 
 const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
-  turquoiseDim: 'rgba(0,168,150,0.10)',
-  turquoiseBg: '#e5f7f5',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
+  bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
+  turquoise: '#00A896', turquoiseDim: 'rgba(0,168,150,0.10)', turquoiseBg: '#e5f7f5',
+  gray100: '#F3F4F6', gray200: '#E5E7EB', gray400: '#9CA3AF',
+  gray500: '#6B7280', border: '#E5E7EB',
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Muslo: '#EFF6FF',
-  Rodilla: '#FFF7ED',
-  Cadera: '#FDF4FF',
-  Tobillo: '#F0FDF4',
-  Glúteo: '#FFF1F2',
-};
-const CATEGORY_TEXT: Record<string, string> = {
-  Muslo: '#3B82F6',
-  Rodilla: '#F97316',
-  Cadera: '#A855F7',
-  Tobillo: '#22C55E',
-  Glúteo: '#EF4444',
-};
+const CATEGORY_COLORS: Record<string, string> = { Muslo: '#EFF6FF', Rodilla: '#FFF7ED', Cadera: '#FDF4FF', Tobillo: '#F0FDF4', Glúteo: '#FFF1F2' };
+const CATEGORY_TEXT: Record<string, string> = { Muslo: '#3B82F6', Rodilla: '#F97316', Cadera: '#A855F7', Tobillo: '#22C55E', Glúteo: '#EF4444' };
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-const DAY_TO_ENGLISH: Record<string, string> = {
-  Lunes: 'monday', Martes: 'tuesday', Miércoles: 'wednesday',
-  Jueves: 'thursday', Viernes: 'friday', Sábado: 'saturday', Domingo: 'sunday',
-};
 
 export default function BibliotecaWeb() {
-  const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockBiblioteca />;
-  }
-  
-  const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
-  const { filtered: allPatients, loading: patientsLoading } = useMisPacientes();
-  const activePatients = allPatients.filter((p) => p.status === 'Activo');
+  const router = useRouter();
+  const { patientId: prefilledPatientId, day: prefilledDay } = useLocalSearchParams<{ patientId?: string, day?: string }>();
 
-  // --- Estados del Modal ---
+  const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [assignError, setAssignError] = useState('');
-  const [assignSaving, setAssignSaving] = useState(false);
 
-  // --- Estados del Formulario ---
   const [patientId, setPatientId] = useState('');
   const [day, setDay] = useState('');
   const [sets, setSets] = useState('3');
@@ -77,15 +43,15 @@ export default function BibliotecaWeb() {
   const [minAngle, setMinAngle] = useState('');
   const [maxAngle, setMaxAngle] = useState('');
 
-  // --- Estados de los Dropdowns Personalizados ---
   const [isPatientDropdownOpen, setIsPatientDropdownOpen] = useState(false);
   const [isDayDropdownOpen, setIsDayDropdownOpen] = useState(false);
 
+  const activePatients = MOCK_PATIENTS.filter((p) => p.status === 'Activo');
+
   const handleOpenAssign = (ex: Exercise) => {
     setSelectedExercise(ex);
-    // Reiniciar valores por defecto
-    setPatientId('');
-    setDay('');
+    setPatientId(prefilledPatientId || '');
+    setDay(prefilledDay || '');
     setSets('3');
     setReps('15');
     setMinAngle('');
@@ -100,28 +66,30 @@ export default function BibliotecaWeb() {
     setIsDayDropdownOpen(false);
   };
 
-  const handleSave = async () => {
-    setAssignError('');
+  const handleSave = () => {
     if (!patientId || !day) {
-      setAssignError('Seleccioná un paciente y un día.');
+      alert('Por favor, selecciona un paciente y un día.');
       return;
     }
-    setAssignSaving(true);
-    try {
-      await api.post('/api/v1/routines/', {
-        patient_id: Number(patientId),
-        exercise_id: Number(selectedExercise!.id),
-        day_of_week: DAY_TO_ENGLISH[day],
-        sets: Number(sets) || 3,
-        reps: Number(reps) || 15,
-        angle_min: minAngle ? Number(minAngle) : null,
-        angle_max: maxAngle ? Number(maxAngle) : null,
+    
+    const exName = selectedExercise?.name;
+    const exMuscle = selectedExercise?.muscles[0] || 'General';
+    const exAngle = (minAngle && maxAngle) ? `${minAngle}° - ${maxAngle}°` : '-';
+    
+    handleCloseModal();
+
+    if (prefilledPatientId) {
+      router.push({
+        pathname: `/kinesiologo/paciente/${prefilledPatientId}` as any,
+        params: {
+          newExerciseName: exName,
+          newExerciseDay: day,
+          newExerciseSets: sets,
+          newExerciseReps: reps,
+          newExerciseMuscle: exMuscle,
+          newExerciseAngle: exAngle
+        }
       });
-      handleCloseModal();
-    } catch (e: any) {
-      setAssignError(e.message ?? 'Error al asignar ejercicio.');
-    } finally {
-      setAssignSaving(false);
     }
   };
 
@@ -132,7 +100,8 @@ export default function BibliotecaWeb() {
       <View style={s.main}>
         {/* Topbar */}
         <View style={s.topbar}>
-          <View>
+          {/* PASO 12: Título Biblioteca */}
+          <View nativeID="tutorial-biblio-title">
             <Text style={s.pageTitle}>Biblioteca de Ejercicios</Text>
             <Text style={s.pageSub}>Catálogo de ejercicios de tren inferior para rehabilitación</Text>
           </View>
@@ -140,7 +109,8 @@ export default function BibliotecaWeb() {
 
         {/* Toolbar */}
         <View style={s.toolbar}>
-          <View style={s.searchWrap}>
+          {/* PASO 13: Barra de Búsqueda */}
+          <View style={s.searchWrap} nativeID="tutorial-biblio-search">
             <Ionicons name="search-outline" size={18} color={C.gray400} style={{ marginRight: 8 }} />
             <TextInput
               style={s.searchInput}
@@ -155,29 +125,28 @@ export default function BibliotecaWeb() {
               </TouchableOpacity>
             )}
           </View>
+          
           <View style={s.filters}>
-            {CATEGORY_FILTERS.map((f) => {
+            {CATEGORY_FILTERS.map((f, i) => {
               const active = filter === f;
               return (
-                <TouchableOpacity
-                  key={f}
-                  style={[s.filterBtn, active && s.filterBtnActive]}
-                  onPress={() => setFilter(f)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[s.filterText, active && s.filterTextActive]}>{f}</Text>
-                </TouchableOpacity>
+                // PASO 14: Filtro (Anclado al primer botón que suele ser "Todos")
+                <View nativeID={i === 0 ? 'tutorial-biblio-filter' : undefined} key={f}>
+                  <TouchableOpacity
+                    style={[s.filterBtn, active && s.filterBtnActive]}
+                    onPress={() => setFilter(f)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.filterText, active && s.filterTextActive]}>{f}</Text>
+                  </TouchableOpacity>
+                </View>
               );
             })}
           </View>
         </View>
 
         {/* Grid de ejercicios */}
-        <ScrollView
-          style={s.grid}
-          contentContainerStyle={s.gridContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={s.grid} contentContainerStyle={s.gridContent} showsVerticalScrollIndicator={false}>
           {filtered.length === 0 ? (
             <View style={s.empty}>
               <Ionicons name="barbell-outline" size={48} color={C.gray200} />
@@ -185,24 +154,33 @@ export default function BibliotecaWeb() {
             </View>
           ) : (
             <View style={s.cardGrid}>
-              {filtered.map((ex) => {
+              {filtered.map((ex, i) => {
                 const catBg = CATEGORY_COLORS[ex.category] ?? C.turquoiseBg;
                 const catText = CATEGORY_TEXT[ex.category] ?? C.turquoise;
+                
+                // Buscamos si es "Sentadilla" (o le anclamos a la primera tarjeta si por algún filtro no se llama así)
+                const isTargetCard = ex.name.includes('Sentadilla') || i === 0;
+
                 return (
-                  <View key={ex.id} style={s.exCard}>
+                  // PASO 15: Tarjeta Sentadilla
+                  <View key={ex.id} style={s.exCard} nativeID={isTargetCard ? 'tutorial-biblio-card' : undefined}>
                     {/* Header */}
                     <View style={s.exCardHead}>
                       <View style={[s.catBadge, { backgroundColor: catBg }]}>
                         <Text style={[s.catText, { color: catText }]}>{ex.category}</Text>
                       </View>
-                      <TouchableOpacity 
-                        style={s.assignBtn} 
-                        activeOpacity={0.8}
-                        onPress={() => handleOpenAssign(ex as any)}
-                      >
-                        <Ionicons name="add" size={14} color={C.white} />
-                        <Text style={s.assignBtnText}>Asignar</Text>
-                      </TouchableOpacity>
+                      
+                      {/* PASO 16: Botón Asignar de Sentadilla */}
+                      <View nativeID={isTargetCard ? 'tutorial-biblio-assign' : undefined}>
+                        <TouchableOpacity 
+                          style={s.assignBtn} 
+                          activeOpacity={0.8}
+                          onPress={() => handleOpenAssign(ex as any)}
+                        >
+                          <Ionicons name="add" size={14} color={C.white} />
+                          <Text style={s.assignBtnText}>Asignar</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
                     {/* Nombre */}
@@ -260,51 +238,42 @@ export default function BibliotecaWeb() {
             {/* Modal Body */}
             <View style={s.modalBody}>
               {/* Paciente */}
-
-<View style={[s.inputGroup, { zIndex: 2 }]}> {/* <-- zIndex movido al contenedor principal */}
-  <Text style={s.label}>PACIENTE (ACTIVOS)</Text>
-  <View> {/* <-- Se eliminó el zIndex de aquí */}
-    <TouchableOpacity 
-      style={s.dropdownBtn} 
-      activeOpacity={0.8}
-      onPress={() => {
-        setIsPatientDropdownOpen(!isPatientDropdownOpen);
-        setIsDayDropdownOpen(false);
-      }}
-    >
-      <Text style={[s.dropdownText, !patientId && { color: C.gray400 }]}>
-        {patientsLoading
-          ? 'Cargando pacientes...'
-          : patientId
-            ? activePatients.find(p => p.id === patientId)?.name
-            : activePatients.length === 0
-              ? 'Sin pacientes activos'
-              : 'Seleccionar paciente...'}
-      </Text>
-      <Ionicons name={isPatientDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
-    </TouchableOpacity>
-    {isPatientDropdownOpen && !patientsLoading && (
-      <View style={s.dropdownList}>
-        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
-          {activePatients.length === 0 ? (
-            <Text style={[s.dropdownText, { padding: 12, color: C.gray400 }]}>No hay pacientes activos</Text>
-          ) : activePatients.map(p => (
-            <TouchableOpacity 
-              key={p.id} 
-              style={s.dropdownItem} 
-              onPress={() => {
-                setPatientId(p.id);
-                setIsPatientDropdownOpen(false);
-              }}
-            >
-              <Text style={s.dropdownItemText}>{p.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    )}
-  </View>
-</View>
+              <View style={[s.inputGroup, { zIndex: 2 }]}>
+                <Text style={s.label}>PACIENTE (ACTIVOS)</Text>
+                <View>
+                  <TouchableOpacity 
+                    style={s.dropdownBtn} 
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setIsPatientDropdownOpen(!isPatientDropdownOpen);
+                      setIsDayDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={[s.dropdownText, !patientId && { color: C.gray400 }]}>
+                      {patientId ? activePatients.find(p => p.id === patientId)?.name : 'Seleccionar paciente...'}
+                    </Text>
+                    <Ionicons name={isPatientDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
+                  </TouchableOpacity>
+                  {isPatientDropdownOpen && (
+                    <View style={s.dropdownList}>
+                      <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                        {activePatients.map(p => (
+                          <TouchableOpacity 
+                            key={p.id} 
+                            style={s.dropdownItem} 
+                            onPress={() => {
+                              setPatientId(p.id);
+                              setIsPatientDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={s.dropdownItemText}>{p.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
 
               {/* Día */}
               <View style={[s.inputGroup, { zIndex: 1 }]}>
@@ -394,18 +363,20 @@ export default function BibliotecaWeb() {
             </View>
 
             {/* Modal Footer */}
-            {!!assignError && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
-                <Text style={{ color: '#DC2626', fontSize: 12, flex: 1 }}>{assignError}</Text>
-              </View>
-            )}
             <View style={s.modalFooter}>
-              <TouchableOpacity style={s.cancelBtn} activeOpacity={0.7} onPress={handleCloseModal}>
+              <TouchableOpacity 
+                style={s.cancelBtn} 
+                activeOpacity={0.7}
+                onPress={handleCloseModal}
+              >
                 <Text style={s.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.saveBtn, assignSaving && { opacity: 0.6 }]} activeOpacity={0.7} onPress={handleSave} disabled={assignSaving}>
-                <Text style={s.saveBtnText}>{assignSaving ? 'Guardando...' : 'Asignar ejercicio'}</Text>
+              <TouchableOpacity 
+                style={s.saveBtn} 
+                activeOpacity={0.7}
+                onPress={handleSave}
+              >
+                <Text style={s.saveBtnText}>Guardar</Text>
               </TouchableOpacity>
             </View>
 
@@ -488,7 +459,7 @@ const s = StyleSheet.create({
   /* Estilos del Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 43, 73, 0.4)', // Fondo oscuro usando el C.navy con opacidad
+    backgroundColor: 'rgba(0, 43, 73, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

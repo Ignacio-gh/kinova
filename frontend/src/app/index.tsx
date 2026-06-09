@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useWelcome } from '@/hooks/use-welcome';
 
+
 export default function Index() {
   const { goToPatient, goToKinesiologo, stats } = useWelcome();
 

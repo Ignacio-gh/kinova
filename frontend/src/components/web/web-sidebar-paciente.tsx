@@ -34,6 +34,14 @@ export function WebSidebarPaciente() {
     return pathname.startsWith(path);
   };
 
+  // Función para disparar el evento global del tutorial
+  const iniciarTutorial = () => {
+    if (typeof window !== 'undefined') {
+      // Disparamos un evento específico para pacientes
+      window.dispatchEvent(new Event('open-tutorial-paciente'));
+    }
+  };
+
   return (
     <View style={s.sidebar}>
       {/* Logo */}
@@ -89,6 +97,17 @@ export function WebSidebarPaciente() {
       {/* Footer */}
       <View style={s.footer}>
         <View style={s.divider} />
+        
+        {/* Botón de Ayuda (Nuevo) */}
+        <TouchableOpacity
+          style={s.helpBtn}
+          onPress={iniciarTutorial}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="help-circle-outline" size={18} color={C.textMuted} />
+          <Text style={s.helpText}>Ver tutorial</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={s.logoutBtn}
           onPress={() => router.replace('/')}
@@ -206,6 +225,20 @@ const s = StyleSheet.create({
   },
   footer: {
     gap: 0,
+  },
+  helpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  helpText: {
+    color: C.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
   },
   logoutBtn: {
     flexDirection: 'row',
