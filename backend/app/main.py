@@ -40,10 +40,6 @@ async def lifespan(app: FastAPI):
     logger.info("Frontend URL: %s", settings.FRONTEND_URL)
     logger.info("DB: %s", settings.DATABASE_URL)
 
-    from app.pose.detector import PoseDetector
-    PoseDetector()
-    logger.info("MediaPipe Pose inicializado")
-
     logger.info("Servidor listo!")
 
     yield
