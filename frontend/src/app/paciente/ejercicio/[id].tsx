@@ -80,10 +80,16 @@ export default function EjercicioSesion() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
+  // ── Toggle frontal/trasera ──
+  // Por default usamos la trasera (mejor para grabar el cuerpo de perfil)
+  // pero el paciente debería poder cambiarla para verse a sí mismo.
+  const [cameraFacing, setCameraFacing] = useState<'back' | 'front'>('back');
+
   const {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
     sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
+    summaryCorrections,
   } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // Dimensiones del contenedor de cámara para el overlay SVG
@@ -170,11 +176,12 @@ export default function EjercicioSesion() {
           height: e.nativeEvent.layout.height,
         })}
       >
-        {/* Cámara trasera — los ejercicios se realizan de perfil */}
+        {/* Cámara trasera por default — los ejercicios se realizan de perfil,
+            pero el paciente puede dar vuelta a la frontal para verse a sí mismo */}
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
-          facing="back"
+          facing={cameraFacing}
           mute
           animateShutter={false}
           pictureSize="640x480"
@@ -192,7 +199,7 @@ export default function EjercicioSesion() {
             width={cameraSize.width}
             height={cameraSize.height}
             exerciseKey={evaluatorKey}
-            frontCamera={false}
+            frontCamera={cameraFacing === 'front'}
           />
         )}
 
@@ -248,6 +255,15 @@ export default function EjercicioSesion() {
         {/* Botón pausa */}
         <TouchableOpacity style={s.pauseBtn} onPress={togglePause} activeOpacity={0.8}>
           <Ionicons name={isRunning ? 'pause' : 'play'} size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        {/* Botón cambiar cámara (frontal/trasera) */}
+        <TouchableOpacity
+          style={s.flipBtn}
+          onPress={() => setCameraFacing((f) => (f === 'back' ? 'front' : 'back'))}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="camera-reverse-outline" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -315,21 +331,60 @@ export default function EjercicioSesion() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal de sesión completada */}
+      {/* Modal de sesión completada con resumen de correcciones */}
       {sessionFinished && (
         <View style={s.finishedOverlay}>
-          <View style={s.finishedCard}>
-            <View style={s.finishedIcon}>
-              <Ionicons name="trophy-outline" size={40} color="#00A896" />
+          <ScrollView
+            style={{ width: '100%' }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={s.finishedCard}>
+              <View style={s.finishedIcon}>
+                <Ionicons name="trophy-outline" size={40} color="#00A896" />
+              </View>
+              <Text style={s.finishedTitle}>¡Serie completada!</Text>
+              <Text style={s.finishedDesc}>
+                Completaste {targetReps} repeticiones × {targetSeries} series en {elapsedFormatted}
+              </Text>
+
+              {/* Resumen de correcciones */}
+              {summaryCorrections.length === 0 ? (
+                <View style={s.summaryPerfectBox}>
+                  <Ionicons name="checkmark-circle" size={22} color="#16A34A" />
+                  <Text style={s.summaryPerfectText}>
+                    ¡Excelente ejecución! No detectamos errores significativos.
+                  </Text>
+                </View>
+              ) : (
+                <View style={s.summaryBox}>
+                  <Text style={s.summaryTitle}>Para mejorar la próxima vez:</Text>
+                  {summaryCorrections.map((c, idx) => {
+                    const color = c.severity === 'error' ? '#EF4444' : '#F59E0B';
+                    const bg = c.severity === 'error' ? '#FEF2F2' : '#FFFBEB';
+                    const icon = c.severity === 'error' ? 'close-circle' : 'warning';
+                    return (
+                      <View key={idx} style={[s.summaryItem, { backgroundColor: bg }]}>
+                        <Ionicons name={icon} size={18} color={color} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.summaryItemText, { color: '#0F172A' }]}>
+                            {c.message}
+                          </Text>
+                          <Text style={s.summaryItemMeta}>
+                            Detectado {c.count} {c.count === 1 ? 'vez' : 'veces'} · {c.joint}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              <TouchableOpacity style={s.finishedBtn} onPress={finishSession} activeOpacity={0.8}>
+                <Text style={s.finishedBtnText}>Volver al inicio</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={s.finishedTitle}>¡Serie completada!</Text>
-            <Text style={s.finishedDesc}>
-              Completaste {targetReps} repeticiones × {targetSeries} series
-            </Text>
-            <TouchableOpacity style={s.finishedBtn} onPress={finishSession} activeOpacity={0.8}>
-              <Text style={s.finishedBtnText}>Volver al inicio</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       )}
     </SafeAreaView>
@@ -375,6 +430,13 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center',
     left: '50%', marginLeft: -26,
+  },
+  flipBtn: {
+    position: 'absolute', bottom: 22, right: 20,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
   connectionBadge: {
     position: 'absolute', top: 88, right: 14,
@@ -438,10 +500,36 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   finishedTitle:    { color: '#002B49', fontSize: 24, fontWeight: '800', marginBottom: 8 },
-  finishedDesc:     { color: '#6B7280', fontSize: 14, textAlign: 'center', marginBottom: 24 },
+  finishedDesc:     { color: '#6B7280', fontSize: 14, textAlign: 'center', marginBottom: 20 },
   finishedBtn: {
     backgroundColor: '#00A896', borderRadius: 12,
     paddingHorizontal: 40, paddingVertical: 14,
+    marginTop: 8,
   },
   finishedBtnText:  { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+
+  // Resumen de correcciones al finalizar la serie
+  summaryBox: { width: '100%', marginBottom: 12 },
+  summaryTitle: {
+    color: '#0F172A', fontSize: 15, fontWeight: '700',
+    marginBottom: 10, alignSelf: 'flex-start',
+  },
+  summaryItem: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    borderRadius: 12, padding: 12, marginBottom: 8,
+  },
+  summaryItemText: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  summaryItemMeta: {
+    color: '#6B7280', fontSize: 11, marginTop: 2, textTransform: 'capitalize',
+  },
+  summaryPerfectBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: '#F0FDF4', borderRadius: 12,
+    padding: 14, marginBottom: 16, width: '100%',
+    borderWidth: 1, borderColor: '#BBF7D0',
+  },
+  summaryPerfectText: {
+    color: '#15803D', fontSize: 13, fontWeight: '600',
+    flex: 1, lineHeight: 18,
+  },
 });

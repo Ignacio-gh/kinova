@@ -162,6 +162,14 @@ export function useEjercicioSesion(
   // Guardamos el total_reps previo para detectar nuevas reps
   const prevTotalReps = useRef(0);
 
+  // ── Acumulador de correcciones a lo largo de la sesión ──
+  // Cuenta cuántas veces apareció cada corrección. Al finalizar mostramos
+  // las más frecuentes como feedback resumido. Esto es la solución
+  // pragmática mientras el pipeline en tiempo real es lento en móvil.
+  type CorrectionStat = { message: string; severity: string; joint: string; count: number };
+  const correctionsHistoryRef = useRef<Map<string, CorrectionStat>>(new Map());
+  const [summaryCorrections, setSummaryCorrections] = useState<CorrectionStat[]>([]);
+
   // Últimos landmarks válidos — se mantienen aunque el siguiente frame
   // no detecte ningún punto, evitando que el esqueleto desaparezca y reaparezca.
   const stableLandmarksRef = useRef<Record<string, PoseLandmark>>({});
@@ -219,6 +227,43 @@ export function useEjercicioSesion(
     }
   }, [connected, feedback, targetReps, targetSeries]);
 
+  // ── Acumular correcciones del WS para el resumen final ──
+  useEffect(() => {
+    if (!feedback?.corrections || feedback.corrections.length === 0) return;
+    const hist = correctionsHistoryRef.current;
+    for (const c of feedback.corrections) {
+      // Ignorar mensajes de sistema (no son correcciones reales del paciente)
+      if (c.joint === 'sistema') continue;
+      const existing = hist.get(c.message);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        hist.set(c.message, {
+          message: c.message,
+          severity: c.severity,
+          joint: c.joint,
+          count: 1,
+        });
+      }
+    }
+  }, [feedback]);
+
+  // ── Cuando la sesión termina, calcular el top de correcciones ──
+  useEffect(() => {
+    if (!sessionFinished) return;
+    const all = Array.from(correctionsHistoryRef.current.values());
+    // Ordenar: primero errores (severity='error'), después warnings; por count desc
+    const top = all
+      .sort((a, b) => {
+        const aErr = a.severity === 'error' ? 1 : 0;
+        const bErr = b.severity === 'error' ? 1 : 0;
+        if (aErr !== bErr) return bErr - aErr;
+        return b.count - a.count;
+      })
+      .slice(0, 5);
+    setSummaryCorrections(top);
+  }, [sessionFinished]);
+
   // ── Valores derivados ──
 
   // Reps y series actuales (real o mock)
@@ -249,7 +294,18 @@ export function useEjercicioSesion(
   const wsStatus = feedback?.status ?? null;
 
   const togglePause = useCallback(() => setIsRunning((r) => !r), []);
-  const finishSession = useCallback(() => router.back(), [router]);
+
+  // ── Cerrar sesión = mostrar resumen primero ──
+  // Si el modal ya está abierto, salimos. Si no, lo abrimos y se mostrará
+  // el feedback acumulado (incluso si no completaste todas las reps).
+  const finishSession = useCallback(() => {
+    if (sessionFinished) {
+      router.back();
+    } else {
+      setIsRunning(false);
+      setSessionFinished(true);
+    }
+  }, [router, sessionFinished]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -277,5 +333,7 @@ export function useEjercicioSesion(
     wsStatus,
     rawCorrections,
     evaluatorKey: evaluatorKey ?? 'default',
+    // Resumen de correcciones para el modal de fin de sesión
+    summaryCorrections,
   };
 }
