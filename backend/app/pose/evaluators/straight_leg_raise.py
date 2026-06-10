@@ -1,15 +1,10 @@
 from app.pose.angle_calculator import calculate_angle
 from app.pose.base_evaluator import BaseEvaluator, EvaluationResult
 
-HIP_L, HIP_R = 23, 24
-KNEE_L, KNEE_R = 25, 26
-ANKLE_L, ANKLE_R = 27, 28
-SHOULDER_L, SHOULDER_R = 11, 12
-
-# Ángulo landmark de cadera por debajo del cual la pierna está "arriba"
+# Ángulo de cadera por debajo del cual la pierna está "arriba"
 RAISED_THRESHOLD = 155.0
 
-# Rodilla doblada si su ángulo landmark es menor a este valor
+# Rodilla doblada si su ángulo es menor a este valor
 KNEE_STRAIGHT_THRESHOLD = 160.0
 
 
@@ -26,25 +21,22 @@ class StraightLegRaiseEvaluator(BaseEvaluator):
     - Alcanzar la elevación mínima (angle_min)
 
     Una rep = pierna abajo → sube → vuelve abajo.
+    El paciente debe posicionarse con la pierna activa hacia la cámara.
     """
 
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
 
+        # Usar el lado más visible — el paciente debe tener la pierna activa
+        # orientada hacia la cámara para una detección confiable.
+        side = self._pick_visible_side(lm)
+        SH, HI, KN, AN = side["shoulder"], side["hip"], side["knee"], side["ankle"]
+
         def pt(idx):
             return (lm[idx].x, lm[idx].y)
 
-        # Usamos el lado con mayor elevación (la pierna que se levanta)
-        hip_angle_l = calculate_angle(pt(ANKLE_L), pt(HIP_L), pt(SHOULDER_L))
-        hip_angle_r = calculate_angle(pt(ANKLE_R), pt(HIP_R), pt(SHOULDER_R))
-
-        if hip_angle_l < hip_angle_r:
-            hip_angle = hip_angle_l
-            knee_angle = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
-        else:
-            hip_angle = hip_angle_r
-            knee_angle = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
-
+        hip_angle  = calculate_angle(pt(AN), pt(HI), pt(SH))
+        knee_angle = calculate_angle(pt(HI), pt(KN), pt(AN))
         hip_elevation = round(180 - hip_angle, 1)
 
         corrections = []

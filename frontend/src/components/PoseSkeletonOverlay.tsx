@@ -150,7 +150,12 @@ type Props = {
   frontCamera?: boolean;
 };
 
-const MIN_V = 0.15;
+// Umbral mínimo de visibilidad para DIBUJAR un punto o segmento.
+// MediaPipe asigna v≈0 a joints en vista lateral incluso cuando tiene
+// una estimación de posición razonable — SVG recorta lo que queda
+// fuera del viewport, no necesitamos filtrar por posición manualmente.
+const MIN_V     = 0.0;
+const MIN_V_ARC = 0.0;
 
 export function PoseSkeletonOverlay({
   landmarks, angles, status, corrections = [], width, height, exerciseKey, frontCamera = true,
@@ -175,6 +180,9 @@ export function PoseSkeletonOverlay({
     if (!l || l.v < MIN_V) return null;
     return { name, x: px(l.x), y: py(l.y) };
   });
+
+  // Al menos 2 puntos visibles = se puede dibujar algún segmento
+  const segmentsDrawable = chainPts.filter(Boolean).length >= 2;
 
   return (
     <View
@@ -211,7 +219,12 @@ export function PoseSkeletonOverlay({
           const vj = lm(side[def.vertex]);
           const va = lm(side[def.a]);
           const vb = lm(side[def.b]);
-          if (!vj || !va || !vb || vj.v < MIN_V || va.v < MIN_V || vb.v < MIN_V) return null;
+          // El vértice necesita buena visibilidad; los extremos del arco usan
+          // umbral más laxo porque solo definen la dirección del arco visual.
+          if (!vj || !va || !vb) return null;
+          if (vj.v < MIN_V) return null;
+          if (va.v < MIN_V_ARC) return null;
+          if (vb.v < MIN_V_ARC) return null;
 
           const arc = makeArc(
             px(vj.x), py(vj.y),
@@ -268,6 +281,22 @@ export function PoseSkeletonOverlay({
             </G>
           );
         })}
+
+        {/* ── GUÍA DE POSICIÓN (cuando no se ven las articulaciones del ejercicio) ── */}
+        {!segmentsDrawable && width > 0 && (
+          <G>
+            <Rect
+              x={width / 2 - 210} y={height * 0.72 - 22}
+              width={420} height={44} fill="rgba(0,0,0,0.75)" rx={11}
+            />
+            <SvgText
+              x={width / 2} y={height * 0.72 + 9}
+              textAnchor="middle" fill="#FACC15" fontSize={14} fontWeight="600"
+            >
+              Mostrá caderas, rodillas y tobillos a la cámara
+            </SvgText>
+          </G>
+        )}
 
       </Svg>
     </View>

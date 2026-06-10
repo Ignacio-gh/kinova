@@ -1,12 +1,7 @@
 from app.pose.angle_calculator import calculate_angle
 from app.pose.base_evaluator import BaseEvaluator, EvaluationResult
 
-HIP_L, HIP_R = 23, 24
-KNEE_L, KNEE_R = 25, 26
-ANKLE_L, ANKLE_R = 27, 28
-SHOULDER_L, SHOULDER_R = 11, 12
-
-# Ángulo landmark por debajo del cual consideramos la rodilla "doblada" (fase abajo)
+# Ángulo de rodilla por debajo del cual se considera "doblada" (fase abajo)
 BENT_THRESHOLD = 130.0
 
 
@@ -33,12 +28,15 @@ class KneeExtensionEvaluator(BaseEvaluator):
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
 
+        # Usar solo el lado más visible — el lado opuesto está oculto cuando
+        # el paciente está sentado de perfil a la cámara.
+        side = self._pick_visible_side(lm)
+        HI, KN, AN = side["hip"], side["knee"], side["ankle"]
+
         def pt(idx):
             return (lm[idx].x, lm[idx].y)
 
-        knee_angle_l = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
-        knee_angle_r = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
-        knee_angle = (knee_angle_l + knee_angle_r) / 2
+        knee_angle = calculate_angle(pt(HI), pt(KN), pt(AN))
         knee_flexion = round(180 - knee_angle, 1)
 
         if self._phase == "up":

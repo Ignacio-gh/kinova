@@ -108,7 +108,9 @@ async def pose_websocket(
     # ignora un frame outlier.
     smoothed_landmarks: dict[int, dict[str, float]] = {}
     SMOOTH_ALPHA = 0.55
-    MAX_JUMP = 0.15  # 15% del frame: si un landmark salta más, lo descartamos
+    MAX_JUMP = 0.15  # 15% del frame: saltos grandes con baja visibilidad = outlier
+    no_detection_frames = 0  # frames consecutivos sin detección
+    NO_DETECTION_RESET = 4   # tras 4 frames sin nadie → resetear EMA
 
     # ── Aceptar la conexion ──
     await websocket.accept()
@@ -138,7 +140,9 @@ async def pose_websocket(
             detection = detector.detect_from_base64(frame_b64)
 
             if detection is None:
-                # No se detecto a nadie en el frame
+                no_detection_frames += 1
+                if no_detection_frames >= NO_DETECTION_RESET:
+                    smoothed_landmarks.clear()
                 await websocket.send_json({
                     "status": "bad",
                     "corrections": [{"joint": "sistema", "message": "No se detecta una persona", "severity": "error"}],
@@ -147,6 +151,8 @@ async def pose_websocket(
                     "total_reps": evaluator.total_reps,
                 })
                 continue
+
+            no_detection_frames = 0
 
             # ── Aplicar EMA + rechazo de saltos a TODOS los landmarks ──
             # Esto evita que el esqueleto tiemble o "se cambie de pierna"
@@ -162,19 +168,26 @@ async def pose_websocket(
                     # Primer frame: usar el valor crudo
                     smoothed_landmarks[idx] = {"x": rx, "y": ry, "v": rv}
                 else:
-                    # Detectar salto anómalo (probablemente cambio de pierna)
+                    dv = rv - prev["v"]
                     dx = abs(rx - prev["x"])
                     dy = abs(ry - prev["y"])
-                    if dx > MAX_JUMP or dy > MAX_JUMP:
-                        # Salto demasiado grande — ignorar este frame para ese landmark
-                        # (mantener el valor suavizado anterior)
+
+                    if dv > 0.2 and rv > 0.1:
+                        # Joint entrando al frame (pico de visibilidad): la posición
+                        # anterior era extrapolada — snapear a posición actual.
+                        smoothed_landmarks[idx] = {"x": rx, "y": ry, "v": rv}
+                    elif (dx > MAX_JUMP or dy > MAX_JUMP) and not (rv > 0.3 and prev["v"] > 0.3):
+                        # Salto grande con baja confianza en alguno de los dos frames
+                        # → probable outlier, mantener valor suavizado anterior.
                         continue
-                    # Mezcla EMA estándar
-                    smoothed_landmarks[idx] = {
-                        "x": SMOOTH_ALPHA * rx + (1 - SMOOTH_ALPHA) * prev["x"],
-                        "y": SMOOTH_ALPHA * ry + (1 - SMOOTH_ALPHA) * prev["y"],
-                        "v": SMOOTH_ALPHA * rv + (1 - SMOOTH_ALPHA) * prev["v"],
-                    }
+                    else:
+                        # Movimiento legítimo (alta confianza en ambos frames) o salto
+                        # pequeño: aplicar EMA estándar.
+                        smoothed_landmarks[idx] = {
+                            "x": SMOOTH_ALPHA * rx + (1 - SMOOTH_ALPHA) * prev["x"],
+                            "y": SMOOTH_ALPHA * ry + (1 - SMOOTH_ALPHA) * prev["y"],
+                            "v": SMOOTH_ALPHA * rv + (1 - SMOOTH_ALPHA) * prev["v"],
+                        }
 
             # ── Construir una vista "tipo MediaPipe" con valores suavizados ──
             # para que los evaluadores existentes funcionen sin cambios.

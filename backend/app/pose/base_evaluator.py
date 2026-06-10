@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+# Índices MediaPipe para cada lado del cuerpo
+LEFT_SIDE  = {"shoulder": 11, "hip": 23, "knee": 25, "ankle": 27}
+RIGHT_SIDE = {"shoulder": 12, "hip": 24, "knee": 26, "ankle": 28}
+
 
 @dataclass
 class EvaluationResult:
@@ -32,6 +36,17 @@ class BaseEvaluator(ABC):
         Recibe los 33 landmarks de MediaPipe y devuelve el resultado.
         Debe llamar a _count_rep() cuando corresponda.
         """
+
+    def _pick_visible_side(self, lm: list) -> dict:
+        """
+        Devuelve el dict de índices del lado con mayor visibilidad promedio.
+        La cámara es lateral: un lado está bien visible, el otro casi oculto.
+        Usar solo el lado visible evita que landmarks de baja confianza
+        corrompan el cálculo de ángulos.
+        """
+        left_v  = sum(lm[i].visibility for i in LEFT_SIDE.values())  / len(LEFT_SIDE)
+        right_v = sum(lm[i].visibility for i in RIGHT_SIDE.values()) / len(RIGHT_SIDE)
+        return LEFT_SIDE if left_v >= right_v else RIGHT_SIDE
 
     def _count_rep(self, new_phase: str) -> bool:
         """

@@ -1,13 +1,6 @@
 from app.pose.angle_calculator import calculate_angle
 from app.pose.base_evaluator import BaseEvaluator, EvaluationResult
 
-# Índices de landmarks de MediaPipe Pose
-HIP_L, HIP_R = 23, 24
-KNEE_L, KNEE_R = 25, 26
-ANKLE_L, ANKLE_R = 27, 28
-SHOULDER_L, SHOULDER_R = 11, 12
-NOSE = 0
-
 
 class SquatEvaluator(BaseEvaluator):
     """
@@ -15,7 +8,7 @@ class SquatEvaluator(BaseEvaluator):
 
     Reglas clínicas:
     - Tronco: mantener por encima de 130° (inclinación natural permitida)
-    - Rodilla: no pasar la punta del pie (valgo/colapso)
+    - Rodilla: no pasar la punta del pie
     - Rango: respetar angle_min (mínima flexión) y angle_max (máxima flexión)
 
     Una rep se cuenta cuando la rodilla baja y vuelve a extenderse (> 160°).
@@ -27,21 +20,17 @@ class SquatEvaluator(BaseEvaluator):
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
 
+        # Usar solo el lado más visible — la cámara es lateral y el lado
+        # opuesto tiene landmarks de baja confianza que distorsionan los ángulos.
+        side = self._pick_visible_side(lm)
+        SH, HI, KN, AN = side["shoulder"], side["hip"], side["knee"], side["ankle"]
+
         def pt(idx):
             return (lm[idx].x, lm[idx].y)
 
-        knee_angle_l = calculate_angle(pt(HIP_L), pt(KNEE_L), pt(ANKLE_L))
-        knee_angle_r = calculate_angle(pt(HIP_R), pt(KNEE_R), pt(ANKLE_R))
-        knee_angle = (knee_angle_l + knee_angle_r) / 2
+        knee_angle = calculate_angle(pt(HI), pt(KN), pt(AN))
         knee_flexion = round(180 - knee_angle, 1)
-
-        hip_mid = ((lm[HIP_L].x + lm[HIP_R].x) / 2, (lm[HIP_L].y + lm[HIP_R].y) / 2)
-        shoulder_mid = (
-            (lm[SHOULDER_L].x + lm[SHOULDER_R].x) / 2,
-            (lm[SHOULDER_L].y + lm[SHOULDER_R].y) / 2,
-        )
-        knee_mid = ((lm[KNEE_L].x + lm[KNEE_R].x) / 2, (lm[KNEE_L].y + lm[KNEE_R].y) / 2)
-        trunk_angle = calculate_angle(shoulder_mid, hip_mid, knee_mid)
+        trunk_angle = calculate_angle(pt(SH), pt(HI), pt(KN))
 
         corrections = []
         status = "perfect"
@@ -59,9 +48,14 @@ class SquatEvaluator(BaseEvaluator):
             status = "improve"
 
         # ── Rodilla pasa la punta del pie ──
-        knee_over_toe_l = lm[KNEE_L].x > lm[ANKLE_L].x + 0.05
-        knee_over_toe_r = lm[KNEE_R].x < lm[ANKLE_R].x - 0.05
-        if knee_over_toe_l or knee_over_toe_r:
+        # Izquierdo (idx 25): paciente de perfil mirando a la derecha → avance = x sube
+        # Derecho   (idx 26): paciente de perfil mirando a la izquierda → avance = x baja
+        if KN == 25:
+            knee_over_toe = lm[KN].x > lm[AN].x + 0.05
+        else:
+            knee_over_toe = lm[KN].x < lm[AN].x - 0.05
+
+        if knee_over_toe:
             corrections.append(
                 self._make_correction(
                     "rodilla",

@@ -2,6 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { usePoseWebSocket, type PoseLandmark, type PoseWSFeedback } from './use-pose-websocket';
 
+// Índices de skeleton que el backend siempre envía cuando detecta a alguien.
+// Se usan para construir el "ghost" (v=-1) que limpia el esqueleto congelado.
+const SKELETON_INDICES = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+
+// Landmarks fantasma: mismos índices que el backend, visibilidad -1.
+// Pasa el check Object.keys > 0 de [id].web.tsx → actualiza stableLandmarks,
+// pero PoseSkeletonOverlay filtra todos (v < MIN_V=0) → esqueleto desaparece.
+const GHOST_LANDMARKS: Record<string, PoseLandmark> = Object.fromEntries(
+  SKELETON_INDICES.map(i => [String(i), { x: 0.5, y: 0.5, v: -1 }]),
+);
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export type PostureStatus = 'correct' | 'warning' | 'incorrect';
@@ -170,11 +181,20 @@ export function useEjercicioSesion(
   const correctionsHistoryRef = useRef<Map<string, CorrectionStat>>(new Map());
   const [summaryCorrections, setSummaryCorrections] = useState<CorrectionStat[]>([]);
 
-  // Últimos landmarks válidos — se mantienen aunque el siguiente frame
-  // no detecte ningún punto, evitando que el esqueleto desaparezca y reaparezca.
-  const stableLandmarksRef = useRef<Record<string, PoseLandmark>>({});
+  // Últimos landmarks válidos — se mantienen un par de frames para evitar
+  // parpadeo, pero se reemplazan por GHOST_LANDMARKS tras 4 frames sin detección
+  // para que el esqueleto congelado no quede pegado al lugar de la última detección.
+  const stableLandmarksRef   = useRef<Record<string, PoseLandmark>>({});
+  const noLandmarksCountRef  = useRef(0);
+
   if (feedback?.landmarks && Object.keys(feedback.landmarks).length > 0) {
-    stableLandmarksRef.current = feedback.landmarks;
+    noLandmarksCountRef.current = 0;
+    stableLandmarksRef.current  = feedback.landmarks;
+  } else if (feedback !== null) {
+    noLandmarksCountRef.current += 1;
+    if (noLandmarksCountRef.current >= 4) {
+      stableLandmarksRef.current = GHOST_LANDMARKS;
+    }
   }
 
   // ── Reloj ──
