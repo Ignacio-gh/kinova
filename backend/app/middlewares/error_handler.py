@@ -97,6 +97,19 @@ def setup_exception_handlers(app: FastAPI) -> None:
     # error feo o un traceback de Python.
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
+        # Capturar errores de DNS o conexión específicamente
+        error_str = str(exc)
+        if "getaddrinfo failed" in error_str or "Connection refused" in error_str:
+            logger.critical("Falla de conectividad: No se pudo alcanzar la base de datos.")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "ServiceUnavailable",
+                    "message": "Error de conexión con el servidor de base de datos. Verifique su internet o DNS.",
+                    "status_code": 503,
+                },
+            )
+
         logger.error(
             "%s %s → Error inesperado: %s",
             request.method,

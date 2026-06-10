@@ -11,13 +11,12 @@
 # Reemplazar [REGION] con tu región (ej: us-east-1, sa-east-1)
 #
 # Opción A — Pooler (recomendada para backends con muchas conexiones):
-# DATABASE_URL=postgresql+asyncpg://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
+# DATABASE_URL=postgresql+asyncpg://postgres.wgsdvdewnfaqytmpgalb:kinova20261@aws-1-sa-east-1.pooler.supabase.com:5432/postgres
 #
 # Opción B — Conexión directa:
 # Conexión DIRECTA (sin pgbouncer) — permite pool de conexiones persistentes (~50ms)
 # El pooler (puerto 6543) requería NullPool que creaba una conexión nueva por request (~3s)
-DATABASE_URL=postgresql+asyncpg://postgres:kinova20261@db.wuxtbkslurmmkthkjpwr.supabase.co:5432/postgres
-
+DATABASE_URL=postgresql+asyncpg://postgres:kinova20261@db.wgsdvdewnfaqytmpgalb.supabase.co:5432/postgres
 
 # ---------- Autenticación JWT ----------
 # Generar con: python -c "import secrets; print(secrets.token_hex(32))"
