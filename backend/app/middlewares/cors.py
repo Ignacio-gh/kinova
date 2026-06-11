@@ -56,19 +56,14 @@ def setup_cors(app: FastAPI) -> None:
             ["*"] = todos. El mas importante es "Authorization"
             (donde va el token JWT).
     """
-    # En desarrollo abrimos a todos los orígenes para facilitar pruebas
-    # con Expo Web (puerto 8081), Expo Go y otros clientes locales.
-    if settings.ENVIRONMENT == "development":
-        origins = ["*"]
-        credentials = False   # allow_credentials no puede ser True con "*"
-    else:
-        origins = [settings.FRONTEND_URL]
-        credentials = True
-
+    # Aceptamos todos los orígenes: cubre Vercel, dominio custom, Expo Go
+    # y desarrollo local sin tener que listar cada URL.
+    # El JWT viaja en el header Authorization (no en cookies), por lo que
+    # allow_credentials=False es correcto y compatible con allow_origins=["*"].
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=credentials,
+        allow_origins=["*"],
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
