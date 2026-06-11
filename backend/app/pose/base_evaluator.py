@@ -37,15 +37,19 @@ class BaseEvaluator(ABC):
         Debe llamar a _count_rep() cuando corresponda.
         """
 
-    def _pick_visible_side(self, lm: list) -> dict:
+    def _pick_visible_side(self, lm: list, joints: list[str] | None = None) -> dict:
         """
         Devuelve el dict de índices del lado con mayor visibilidad promedio.
         La cámara es lateral: un lado está bien visible, el otro casi oculto.
-        Usar solo el lado visible evita que landmarks de baja confianza
-        corrompan el cálculo de ángulos.
+
+        joints: subconjunto de joints a considerar (e.g. ['hip','knee','ankle']).
+        Si es None, usa los 4 joints (shoulder, hip, knee, ankle).
+        Pasar solo los joints del ejercicio evita que un hombro visible en el
+        lado equivocado sesgo la selección (relevante en knee_extension sentado).
         """
-        left_v  = sum(lm[i].visibility for i in LEFT_SIDE.values())  / len(LEFT_SIDE)
-        right_v = sum(lm[i].visibility for i in RIGHT_SIDE.values()) / len(RIGHT_SIDE)
+        keys = joints if joints else list(LEFT_SIDE.keys())
+        left_v  = sum(lm[LEFT_SIDE[k]].visibility  for k in keys) / len(keys)
+        right_v = sum(lm[RIGHT_SIDE[k]].visibility for k in keys) / len(keys)
         return LEFT_SIDE if left_v >= right_v else RIGHT_SIDE
 
     def _count_rep(self, new_phase: str) -> bool:

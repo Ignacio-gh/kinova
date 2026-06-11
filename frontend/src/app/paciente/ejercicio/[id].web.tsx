@@ -5,30 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEjercicioSesion, type PostureStatus } from '@/hooks/use-ejercicio-sesion';
 import { PoseSkeletonOverlay } from '@/components/PoseSkeletonOverlay';
 
-// ─── Alerta sonora ───────────────────────────────────────────────────────────
-
-function playAlertSound(type: 'error' | 'warning') {
-  try {
-    const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx  = new AudioCtx();
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    if (type === 'error') {
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.setValueAtTime(620, ctx.currentTime + 0.15);
-    } else {
-      osc.frequency.setValueAtTime(660, ctx.currentTime);
-    }
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.35);
-  } catch { /* sin soporte de audio */ }
-}
-
 // ─── Paleta ───────────────────────────────────────────────────────────────────
 
 const ANGLE_KEY_TO_JOINT: Record<string, string> = {
@@ -81,7 +57,7 @@ function WebCamera({
 }: {
   onError: (msg: string) => void;
   captureRef: React.MutableRefObject<(() => string | null) | null>;
-  onVideoReady: (videoWidth: number, videoHeight: number) => void;
+  onVideoReady: (w: number, h: number) => void;
 }) {
   const containerRef = useRef<View>(null);
   const videoRef     = useRef<HTMLVideoElement | null>(null);
@@ -110,7 +86,7 @@ function WebCamera({
         const node = containerRef.current as unknown as HTMLDivElement | null;
         node?.appendChild(video);
 
-        // Notificar dimensiones reales del video cuando estén disponibles
+        // Notificar dimensiones reales cuando estén disponibles (para la transformada del overlay)
         video.addEventListener('loadedmetadata', () => {
           onVideoReady(video!.videoWidth || 640, video!.videoHeight || 480);
         }, { once: true });
@@ -120,9 +96,8 @@ function WebCamera({
         document.body.appendChild(canvas);
         canvasRef.current = canvas;
 
-        // Manda el frame COMPLETO — MediaPipe tiene más contexto y los landmarks
-        // son más estables. El overlay aplica el transform object-fit:cover
-        // matemáticamente para alinear coordenadas con lo que se ve en pantalla.
+        // Frame completo → MediaPipe tiene contexto de todo el cuerpo = mejor detección.
+        // El overlay aplica la misma transformada object-fit:cover para alinear los landmarks.
         captureRef.current = () => {
           const v = videoRef.current;
           const c = canvasRef.current;
@@ -184,7 +159,7 @@ export default function EjercicioSesionWeb() {
   const {
     reps, series, isRunning, togglePause, elapsedFormatted,
     currentFeedback, steps, sessionFinished, finishSession,
-    sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
+    sendFrame, connected, landmarks, angles, rawCorrections, evaluatorKey,
   } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
   // ── Correcciones client-side ──
@@ -223,24 +198,11 @@ export default function EjercicioSesionWeb() {
   // Backend tiene prioridad; client-side es el fallback
   const effectiveCorrections = rawCorrections.length > 0 ? rawCorrections : computedCorrections;
 
-  // ── Alerta sonora ──
-  const lastAlertRef = useRef(0);
-  useEffect(() => {
-    const hasError   = effectiveCorrections.some(c => c.severity === 'error');
-    const hasWarning = !hasError && effectiveCorrections.some(c => c.severity === 'warning');
-    if (!hasError && !hasWarning) return;
-    const now = Date.now();
-    if (now - lastAlertRef.current < 2500) return; // máximo una alerta cada 2.5 s
-    lastAlertRef.current = now;
-    playAlertSound(hasError ? 'error' : 'warning');
-  }, [effectiveCorrections]);
-
   // Landmarks persistentes — el esqueleto no desaparece entre frames.
   // Si no llegan landmarks por 1.5 s (persona fuera de cámara), se limpia
   // para que al volver no haya estado EMA viejo y arranque con posición fresca.
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);
   const [stableAngles, setStableAngles]       = useState<typeof angles>(null);
-  const [stableStatus, setStableStatus]       = useState<'perfect' | 'improve' | 'bad'>('perfect');
   const staleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!landmarks || Object.keys(landmarks).length === 0) {
@@ -257,9 +219,8 @@ export default function EjercicioSesionWeb() {
       staleTimerRef.current = null;
     }
     setStableLandmarks(landmarks);
-    if (angles)   setStableAngles(angles);
-    if (wsStatus) setStableStatus(wsStatus);
-  }, [landmarks, angles, wsStatus]);
+    if (angles) setStableAngles(angles);
+  }, [landmarks, angles]);
 
   // ── Captura periódica de frames para el WebSocket (~3 fps) ──
   useEffect(() => {
@@ -309,8 +270,6 @@ export default function EjercicioSesionWeb() {
           <PoseSkeletonOverlay
             landmarks={stableLandmarks}
             angles={angles ?? stableAngles ?? {}}
-            status={stableStatus}
-            corrections={effectiveCorrections}
             width={cameraPanelSize.width}
             height={cameraPanelSize.height}
             exerciseKey={evaluatorKey}

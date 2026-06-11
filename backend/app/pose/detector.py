@@ -131,7 +131,10 @@ class PoseDetector:
             static_image_mode=False,
             model_complexity=settings.POSE_MODEL_COMPLEXITY,
             min_detection_confidence=settings.POSE_CONFIDENCE_THRESHOLD,
-            min_tracking_confidence=settings.POSE_CONFIDENCE_THRESHOLD,
+            # Tracking más permisivo: MediaPipe mantiene los joints trackeados
+            # aunque la visibilidad baje (ej: articulación tapada por ropa holgada)
+            # en lugar de re-detectar desde cero cada vez.
+            min_tracking_confidence=0.15,
         )
         self._initialized = True
 
@@ -160,13 +163,23 @@ class PoseDetector:
         if image is None:
             return None
 
-        # Reducir a máximo 480px en el lado largo para acelerar MediaPipe.
-        # Con frames de móvil que vienen ya pequeños (~360x640 a quality 0.15),
-        # esto suele no aplicar — pero es safety net para frames grandes.
+        # Escalar a máximo 640px — más resolución que 480 ayuda a MediaPipe
+        # a detectar articulaciones con ropa holgada donde los bordes del cuerpo
+        # son menos definidos.
         h, w = image.shape[:2]
-        if max(h, w) > 480:
-            scale = 480 / max(h, w)
+        if max(h, w) > 640:
+            scale = 640 / max(h, w)
             image = cv2.resize(image, (int(w * scale), int(h * scale)))
+
+        # CLAHE: ecualización de histograma adaptativa por canal.
+        # Aumenta el contraste LOCAL → hace más visibles los bordes del cuerpo
+        # aunque la ropa holgada los difumine. Opera en el espacio LAB para no
+        # saturar colores (solo afecta la luminancia, canal L).
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        l_ch, a_ch, b_ch = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_ch = clahe.apply(l_ch)
+        image = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2BGR)
 
         return self.detect_from_array(image)
 

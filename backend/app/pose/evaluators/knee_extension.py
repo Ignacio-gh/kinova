@@ -28,9 +28,9 @@ class KneeExtensionEvaluator(BaseEvaluator):
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
 
-        # Usar solo el lado más visible — el lado opuesto está oculto cuando
-        # el paciente está sentado de perfil a la cámara.
-        side = self._pick_visible_side(lm)
+        # Seleccionar lado solo por cadera/rodilla/tobillo — el hombro del lado
+        # lejano puede tener más visibilidad y sesgar la selección incorrectamente.
+        side = self._pick_visible_side(lm, joints=["hip", "knee", "ankle"])
         HI, KN, AN = side["hip"], side["knee"], side["ankle"]
 
         def pt(idx):

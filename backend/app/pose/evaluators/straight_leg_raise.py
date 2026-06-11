@@ -27,9 +27,8 @@ class StraightLegRaiseEvaluator(BaseEvaluator):
     def evaluate(self, landmarks: list) -> EvaluationResult:
         lm = landmarks
 
-        # Usar el lado más visible — el paciente debe tener la pierna activa
-        # orientada hacia la cámara para una detección confiable.
-        side = self._pick_visible_side(lm)
+        # Seleccionar lado solo por los joints del ejercicio.
+        side = self._pick_visible_side(lm, joints=["shoulder", "hip", "knee", "ankle"])
         SH, HI, KN, AN = side["shoulder"], side["hip"], side["knee"], side["ankle"]
 
         def pt(idx):

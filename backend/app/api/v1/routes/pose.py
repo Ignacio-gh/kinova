@@ -107,8 +107,8 @@ async def pose_websocket(
     # y los reemplaza por el valor suavizado anterior — efectivamente
     # ignora un frame outlier.
     smoothed_landmarks: dict[int, dict[str, float]] = {}
-    SMOOTH_ALPHA = 0.85  # más cercano a 1 = más responsivo, menos suavizado
-    MAX_JUMP = 0.30  # 30% del frame: permite movimientos rápidos de ejercicio
+    SMOOTH_ALPHA = 0.70  # balance suavidad/respuesta para ejercicios en perfil
+    MAX_JUMP = 0.35  # rechaza teleportaciones pero permite movimientos de ejercicio
     no_detection_frames = 0  # frames consecutivos sin detección
     NO_DETECTION_RESET = 3   # tras 3 frames sin nadie → resetear EMA (balance entre limpieza y estabilidad)
 
@@ -172,17 +172,14 @@ async def pose_websocket(
                     dx = abs(rx - prev["x"])
                     dy = abs(ry - prev["y"])
 
-                    if dv > 0.2 and rv > 0.1:
-                        # Joint entrando al frame (pico de visibilidad): la posición
-                        # anterior era extrapolada — snapear a posición actual.
-                        smoothed_landmarks[idx] = {"x": rx, "y": ry, "v": rv}
-                    elif (dx > MAX_JUMP or dy > MAX_JUMP) and not (rv > 0.3 and prev["v"] > 0.3):
-                        # Salto grande con baja confianza en alguno de los dos frames
-                        # → probable outlier, mantener valor suavizado anterior.
+                    if (dx > MAX_JUMP or dy > MAX_JUMP) and not (rv > 0.4 and prev["v"] > 0.4):
+                        # Salto grande con baja confianza → probable outlier, ignorar.
+                        # Solo se acepta el salto si ambos frames tienen visibilidad alta,
+                        # lo que indica que el paciente se movió rápido pero MediaPipe
+                        # está seguro en ambos frames.
                         continue
                     else:
-                        # Movimiento legítimo (alta confianza en ambos frames) o salto
-                        # pequeño: aplicar EMA estándar.
+                        # EMA estándar — suaviza sin snapear.
                         smoothed_landmarks[idx] = {
                             "x": SMOOTH_ALPHA * rx + (1 - SMOOTH_ALPHA) * prev["x"],
                             "y": SMOOTH_ALPHA * ry + (1 - SMOOTH_ALPHA) * prev["y"],
