@@ -107,10 +107,10 @@ async def pose_websocket(
     # y los reemplaza por el valor suavizado anterior — efectivamente
     # ignora un frame outlier.
     smoothed_landmarks: dict[int, dict[str, float]] = {}
-    SMOOTH_ALPHA = 0.55
-    MAX_JUMP = 0.15  # 15% del frame: saltos grandes con baja visibilidad = outlier
+    SMOOTH_ALPHA = 0.85  # más cercano a 1 = más responsivo, menos suavizado
+    MAX_JUMP = 0.30  # 30% del frame: permite movimientos rápidos de ejercicio
     no_detection_frames = 0  # frames consecutivos sin detección
-    NO_DETECTION_RESET = 4   # tras 4 frames sin nadie → resetear EMA
+    NO_DETECTION_RESET = 3   # tras 3 frames sin nadie → resetear EMA (balance entre limpieza y estabilidad)
 
     # ── Aceptar la conexion ──
     await websocket.accept()
@@ -210,14 +210,16 @@ async def pose_websocket(
             # Evaluar con landmarks suavizados — más estables → menos falsos positivos
             result = evaluator.evaluate(smoothed_list)
 
-            # Serializar los landmarks clave (ya suavizados) para el frontend
+            # Display: usar landmarks suavizados (EMA) para un skeleton estable.
+            # Los crudos de MediaPipe son ruidosos frame a frame.
             landmarks_payload = {
                 str(idx): {
-                    "x": round(smoothed_landmarks[idx]["x"], 4),
-                    "y": round(smoothed_landmarks[idx]["y"], 4),
-                    "v": round(smoothed_landmarks[idx]["v"], 2),
+                    "x": round(float(smoothed_landmarks[idx]["x"]), 4),
+                    "y": round(float(smoothed_landmarks[idx]["y"]), 4),
+                    "v": round(float(smoothed_landmarks[idx]["v"]), 2),
                 }
                 for idx in SKELETON_LANDMARK_INDICES
+                if idx in smoothed_landmarks
             }
 
             # Mandar feedback al frontend

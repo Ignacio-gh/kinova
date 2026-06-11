@@ -1,11 +1,49 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEjercicioSesion, type PostureStatus } from '@/hooks/use-ejercicio-sesion';
 import { PoseSkeletonOverlay } from '@/components/PoseSkeletonOverlay';
 
+// ─── Alerta sonora ───────────────────────────────────────────────────────────
+
+function playAlertSound(type: 'error' | 'warning') {
+  try {
+    const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx  = new AudioCtx();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    if (type === 'error') {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(620, ctx.currentTime + 0.15);
+    } else {
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+    }
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch { /* sin soporte de audio */ }
+}
+
 // ─── Paleta ───────────────────────────────────────────────────────────────────
+
+const ANGLE_KEY_TO_JOINT: Record<string, string> = {
+  knee: 'rodilla', hip: 'cadera', trunk: 'tronco',
+};
+
+function angleChipStyle(key: string, corrections: Array<{ joint: string; severity: string }>) {
+  const joint = ANGLE_KEY_TO_JOINT[key];
+  const hits  = joint ? corrections.filter(c => c.joint === joint) : [];
+  if (hits.some(c => c.severity === 'error'))
+    return { bg: '#FEF2F2', border: '#FECACA', text: '#EF4444' };
+  if (hits.some(c => c.severity === 'warning'))
+    return { bg: '#FFFBEB', border: '#FDE68A', text: '#F59E0B' };
+  return { bg: '#F0FDF4', border: '#BBF7D0', text: '#16A34A' };
+}
 
 const STATUS_COLOR: Record<PostureStatus, string> = {
   correct:   '#16A34A',
@@ -39,9 +77,11 @@ const STATUS_LABEL: Record<PostureStatus, string> = {
 function WebCamera({
   onError,
   captureRef,
+  onVideoReady,
 }: {
   onError: (msg: string) => void;
   captureRef: React.MutableRefObject<(() => string | null) | null>;
+  onVideoReady: (videoWidth: number, videoHeight: number) => void;
 }) {
   const containerRef = useRef<View>(null);
   const videoRef     = useRef<HTMLVideoElement | null>(null);
@@ -55,7 +95,6 @@ function WebCamera({
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          // 'environment' = cámara trasera (para ver el perfil del paciente)
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } },
         });
         streamRef.current = stream;
@@ -71,22 +110,28 @@ function WebCamera({
         const node = containerRef.current as unknown as HTMLDivElement | null;
         node?.appendChild(video);
 
-        // Canvas oculto para captura — resolución mayor y mejor calidad JPEG
+        // Notificar dimensiones reales del video cuando estén disponibles
+        video.addEventListener('loadedmetadata', () => {
+          onVideoReady(video!.videoWidth || 640, video!.videoHeight || 480);
+        }, { once: true });
+
         canvas = document.createElement('canvas');
-        canvas.width  = 480;
-        canvas.height = 360;
         canvas.style.display = 'none';
         document.body.appendChild(canvas);
         canvasRef.current = canvas;
 
+        // Manda el frame COMPLETO — MediaPipe tiene más contexto y los landmarks
+        // son más estables. El overlay aplica el transform object-fit:cover
+        // matemáticamente para alinear coordenadas con lo que se ve en pantalla.
         captureRef.current = () => {
           const v = videoRef.current;
           const c = canvasRef.current;
           if (!v || !c || v.readyState < 2) return null;
           const ctx = c.getContext('2d');
           if (!ctx) return null;
+          c.width  = v.videoWidth  || 640;
+          c.height = v.videoHeight || 480;
           ctx.drawImage(v, 0, 0, c.width, c.height);
-          // Calidad 0.75: balance entre detalle para MediaPipe y tamaño de payload
           return c.toDataURL('image/jpeg', 0.75).split(',')[1] ?? null;
         };
       } catch (err: unknown) {
@@ -132,6 +177,7 @@ export default function EjercicioSesionWeb() {
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraPanelSize, setCameraPanelSize] = useState({ width: 0, height: 0 });
+  const [videoSize, setVideoSize] = useState({ width: 640, height: 480 });
 
   const captureRef = useRef<(() => string | null) | null>(null);
 
@@ -141,19 +187,79 @@ export default function EjercicioSesionWeb() {
     sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
   } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
 
-  // Landmarks persistentes — el esqueleto no desaparece entre frames
+  // ── Correcciones client-side ──
+  // El backend solo genera correcciones si el ejercicio tiene angle_min/max en DB.
+  // Este bloque las calcula directamente desde los ángulos recibidos para que
+  // el skeleton y los chips cambien de color aunque no vengan del servidor.
+  // El convenio es el mismo que usan los evaluadores: los valores son en grados
+  // de FLEXIÓN (knee_extension, squat) o ELEVACIÓN (straight_leg_raise).
+  const computedCorrections = useMemo(() => {
+    if (!angles || (angleMin === null && angleMax === null)) return [];
+    const result: Array<{ joint: string; message: string; severity: string }> = [];
+
+    if (angles.knee !== undefined) {
+      const flexion = Math.round(180 - angles.knee);
+      if (angleMax !== null && flexion > angleMax) {
+        result.push({ joint: 'rodilla', severity: 'error',
+          message: `Flexión de rodilla ${flexion}° supera el máximo de ${angleMax}°` });
+      } else if (angleMin !== null && flexion > angleMin) {
+        result.push({ joint: 'rodilla', severity: 'warning',
+          message: `Extendé más la pierna — flexión actual ${flexion}°, objetivo < ${angleMin}°` });
+      }
+    }
+    if (angles.hip !== undefined) {
+      const elevation = Math.round(180 - angles.hip);
+      if (angleMax !== null && elevation > angleMax) {
+        result.push({ joint: 'cadera', severity: 'error',
+          message: `Elevación ${elevation}° supera el máximo de ${angleMax}°` });
+      } else if (angleMin !== null && elevation < angleMin) {
+        result.push({ joint: 'cadera', severity: 'warning',
+          message: `Subí más la pierna — elevación actual ${elevation}°, objetivo > ${angleMin}°` });
+      }
+    }
+    return result;
+  }, [angles, angleMin, angleMax]);
+
+  // Backend tiene prioridad; client-side es el fallback
+  const effectiveCorrections = rawCorrections.length > 0 ? rawCorrections : computedCorrections;
+
+  // ── Alerta sonora ──
+  const lastAlertRef = useRef(0);
+  useEffect(() => {
+    const hasError   = effectiveCorrections.some(c => c.severity === 'error');
+    const hasWarning = !hasError && effectiveCorrections.some(c => c.severity === 'warning');
+    if (!hasError && !hasWarning) return;
+    const now = Date.now();
+    if (now - lastAlertRef.current < 2500) return; // máximo una alerta cada 2.5 s
+    lastAlertRef.current = now;
+    playAlertSound(hasError ? 'error' : 'warning');
+  }, [effectiveCorrections]);
+
+  // Landmarks persistentes — el esqueleto no desaparece entre frames.
+  // Si no llegan landmarks por 1.5 s (persona fuera de cámara), se limpia
+  // para que al volver no haya estado EMA viejo y arranque con posición fresca.
   const [stableLandmarks, setStableLandmarks] = useState<typeof landmarks>(null);
   const [stableAngles, setStableAngles]       = useState<typeof angles>(null);
   const [stableStatus, setStableStatus]       = useState<'perfect' | 'improve' | 'bad'>('perfect');
-  const [stableCorrections, setStableCorrections] = useState<typeof rawCorrections>([]);
+  const staleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (landmarks && Object.keys(landmarks).length > 0) {
-      setStableLandmarks(landmarks);
-      if (angles)   setStableAngles(angles);
-      if (wsStatus) setStableStatus(wsStatus);
-      setStableCorrections(rawCorrections);
+    if (!landmarks || Object.keys(landmarks).length === 0) {
+      if (!staleTimerRef.current) {
+        staleTimerRef.current = setTimeout(() => {
+          setStableLandmarks(null);
+          staleTimerRef.current = null;
+        }, 1500);
+      }
+      return;
     }
-  }, [landmarks, angles, wsStatus, rawCorrections]);
+    if (staleTimerRef.current) {
+      clearTimeout(staleTimerRef.current);
+      staleTimerRef.current = null;
+    }
+    setStableLandmarks(landmarks);
+    if (angles)   setStableAngles(angles);
+    if (wsStatus) setStableStatus(wsStatus);
+  }, [landmarks, angles, wsStatus]);
 
   // ── Captura periódica de frames para el WebSocket (~3 fps) ──
   useEffect(() => {
@@ -161,7 +267,7 @@ export default function EjercicioSesionWeb() {
     const interval = setInterval(() => {
       const base64 = captureRef.current?.();
       if (base64) sendFrame(base64);
-    }, 200); // 5 fps — más fluido y menor probabilidad de perder el movimiento
+    }, 100); // 10 fps — sendingRef garantiza no saturar el WS
     return () => clearInterval(interval);
   }, [isRunning, connected, sendFrame]);
 
@@ -191,20 +297,25 @@ export default function EjercicioSesionWeb() {
             </TouchableOpacity>
           </View>
         ) : (
-          <WebCamera onError={setCameraError} captureRef={captureRef} />
+          <WebCamera
+            onError={setCameraError}
+            captureRef={captureRef}
+            onVideoReady={(w, h) => setVideoSize({ width: w, height: h })}
+          />
         )}
 
-        {/* Esqueleto: usa últimos landmarks válidos para mostrar siempre */}
+        {/* Skeleton overlay encima de la cámara */}
         {stableLandmarks && cameraPanelSize.width > 0 && (
           <PoseSkeletonOverlay
             landmarks={stableLandmarks}
-            angles={stableAngles ?? {}}
+            angles={angles ?? stableAngles ?? {}}
             status={stableStatus}
-            corrections={stableCorrections}
+            corrections={effectiveCorrections}
             width={cameraPanelSize.width}
             height={cameraPanelSize.height}
             exerciseKey={evaluatorKey}
             frontCamera={false}
+            videoSize={videoSize}
           />
         )}
 
@@ -281,12 +392,15 @@ export default function EjercicioSesionWeb() {
             <>
               <Text style={[s.sectionTitle, { marginTop: 20 }]}>Ángulos en Tiempo Real</Text>
               <View style={s.anglesRow}>
-                {Object.entries(angles).map(([k, v]) => (
-                  <View key={k} style={s.angleChip}>
-                    <Text style={s.angleChipLabel}>{k}</Text>
-                    <Text style={s.angleChipValue}>{Math.round(v)}°</Text>
-                  </View>
-                ))}
+                {Object.entries(angles).map(([k, v]) => {
+                  const c = angleChipStyle(k, effectiveCorrections);
+                  return (
+                    <View key={k} style={[s.angleChip, { backgroundColor: c.bg, borderColor: c.border }]}>
+                      <Text style={s.angleChipLabel}>{k}</Text>
+                      <Text style={[s.angleChipValue, { color: c.text }]}>{Math.round(v)}°</Text>
+                    </View>
+                  );
+                })}
               </View>
             </>
           )}
@@ -433,7 +547,7 @@ const s = StyleSheet.create({
   retryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 
   // Panel derecho
-  rightPanel: { width: 300, backgroundColor: '#FFFFFF', flexDirection: 'column' },
+  rightPanel: { width: 340, backgroundColor: '#FFFFFF', flexDirection: 'column' },
   statusHeader: { paddingHorizontal: 20, paddingVertical: 18 },
   statusHeaderText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
   rightScroll: { flex: 1 },

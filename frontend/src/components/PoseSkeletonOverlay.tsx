@@ -148,6 +148,10 @@ type Props = {
   height:       number;
   exerciseKey:  string;
   frontCamera?: boolean;
+  // Dimensiones reales del video (sin recortar). Cuando se provee, el overlay
+  // aplica el mismo transform object-fit:cover que usa el <video> para alinear
+  // los landmarks con exactitud sin depender de un recorte manual del canvas.
+  videoSize?:   { width: number; height: number };
 };
 
 // Umbral mínimo de visibilidad para DIBUJAR un punto o segmento.
@@ -158,13 +162,29 @@ const MIN_V     = 0.0;
 const MIN_V_ARC = 0.0;
 
 export function PoseSkeletonOverlay({
-  landmarks, angles, status, corrections = [], width, height, exerciseKey, frontCamera = true,
+  landmarks, angles, status, corrections = [], width, height, exerciseKey,
+  frontCamera = true, videoSize,
 }: Props) {
   const defaultColor = COLOR[status] ?? COLOR.perfect;
   const segmentColors = getSegmentColors(corrections);
 
-  const px = (x: number) => (frontCamera ? 1 - x : x) * width;
-  const py = (y: number) => y * height;
+  // Si se provee videoSize, aplicar el transform object-fit:cover para alinear
+  // los landmarks (en [0,1] del frame completo) con el panel de display.
+  // Sin videoSize, mapeo directo [0,1] → dimensiones del panel (modo overlay clásico).
+  let coverScale = 1, coverOffX = 0, coverOffY = 0;
+  if (videoSize && videoSize.width > 0 && videoSize.height > 0) {
+    coverScale = Math.max(width / videoSize.width, height / videoSize.height);
+    coverOffX  = (width  - videoSize.width  * coverScale) / 2;
+    coverOffY  = (height - videoSize.height * coverScale) / 2;
+  }
+
+  const px = (x: number) => {
+    const rx = frontCamera ? 1 - x : x;
+    return videoSize ? rx * videoSize.width * coverScale + coverOffX : rx * width;
+  };
+  const py = (y: number) =>
+    videoSize ? y * videoSize.height * coverScale + coverOffY : y * height;
+
   const lm  = (i: number) => landmarks[String(i)];
 
   // ── Elegir el lado más visible ──
