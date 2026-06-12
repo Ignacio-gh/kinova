@@ -57,8 +57,35 @@ const ANGLES: Record<string, ArcDef[]> = {
   ],
 };
 
-// Color fijo del esqueleto
-const SKELETON_COLOR = '#00E5A0';
+// ─── Colores ──────────────────────────────────────────────────────────────────
+
+const COLOR = {
+  ok:      '#00E5A0',
+  warning: '#FACC15',
+  error:   '#F87171',
+};
+
+// joint de la corrección → segmentos del skeleton que colorear
+const JOINT_TO_SEGMENTS: Record<string, string[]> = {
+  tronco:  ['shoulder-hip'],
+  rodilla: ['hip-knee', 'knee-ankle'],
+  cadera:  ['shoulder-hip', 'hip-knee'],
+  sistema: [],
+};
+
+type Correction = { joint: string; message: string; severity: string };
+
+function getSegmentColors(corrections: Correction[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const c of corrections) {
+    const col  = c.severity === 'error' ? COLOR.error : COLOR.warning;
+    for (const seg of (JOINT_TO_SEGMENTS[c.joint] ?? [])) {
+      if (!map.has(seg) || (c.severity === 'error' && map.get(seg) !== COLOR.error))
+        map.set(seg, col);
+    }
+  }
+  return map;
+}
 
 // ─── Helper: path SVG del arco + posición de la etiqueta ─────────────────────
 
@@ -96,15 +123,14 @@ function makeArc(
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 type Props = {
-  landmarks:   Record<string, PoseLandmark>;
-  angles:      Record<string, number>;
-  width:       number;
-  height:      number;
-  exerciseKey: string;
+  landmarks:    Record<string, PoseLandmark>;
+  angles:       Record<string, number>;
+  corrections?: Correction[];
+  width:        number;
+  height:       number;
+  exerciseKey:  string;
   frontCamera?: boolean;
-  // Dimensiones reales del video (sin recortar). Cuando se provee, el overlay
-  // aplica object-fit:cover para alinear landmarks del frame completo con lo visible.
-  videoSize?:  { width: number; height: number };
+  videoSize?:   { width: number; height: number };
 };
 
 // Umbral mínimo de visibilidad. MediaPipe asigna v≈0 en vista lateral,
@@ -113,10 +139,10 @@ const MIN_V     = 0.0;
 const MIN_V_ARC = 0.0;
 
 export function PoseSkeletonOverlay({
-  landmarks, angles, width, height, exerciseKey, frontCamera = true, videoSize,
+  landmarks, angles, corrections = [], width, height, exerciseKey, frontCamera = true, videoSize,
 }: Props) {
-  // Si se provee videoSize: aplicar transformada object-fit:cover (frame completo → panel).
-  // Sin videoSize: mapeo directo [0,1] → dimensiones del panel.
+  const segmentColors = getSegmentColors(corrections);
+
   let coverScale = 1, coverOffX = 0, coverOffY = 0;
   if (videoSize && videoSize.width > 0 && videoSize.height > 0) {
     coverScale = Math.max(width / videoSize.width, height / videoSize.height);
@@ -131,16 +157,11 @@ export function PoseSkeletonOverlay({
   const py = (y: number) =>
     videoSize ? y * videoSize.height * coverScale + coverOffY : y * height;
 
-  const lm  = (i: number) => landmarks[String(i)];
+  const lm = (i: number) => landmarks[String(i)];
 
   const chain     = CHAIN[exerciseKey]  ?? CHAIN.default;
   const angleDefs = ANGLES[exerciseKey] ?? ANGLES.default;
 
-  // Seleccionar lado usando SOLO los joints del ejercicio actual.
-  // Si se usan los 4 joints (hombro+cadera+rodilla+tobillo), un hombro visible
-  // en el lado equivocado puede forzar la selección incorrecta —
-  // especialmente en knee_extension (sentado de perfil) donde el hombro
-  // del lado lejano puede ser más visible que el del lado activo.
   const chainLeftScore  = chain.reduce((s, name) => s + (lm(IDX.left[name])?.v  ?? 0), 0);
   const chainRightScore = chain.reduce((s, name) => s + (lm(IDX.right[name])?.v ?? 0), 0);
   const side = chainLeftScore >= chainRightScore ? IDX.left : IDX.right;
@@ -151,7 +172,6 @@ export function PoseSkeletonOverlay({
     return { name, x: px(l.x), y: py(l.y) };
   });
 
-  // Al menos 2 puntos visibles = se puede dibujar algún segmento
   const segmentsDrawable = chainPts.filter(Boolean).length >= 2;
 
   return (
@@ -161,22 +181,23 @@ export function PoseSkeletonOverlay({
     >
       <Svg width={width} height={height}>
 
-        {/* ── LÍNEAS ──────────────────────────────────────────── */}
+        {/* ── LÍNEAS (coloreadas por segmento) ─────────────── */}
         {chainPts.map((pt, i) => {
           if (!pt) return null;
           const next = chainPts[i + 1];
           if (!next) return null;
+          const segColor = segmentColors.get(`${pt.name}-${next.name}`) ?? COLOR.ok;
           return (
             <G key={`seg-${i}`}>
               <Line x1={pt.x} y1={pt.y} x2={next.x} y2={next.y}
                 stroke="rgba(0,0,0,0.65)" strokeWidth={9} strokeLinecap="round" />
               <Line x1={pt.x} y1={pt.y} x2={next.x} y2={next.y}
-                stroke={SKELETON_COLOR} strokeWidth={5} strokeLinecap="round" />
+                stroke={segColor} strokeWidth={5} strokeLinecap="round" />
             </G>
           );
         })}
 
-        {/* ── ARCOS DE ÁNGULO ────────────────────────────────── */}
+        {/* ── ARCOS DE ÁNGULO (color del peor segmento adyacente) ── */}
         {angleDefs.map((def) => {
           const angleValue = angles[def.label];
           if (angleValue === undefined) return null;
@@ -195,30 +216,43 @@ export function PoseSkeletonOverlay({
           );
           if (!arc) return null;
 
-          const LW = 68;  const LH = 32;
+          const arcColor = segmentColors.get(`${def.a}-${def.vertex}`)
+            ?? segmentColors.get(`${def.vertex}-${def.b}`)
+            ?? COLOR.ok;
+
+          const LW = 68; const LH = 32;
           return (
             <G key={`arc-${def.label}`}>
               <Path d={arc.d} fill="none"
-                stroke={SKELETON_COLOR} strokeWidth={2.5} strokeDasharray="6,3" opacity={0.95} />
+                stroke={arcColor} strokeWidth={2.5} strokeDasharray="6,3" opacity={0.95} />
               <Rect x={arc.lx - LW/2} y={arc.ly - LH/2}
                 width={LW} height={LH} fill="rgba(0,0,0,0.78)" rx={9} />
               <SvgText x={arc.lx} y={arc.ly + 7}
-                textAnchor="middle" fill={SKELETON_COLOR} fontSize={17} fontWeight="bold">
+                textAnchor="middle" fill={arcColor} fontSize={17} fontWeight="bold">
                 {Math.round(angleValue)}°
               </SvgText>
             </G>
           );
         })}
 
-        {/* ── PUNTOS ────────────────────────────────────────── */}
+        {/* ── PUNTOS (color del peor segmento adyacente) ───── */}
         {chainPts.map((pt, i) => {
           if (!pt) return null;
+          const prev = chainPts[i - 1];
+          const next = chainPts[i + 1];
+          const c1 = prev ? segmentColors.get(`${prev.name}-${pt.name}`) : undefined;
+          const c2 = next ? segmentColors.get(`${pt.name}-${next.name}`) : undefined;
+          const dotColor = (c1 === COLOR.error || c2 === COLOR.error)
+            ? COLOR.error
+            : (c1 === COLOR.warning || c2 === COLOR.warning)
+              ? COLOR.warning
+              : COLOR.ok;
           return (
             <G key={`dot-${i}`}>
               <Circle cx={pt.x} cy={pt.y} r={16}
-                fill="none" stroke={SKELETON_COLOR} strokeWidth={2} opacity={0.25} />
+                fill="none" stroke={dotColor} strokeWidth={2} opacity={0.25} />
               <Circle cx={pt.x} cy={pt.y} r={10} fill="rgba(0,0,0,0.6)" />
-              <Circle cx={pt.x} cy={pt.y} r={8} fill={SKELETON_COLOR} />
+              <Circle cx={pt.x} cy={pt.y} r={8} fill={dotColor} />
             </G>
           );
         })}

@@ -45,12 +45,12 @@ class KneeExtensionEvaluator(BaseEvaluator):
         corrections = []
         status = "perfect"
 
-        # ── Flexión supera el máximo permitido ──
-        if self.angle_max is not None and knee_flexion > self.angle_max:
+        # ── Ángulo supera el máximo permitido (se pasa de la extensión) ──
+        if self.angle_max is not None and knee_angle > self.angle_max:
             corrections.append(
                 self._make_correction(
                     "rodilla",
-                    f"No dobles tanto la rodilla — estás a {knee_flexion}° de flexión, "
+                    f"No estires tanto la rodilla — estás a {round(knee_angle)}°, "
                     f"tu kinesiólogo puso un máximo de {self.angle_max}°",
                     "error",
                 )
