@@ -33,8 +33,6 @@ function resolveEvaluatorKey(name: string): string | null {
   const lower = name.toLowerCase();
   if (lower.includes('sentadilla') || lower.includes('squat')) return 'squat';
   if (lower.includes('extensi')) return 'knee_extension';
-  if (lower.includes('elevaci') || lower.includes('pierna recta') || lower.includes('slr'))
-    return 'straight_leg_raise';
   return null;
 }
 

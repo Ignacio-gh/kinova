@@ -177,11 +177,13 @@ export default function EjercicioSesionWeb() {
     if (angles) setStableAngles(angles);
   }, [landmarks, angles]);
 
-  // Suena la alarma solo cuando: hay skeleton visible + ángulo supera el máximo (error), máx 1 vez cada 4 s.
+  // Suena la alarma solo cuando: las articulaciones clave son visibles + ángulo supera el máximo (error), máx 1 vez cada 4 s.
   useEffect(() => {
     if (!isRunning || !stableLandmarks) return;
-    // GHOST_LANDMARKS tiene v:-1 — skeleton invisible, resetear gracia y no sonar
-    const skeletonVisible = Object.values(stableLandmarks).some((lm) => lm.v >= 0);
+    // Verificar que cadera, rodilla y tobillo sean visibles (v > 0.3) en al menos un lado
+    const leftVisible  = ['23', '25', '27'].every((i) => (stableLandmarks[i]?.v ?? -1) > 0.3);
+    const rightVisible = ['24', '26', '28'].every((i) => (stableLandmarks[i]?.v ?? -1) > 0.3);
+    const skeletonVisible = leftVisible || rightVisible;
     if (!skeletonVisible) {
       skeletonReadyTs.current = 0;
       return;
@@ -255,12 +257,8 @@ export default function EjercicioSesionWeb() {
           />
         )}
 
-        {/* Top bar: rep counter + close */}
+        {/* Top bar: close */}
         <View style={s.topBar}>
-          <View>
-            <Text style={s.repLabel}>Repeticiones</Text>
-            <Text style={s.repValue}>{reps}</Text>
-          </View>
           <TouchableOpacity style={s.closeBtn} onPress={() => router.back()}>
             <Ionicons name="close" size={20} color="#FFFFFF" />
           </TouchableOpacity>

@@ -19,7 +19,7 @@ pydantic-settings==2.9.1
 email-validator==2.2.0
 
 # Computer vision
-mediapipe==0.10.14
+mediapipe==0.10.35
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 Pillow>=10.0.0

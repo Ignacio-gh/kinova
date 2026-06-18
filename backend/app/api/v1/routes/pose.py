@@ -32,23 +32,16 @@ from app.pose.base_evaluator import BaseEvaluator
 from app.pose.detector import PoseDetector
 from app.pose.evaluators.knee_extension import KneeExtensionEvaluator
 from app.pose.evaluators.squat import SquatEvaluator
-from app.pose.evaluators.straight_leg_raise import StraightLegRaiseEvaluator
 
 logger = logging.getLogger("kinova.pose")
 
 router = APIRouter()
 
-# Índices de landmarks de MediaPipe que se envían al frontend para dibujar el esqueleto.
-# Incluye: nariz, hombros, codos, muñecas, caderas, rodillas, tobillos.
 SKELETON_LANDMARK_INDICES = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
 
-# Registry: mapea el evaluator_key del ejercicio a su clase evaluadora.
-# Cuando Maria o Agus crean un ejercicio en la DB, le ponen un
-# evaluator_key (ej: "squat") y el WebSocket sabe que clase usar.
 EVALUATOR_REGISTRY: dict[str, type[BaseEvaluator]] = {
     "squat": SquatEvaluator,
     "knee_extension": KneeExtensionEvaluator,
-    "straight_leg_raise": StraightLegRaiseEvaluator,
 }
 
 
@@ -161,7 +154,7 @@ async def pose_websocket(
             for idx in range(len(raw_landmarks)):
                 rx = float(raw_landmarks[idx].x)
                 ry = float(raw_landmarks[idx].y)
-                rv = float(raw_landmarks[idx].visibility)
+                rv = float(raw_landmarks[idx].visibility or 0.0)
 
                 prev = smoothed_landmarks.get(idx)
                 if prev is None:

@@ -30,10 +30,9 @@ type JointName = keyof typeof IDX.left;
 // ─── Cadena de joints por ejercicio ──────────────────────────────────────────
 
 const CHAIN: Record<string, JointName[]> = {
-  squat:              ['shoulder', 'hip', 'knee', 'ankle'],
-  knee_extension:     ['hip', 'knee', 'ankle'],
-  straight_leg_raise: ['shoulder', 'hip', 'knee', 'ankle'],
-  default:            ['hip', 'knee', 'ankle'],
+  squat:          ['shoulder', 'hip', 'knee', 'ankle'],
+  knee_extension: ['hip', 'knee', 'ankle'],
+  default:        ['hip', 'knee', 'ankle'],
 };
 
 // ─── Definición de los arcos de ángulo ───────────────────────────────────────
@@ -46,10 +45,6 @@ const ANGLES: Record<string, ArcDef[]> = {
     { label: 'trunk', vertex: 'hip',  a: 'shoulder', b: 'knee'  },
   ],
   knee_extension: [
-    { label: 'knee',  vertex: 'knee', a: 'hip',      b: 'ankle' },
-  ],
-  straight_leg_raise: [
-    { label: 'hip',   vertex: 'hip',  a: 'shoulder', b: 'ankle' },
     { label: 'knee',  vertex: 'knee', a: 'hip',      b: 'ankle' },
   ],
   default: [
