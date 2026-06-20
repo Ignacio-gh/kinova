@@ -4,88 +4,158 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTutorial, TUTORIAL_MOBILE_CONFIG } from '@/context/TutorialContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BUBBLE_WIDTH = SCREEN_WIDTH * 0.88;
+const BUBBLE_LEFT = (SCREEN_WIDTH - BUBBLE_WIDTH) / 2;
 
 export function TutorialOverlayMobile() {
-  const { isTutorialActive, currentScreen, currentStep, activeStepData, nextMobile, prevMobile, stopMobileTutorial } = useTutorial();
+  const {
+    isTutorialActive, currentScreen, currentStep,
+    activeStepData, nextMobile, prevMobile, stopMobileTutorial,
+  } = useTutorial();
 
   if (!isTutorialActive || !activeStepData) return null;
 
-  // Lógica dinámica para saber si es el final absoluto
-  const currentConfig = TUTORIAL_MOBILE_CONFIG[currentScreen];
-  const isLastScreen = currentConfig.nextScreen === null;
-  const isLastStep = currentStep === (currentConfig.steps.length - 1);
-  const isFinalStep = isLastScreen && isLastStep;
+  const config = TUTORIAL_MOBILE_CONFIG[currentScreen];
+  const isFinalStep = config.nextScreen === null && currentStep === config.steps.length - 1;
+  const isVeryFirstStep =
+    (currentScreen === 'inicio' || currentScreen === 'kine_inicio') && currentStep === 0;
 
   const handleNext = () => {
-  const step = activeStepData;
-  // Si el paso actual tiene una acción de navegación, ejecútala
-  if (step?.onNavigate) {
-    step.onNavigate();
-  }
-  
-  // Llamamos a la lógica del contexto para avanzar o cambiar de pantalla
-  nextMobile(); 
-};
+    if (activeStepData.onNavigate) activeStepData.onNavigate();
+    nextMobile();
+  };
+
+  const arrow = activeStepData.arrow ?? 'none';
 
   return (
-
-    
-    <View 
-      className="absolute inset-0 z-50 pointer-events-auto" 
-      style={{ backgroundColor: 'rgba(10, 22, 40, 0.5)' }} 
+    <View
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,22,40,0.58)', zIndex: 50 }}
       pointerEvents="auto"
     >
-      
-      {/* Globo Flotante Informativo */}
-      <View 
-        className="absolute bg-white rounded-3xl p-5 shadow-2xl" 
-        style={[{ width: SCREEN_WIDTH * 0.85, elevation: 10 }, activeStepData.position as any]}
+      {/* ── Burbuja ─────────────────────────────────────────── */}
+      <View
+        style={[
+          {
+            position: 'absolute',
+            width: BUBBLE_WIDTH,
+            left: BUBBLE_LEFT,
+            backgroundColor: '#FFFFFF',
+            borderRadius: 24,
+            padding: 20,
+            elevation: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.18,
+            shadowRadius: 16,
+          },
+          activeStepData.position as object,
+        ]}
       >
-        <View className="mb-4">
-          <Text className="text-xs font-bold text-turquoise uppercase tracking-widest mb-1.5">
-            PASO {currentStep + 1}
+        {/* Triángulo superior */}
+        {arrow === 'top' && (
+          <View style={{
+            position: 'absolute', top: -13, left: 0, right: 0, alignItems: 'center',
+          }}>
+            <View style={{
+              width: 0, height: 0,
+              borderLeftWidth: 13, borderRightWidth: 13, borderBottomWidth: 13,
+              borderLeftColor: 'transparent', borderRightColor: 'transparent',
+              borderBottomColor: '#FFFFFF',
+            }} />
+          </View>
+        )}
+
+        {/* Encabezado: paso + dots */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#00A896', textTransform: 'uppercase', letterSpacing: 1 }}>
+            Paso {currentStep + 1} de {config.steps.length}
           </Text>
-          <Text className="text-navy text-sm font-semibold leading-5">
-            {activeStepData.text}
-          </Text>
+          <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+            {config.steps.map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  width: i === currentStep ? 18 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: i === currentStep ? '#00A896' : '#E5E7EB',
+                }}
+              />
+            ))}
+          </View>
         </View>
-        
-        <View className="flex-row justify-end gap-3 pt-4 border-t border-gray-100">
-          {/* Botón Atrás */}
-          <TouchableOpacity 
-            className={`px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 items-center justify-center ${(currentScreen === 'inicio' && currentStep === 0) ? 'opacity-40' : ''}`}
+
+        {/* Texto */}
+        <Text style={{ fontSize: 14, fontWeight: '500', color: '#002B49', lineHeight: 21, marginBottom: 18 }}>
+          {activeStepData.text}
+        </Text>
+
+        {/* Botones */}
+        <View style={{
+          flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+          paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6',
+        }}>
+          <TouchableOpacity
             onPress={prevMobile}
-            disabled={currentScreen === 'inicio' && currentStep === 0}
+            disabled={isVeryFirstStep}
             activeOpacity={0.7}
+            style={{
+              paddingHorizontal: 16, paddingVertical: 10,
+              borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB',
+              backgroundColor: '#F9FAFB',
+              opacity: isVeryFirstStep ? 0.35 : 1,
+            }}
           >
-            <Text className="text-gray-500 font-semibold text-xs">Volver</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#6B7280' }}>Volver</Text>
           </TouchableOpacity>
-          
-          {/* Botón Siguiente */}
-<TouchableOpacity 
-  className="px-5 py-2.5 rounded-xl items-center justify-center bg-turquoise" 
-  onPress={handleNext} // Usá handleNext que ya tenías preparado
-  activeOpacity={0.8}
->
-  <Text className="text-white font-bold text-xs">
-    {isFinalStep ? 'Finalizar' : 'Siguiente'}
-  </Text>
-</TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleNext}
+            activeOpacity={0.8}
+            style={{
+              paddingHorizontal: 22, paddingVertical: 10,
+              borderRadius: 12, backgroundColor: '#00A896',
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+              {isFinalStep ? 'Finalizar' : 'Siguiente'}
+            </Text>
+            {!isFinalStep && <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />}
+            {isFinalStep && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+          </TouchableOpacity>
         </View>
+
+        {/* Triángulo inferior */}
+        {arrow === 'bottom' && (
+          <View style={{
+            position: 'absolute', bottom: -13, left: 0, right: 0, alignItems: 'center',
+          }}>
+            <View style={{
+              width: 0, height: 0,
+              borderLeftWidth: 13, borderRightWidth: 13, borderTopWidth: 13,
+              borderLeftColor: 'transparent', borderRightColor: 'transparent',
+              borderTopColor: '#FFFFFF',
+            }} />
+          </View>
+        )}
       </View>
 
-      {/* Botón de Cierre Absoluto */}
-      <TouchableOpacity 
-        className="absolute bottom-8 right-5 flex-row items-center bg-red-500 px-5 py-3 rounded-full shadow-lg"
-        onPress={stopMobileTutorial} 
+      {/* ── Botón cerrar ────────────────────────────────────── */}
+      <TouchableOpacity
+        onPress={stopMobileTutorial}
         activeOpacity={0.8}
-        style={{ elevation: 5 }}
+        style={{
+          position: 'absolute', bottom: 32, alignSelf: 'center',
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+          paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20,
+        }}
       >
-        <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-        <Text className="text-white text-xs font-bold">Cerrar Tutorial</Text>
+        <Ionicons name="close" size={15} color="#FFFFFF" />
+        <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>Salir del tutorial</Text>
       </TouchableOpacity>
     </View>
   );
-
-  
 }

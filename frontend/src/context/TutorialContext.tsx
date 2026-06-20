@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Platform } from 'react-native';
-
-const IS_WEB = Platform.OS === 'web';
 
 // --- Tipos para la versión Mobile ---
 export type ScreenKeyMobile = 
@@ -22,57 +19,133 @@ export const TUTORIAL_MOBILE_CONFIG: Record<ScreenKeyMobile, { route: string; ne
     route: '/tutorialmobile/mock-index-mobile',
     nextScreen: 'calendario',
     steps: [
-      { text: 'Bienvenido al portal del paciente de Kinova. Desde esta interfaz podrá visualizar sus ejercicios prescritos y realizar el seguimiento continuo de su proceso de rehabilitación.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Esta sección detalla los ejercicios programados para la jornada actual. Se solicita asegurar su ejecución sistemática para mantener la continuidad terapéutica.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Aquí dispondrá de los parámetros clínicos necesarios para iniciar la sesión: series, repeticiones y el comando para activar el análisis biomecánico asistido.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Al finalizar cada ejercicio, deberá registrar su cumplimiento seleccionando la opción correspondiente para actualizar el estado de su evolución.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'En este apartado podrá examinar la proyección de los siguientes bloques terapéuticos planificados en su rutina de tratamiento.', position: { bottom: '15%' }, arrow: 'none' },
-    ]
+      {
+        text: '¡Bienvenido a Kinova! Esta es tu pantalla principal. Acá vas a ver tus ejercicios del día y tu progreso semanal.',
+        position: { bottom: '22%' },
+        arrow: 'none',
+      },
+      {
+        text: 'Estos son tus ejercicios del día. Deslizá las tarjetas para verlos todos.',
+        position: { top: '20%' },
+        arrow: 'none',
+      },
+      {
+        text: 'Cada tarjeta tiene las repeticiones, series y el botón para iniciar el análisis con la cámara.',
+        position: { bottom: '30%' },
+        arrow: 'top',
+      },
+      {
+        text: 'Cuando terminés un ejercicio, marcalo como completado para registrar tu avance.',
+        position: { bottom: '22%' },
+        arrow: 'top',
+      },
+      {
+        text: 'Acá abajo ves los próximos ejercicios de tu rutina semanal.',
+        position: { top: '12%' },
+        arrow: 'bottom',
+      },
+    ],
   },
   calendario: {
     route: '/tutorialmobile/mock-calendario-mobile',
     nextScreen: 'historial',
     steps: [
-      { text: 'Bienvenido al módulo de Calendario Semanal. Aquí podrá auditar la planificación cronológica completa de su tratamiento.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Al seleccionar los diferentes días de la semana, el sistema desplegará el listado específico de las actividades programadas para dicha jornada.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Al interactuar con la opción "Video Demo", accederá a una guía técnica audiovisual que ilustra la ejecución motriz correcta de cada ejercicio.', position: { bottom: '15%' }, arrow: 'none' },
-    ]
+      {
+        text: 'Este es tu calendario semanal con todos los ejercicios de tu tratamiento.',
+        position: { bottom: '22%' },
+        arrow: 'none',
+      },
+      {
+        text: 'Tocá los días para ver qué ejercicios te corresponden ese día.',
+        position: { bottom: '30%' },
+        arrow: 'top',
+      },
+      {
+        text: 'Con "Video Demo" podés ver cómo ejecutar correctamente cada ejercicio antes de hacerlo.',
+        position: { top: '18%' },
+        arrow: 'bottom',
+      },
+    ],
   },
   historial: {
     route: '/tutorialmobile/mock-historial-mobile',
-    nextScreen: null, // Final del recorrido
+    nextScreen: null,
     steps: [
-      { text: 'Bienvenido al Historial Clínico Personal. En esta sección encontrará el registro detallado de sus sesiones previas, índices de adherencia y métricas cuantitativas de su progreso.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'El recorrido introductorio ha finalizado. El portal se encuentra totalmente operativo para acompañarlo en su proceso de recuperación funcional.', position: { bottom: '15%' }, arrow: 'none' }
-    ]
+      {
+        text: 'Acá están todas tus sesiones completadas con estadísticas de adherencia y tiempo total.',
+        position: { bottom: '22%' },
+        arrow: 'none',
+      },
+      {
+        text: '¡Eso es todo! Ya conocés la app. El tutorial está siempre disponible desde tu pantalla principal.',
+        position: { top: '36%' },
+        arrow: 'none',
+      },
+    ],
   },
   kine_inicio: {
-    route: '/tutorialkine/mock-index',
+    route: '/tutorialkine/mock-index-mobile-kine',
     nextScreen: 'kine_detalle',
     steps: [
-      { text: 'Bienvenido al panel de gestión clínica. Desde este módulo podrá centralizar y administrar el seguimiento integral de sus pacientes.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Utilice la función "+Agregar" para registrar nuevos perfiles y generar de forma automatizada las credenciales de acceso al portal del paciente.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'El listado proporciona un resumen con métricas en tiempo real. Se sugiere monitorear el índice de adherencia terapéutica para evaluar el cumplimiento del tratamiento.', position: { bottom: '15%' }, arrow: 'none' },
-    ]
+      {
+        text: 'Bienvenido al panel del kinesiólogo. Desde acá gestionás a todos tus pacientes.',
+        position: { bottom: '22%' },
+        arrow: 'none',
+      },
+      {
+        text: 'Tocá "Agregar" para dar de alta un nuevo paciente. El sistema genera sus credenciales automáticamente.',
+        position: { top: '20%' },
+        arrow: 'top',
+      },
+      {
+        text: 'En la lista ves el porcentaje de adherencia de cada paciente de un vistazo. Un valor bajo puede indicar que necesita seguimiento.',
+        position: { bottom: '22%' },
+        arrow: 'top',
+      },
+    ],
   },
   kine_detalle: {
     route: '/tutorialkine/mock-detalle-mobile-kine',
     nextScreen: 'kine_biblioteca',
     steps: [
-      { text: 'Este es el perfil clínico individual. Aquí visualizará el diagnóstico funcional, la duración del tratamiento y las notas evolutivas correspondientes.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'El indicador de adherencia cuantifica el porcentaje de cumplimiento de la prescripción de ejercicios, facilitando la evaluación objetiva del progreso.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'En la sección inferior se detalla la planificación semanal dosificada, permitiendo auditar la progresión del esquema terapéutico asignado.', position: { bottom: '15%' }, arrow: 'none' },
-    ]
+      {
+        text: 'Acá está toda la info clínica del paciente: diagnóstico, semanas de tratamiento y notas.',
+        position: { bottom: '30%' },
+        arrow: 'top',
+      },
+      {
+        text: 'La adherencia muestra qué porcentaje de ejercicios completó. Es tu principal indicador de seguimiento.',
+        position: { top: '28%' },
+        arrow: 'top',
+      },
+      {
+        text: 'Y acá abajo la rutina semanal dosificada que le asignaste, día por día.',
+        position: { top: '12%' },
+        arrow: 'bottom',
+      },
+    ],
   },
   kine_biblioteca: {
     route: '/tutorialkine/mock-mobile-biblioteca-kine',
-    nextScreen: null, // Fin del tutorial del kinesiólogo
+    nextScreen: null,
     steps: [
-      { text: 'Bienvenido a la Biblioteca Terapéutica. Este repositorio contiene el catálogo de ejercicios biomecánicos parametrizables para el diseño de rutinas.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'Seleccionando el icono "+" podrá asignar y dosificar variables biomecánicas de ejercicios específicos a la planificación de cualquier paciente activo.', position: { bottom: '15%' }, arrow: 'none' },
-      { text: 'El recorrido guiado ha concluido. El sistema se encuentra operativo para optimizar la gestión integral de los procesos de rehabilitación.', position: { bottom: '15%' }, arrow: 'none' }
-    ]
-  }
+      {
+        text: 'Esta es la biblioteca con todos los ejercicios disponibles para prescribir.',
+        position: { bottom: '22%' },
+        arrow: 'none',
+      },
+      {
+        text: 'Con el botón "+" podés asignar cualquier ejercicio a un paciente y definir sus parámetros.',
+        position: { bottom: '28%' },
+        arrow: 'top',
+      },
+      {
+        text: '¡Listo! Ya dominás Kinova. Ahora podés gestionar la rehabilitación de tus pacientes de forma eficiente.',
+        position: { top: '36%' },
+        arrow: 'none',
+      },
+    ],
+  },
 };
 
 // ... (El resto del Provider queda igual que antes)
@@ -113,7 +186,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     setCurrentScreen(startScreen);
     setCurrentStep(0);
     setIsTutorialActive(true);
-    router.push(TUTORIAL_MOBILE_CONFIG['inicio'].route as any);
+    router.push(TUTORIAL_MOBILE_CONFIG[startScreen].route as any);
   };
 
   const stopMobileTutorial = () => {
@@ -163,7 +236,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const activeStepData = !IS_WEB && isTutorialActive ? TUTORIAL_MOBILE_CONFIG[currentScreen].steps[currentStep] : null;
+  const activeStepData = isTutorialActive ? TUTORIAL_MOBILE_CONFIG[currentScreen].steps[currentStep] : null;
 
   return (
     <TutorialContext.Provider value={{ 
