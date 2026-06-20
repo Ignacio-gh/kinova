@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // <-- 1. Importamos el router
 import { usePerfilKine, PERFIL_AJUSTES } from '@/hooks/use-perfil-kine';
 
 type SettingRowProps = {
@@ -42,7 +43,8 @@ function SettingRow({ icon, label, value, onPress, danger = false }: SettingRowP
 }
 
 export default function MiPerfil() {
-  const { handleLogout, perfilInfo } = usePerfilKine();
+  const { handleLogout, perfilInfo, user } = usePerfilKine();
+  const router = useRouter(); // <-- 2. Instanciamos el router
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -60,17 +62,21 @@ export default function MiPerfil() {
         </View>
 
         {/* Avatar + info */}
-        <View className="items-center pb-8 px-5">
-          <View
-            className="w-24 h-24 rounded-full items-center justify-center mb-4"
-            style={{ backgroundColor: '#e5f7f5' }}
-          >
-            <Text className="font-extrabold" style={{ fontSize: 32, color: '#00A896' }}>
-              DR
-            </Text>
-          </View>
-          <Text className="text-navy font-bold text-xl">Dr. Rodríguez</Text>
-          <Text className="text-gray-400 text-sm mt-1">kinesiologo@kinova.com</Text>
+      <View className="items-center pb-8 px-5">
+        <View
+          className="w-24 h-24 rounded-full items-center justify-center mb-4"
+          style={{ backgroundColor: '#e5f7f5' }}
+        >
+          <Text className="font-extrabold" style={{ fontSize: 32, color: '#00A896' }}>
+            {user?.full_name?.substring(0, 2).toUpperCase() ?? 'DR'}
+          </Text>
+        </View>
+          <Text className="text-navy font-bold text-xl">
+          {user?.full_name ?? 'Cargando...'}
+        </Text>
+        <Text className="text-gray-400 text-sm mt-1">
+          {user?.email ?? '...'}
+        </Text>
           <View
             className="flex-row items-center rounded-full px-3 py-1 mt-3"
             style={{ backgroundColor: '#e5f7f5' }}
@@ -98,7 +104,17 @@ export default function MiPerfil() {
             Ajustes
           </Text>
           {PERFIL_AJUSTES.map((item) => (
-            <SettingRow key={item.label} icon={item.icon} label={item.label} onPress={() => {}} />
+            <SettingRow 
+              key={item.label} 
+              icon={item.icon} 
+              label={item.label} 
+              onPress={() => {
+                // Redirección al nuevo archivo ayuda.mobile
+                if (item.label === 'Ayuda y soporte') {
+                  router.push('/ayuda.mobile'); 
+                }
+              }} 
+            />
           ))}
         </View>
 

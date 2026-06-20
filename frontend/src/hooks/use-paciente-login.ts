@@ -31,8 +31,19 @@ export function usePacienteLogin() {
 
       await saveToken(data.access_token);
       router.replace('/paciente' as never);
+      
     } catch (err: any) {
-      setError(err.message ?? 'Email o contraseña incorrectos.');
+      // --- AQUÍ ESTÁ EL NUEVO CATCH CORRECTAMENTE UBICADO ---
+      console.log("Error completo de la API:", err);
+      
+      // Buscamos si el backend mandó un mensaje específico
+      const mensajeBackend = 
+        err?.response?.data?.detail || 
+        err?.response?.data?.message || 
+        err?.message;
+
+      setError(typeof mensajeBackend === 'string' ? mensajeBackend : 'Email o contraseña incorrectos.');
+      // ------------------------------------------------------
     } finally {
       setLoading(false);
     }

@@ -13,13 +13,15 @@ import { AuthInput } from '@/components/auth-input';
 import { usePacienteLogin } from '@/hooks/use-paciente-login';
 
 export default function PacienteLogin() {
-  const { email, setEmail, password, setPassword, loading, handleLogin, goBack } =
+  // Aseguramos que 'error' esté correctamente extraído aquí del hook
+  const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack } =
     usePacienteLogin();
 
   return (
     <SafeAreaView className="flex-1 bg-navy">
       <StatusBar style="light" />
 
+      {/* Círculos decorativos de fondo */}
       <View className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
         <View
           className="absolute rounded-full bg-turquoise"
@@ -60,6 +62,7 @@ export default function PacienteLogin() {
             <Text className="text-gray-400 text-sm mt-1">Acceso Paciente</Text>
           </View>
 
+          {/* Tarjeta Blanca de Formulario */}
           <View
             className="mx-5 bg-white rounded-3xl p-6"
             style={{
@@ -71,7 +74,7 @@ export default function PacienteLogin() {
             }}
           >
             <View className="items-center mb-5">
-              <View className="w-14 h-14 rounded-2xl bg-turquoise-light items-center justify-center">
+              <View className="w-14 h-14 rounded-2xl items-center justify-center" style={{ backgroundColor: 'rgba(0,168,150,0.1)' }}>
                 <Ionicons name="mail-outline" size={28} color="#00A896" />
               </View>
             </View>
@@ -86,6 +89,7 @@ export default function PacienteLogin() {
                 iconName="mail-outline"
                 placeholder="paciente@email.com"
                 keyboardType="email-address"
+                autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
               />
@@ -97,6 +101,28 @@ export default function PacienteLogin() {
                 onChangeText={setPassword}
               />
             </View>
+
+            {/* CARTEL DE ERROR: Renderizado nativo puro e inline a prueba de fallos */}
+            {!!error && (
+              <View 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#FEF2F2', 
+                  borderWidth: 1, 
+                  borderColor: '#FECACA', 
+                  borderRadius: 12, 
+                  padding: 12, 
+                  marginTop: 16,
+                  gap: 8
+                }}
+              >
+                <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+                <Text style={{ color: '#DC2626', fontSize: 12, flex: 1, fontWeight: '500' }}>
+                  {error}
+                </Text>
+              </View>
+            )}
 
             <TouchableOpacity
               className="bg-turquoise rounded-xl items-center justify-center mt-6"
