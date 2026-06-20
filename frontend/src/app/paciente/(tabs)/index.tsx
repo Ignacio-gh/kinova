@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { usePacienteInicio, UPCOMING } from '@/hooks/use-paciente-inicio';
+import { useTutorial } from '@/context/TutorialContext';
 
 const CARD_WIDTH = Dimensions.get('window').width * 0.74;
 
@@ -89,6 +90,7 @@ function TodayCard({ exercise, onToggle, onStart }: TodayCardProps) {
 }
 
 export default function PacienteInicio() {
+ const { startMobileTutorial, setIsTutorialActive } = useTutorial();
   const router = useRouter();
   const {
     exercises,
@@ -99,6 +101,7 @@ export default function PacienteInicio() {
     today,
     toggleExercise,
     goToCalendar,
+    userName, 
   } = usePacienteInicio();
 
   const startExercise = (ex: typeof exercises[0]) =>
@@ -118,7 +121,6 @@ export default function PacienteInicio() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 90 }}
@@ -129,7 +131,7 @@ export default function PacienteInicio() {
             className="text-navy"
             style={{ fontSize: 36, fontStyle: 'italic', fontWeight: '300', letterSpacing: 0.5 }}
           >
-            Bienvenido, Carlos
+            Bienvenido, {userName || '...'} 
           </Text>
           <Text className="text-gray-400 text-sm mt-1">{today}</Text>
         </View>
@@ -273,6 +275,20 @@ export default function PacienteInicio() {
             </TouchableOpacity>
           </View>
         </View>
+      <TouchableOpacity 
+  className="flex-row items-center justify-center mt-8 mb-6 mx-5 py-4 rounded-xl border border-dashed border-turquoise bg-white"
+  onPress={() => {
+    setIsTutorialActive(true); // Esto activa el contexto del tutorial
+    router.push('/tutorialmobile/mock-index-mobile'); // Esto te lleva a la pantalla
+  }}
+  activeOpacity={0.7}
+>
+  <Ionicons name="school-outline" size={20} color="#00A896" style={{ marginRight: 8 }} />
+  <Text className="text-turquoise font-semibold text-sm">
+    ¿Tenés dudas? Mirá el tutorial acá
+  </Text>
+</TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );

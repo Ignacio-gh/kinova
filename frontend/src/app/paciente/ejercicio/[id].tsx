@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Modal // <-- Agregá Modal acá
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,6 +64,7 @@ const p = StyleSheet.create({
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 
 export default function EjercicioSesion() {
+  const [showTips, setShowTips] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
@@ -292,7 +293,9 @@ export default function EjercicioSesion() {
               </View>
               <Text style={s.stepText}>{step.text}</Text>
             </View>
+
           ))}
+          
 
           {/* Ángulos actuales (cuando hay análisis real) */}
           {angles && Object.keys(angles).length > 0 && (
@@ -323,6 +326,15 @@ export default function EjercicioSesion() {
             </View>
           ))}
 
+          <TouchableOpacity 
+            style={s.helpBtn} 
+            onPress={() => setShowTips(true)} 
+            activeOpacity={0.7}
+          >
+            <Ionicons name="information-circle-outline" size={18} color="#00A896" />
+            <Text style={s.helpBtnText}>¿Problemas con la cámara?</Text>
+          </TouchableOpacity>
+
           <View style={{ height: 20 }} />
         </ScrollView>
 
@@ -330,6 +342,59 @@ export default function EjercicioSesion() {
           <Text style={s.finishBtnText}>Finalizar sesión</Text>
         </TouchableOpacity>
       </View>
+
+      {/* --- NUEVO MODAL DE TIPS --- */}
+      {/* El Modal va a la misma altura que la vista final, pero fuera de la vista principal del Panel */}
+      <Modal visible={showTips} transparent animationType="fade" onRequestClose={() => setShowTips(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.tipsCard}>
+            <View style={s.tipsHeader}>
+              <View style={s.tipsIconWrap}>
+                <Ionicons name="help-buoy-outline" size={28} color="#00A896" />
+              </View>
+              <Text style={s.tipsTitle}>Tips de Detección</Text>
+            </View>
+            <Text style={s.tipsDesc}>
+              Si la cámara no detecta tus movimientos, probá con lo siguiente:
+            </Text>
+
+            <View style={s.tipList}>
+              <View style={s.tipItem}>
+                <Ionicons name="sunny-outline" size={22} color="#F59E0B" />
+                <Text style={s.tipText}>
+                  Asegurate de estar en un lugar con <Text style={{fontWeight: '700'}}>buena iluminación</Text> para que la cámara te vea nítidamente.
+                </Text>
+              </View>
+
+              <View style={s.tipItem}>
+                <Ionicons name="shirt-outline" size={22} color="#3B82F6" />
+                <Text style={s.tipText}>
+                  Evitá ropa muy holgada. Tratá de usar ropa más ajustada o corta para que la IA <Text style={{fontWeight: '700'}}>detecte tus articulaciones</Text> con precisión.
+                </Text>
+              </View>
+
+              <View style={s.tipItem}>
+                <Ionicons name="scan-outline" size={22} color="#10B981" />
+                <Text style={s.tipText}>
+                  Acomodá el celular de forma estable a unos <Text style={{fontWeight: '700'}}>2 metros de distancia</Text>, de modo que tu cuerpo entero sea visible en el recuadro.
+                </Text>
+              </View>
+
+              <View style={s.tipItem}>
+                <Ionicons name="contrast-outline" size={22} color="#8B5CF6" />
+                <Text style={s.tipText}>
+                  Buscá un fondo liso. Que el color de tu ropa <Text style={{fontWeight: '700'}}>contraste con la pared</Text> ayuda muchísimo al sistema.
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={s.closeTipsBtn} onPress={() => setShowTips(false)} activeOpacity={0.8}>
+              <Text style={s.closeTipsText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* --------------------------- */}
 
       {/* Modal de sesión completada con resumen de correcciones */}
       {sessionFinished && (
@@ -532,4 +597,40 @@ const s = StyleSheet.create({
     color: '#15803D', fontSize: 13, fontWeight: '600',
     flex: 1, lineHeight: 18,
   },
+
+  // --- Botón de Tips ---
+  helpBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: 24, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: '#e5f7f5', borderWidth: 1, borderColor: '#CCFBF1'
+  },
+  helpBtnText: { color: '#00A896', fontSize: 13, fontWeight: '700' },
+
+  // --- Modal de Tips ---
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 22, 40, 0.6)',
+    alignItems: 'center', justifyContent: 'center', padding: 20,
+    zIndex: 100,
+  },
+  tipsCard: {
+    backgroundColor: '#FFFFFF', borderRadius: 24, padding: 28,
+    width: '100%', maxWidth: 400,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+  },
+  tipsHeader: { alignItems: 'center', marginBottom: 12 },
+  tipsIconWrap: {
+    width: 60, height: 60, borderRadius: 30, backgroundColor: '#e5f7f5',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  tipsTitle: { color: '#002B49', fontSize: 20, fontWeight: '800' },
+  tipsDesc: { color: '#6B7280', fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  tipList: { gap: 16, marginBottom: 28 },
+  tipItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  tipText: { color: '#374151', fontSize: 13, lineHeight: 20, flex: 1 },
+  closeTipsBtn: {
+    backgroundColor: '#0A1628', borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+  },
+  closeTipsText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 });

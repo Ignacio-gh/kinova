@@ -11,11 +11,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthInput } from '@/components/auth-input';
 import { useKinesiologoRegister } from '@/hooks/use-kinesiologo-register';
+import { useRouter } from 'expo-router';
 
 export default function KinesiologoRegister() {
+  const router = useRouter(); 
   const {
     name, setName,
     email, setEmail,
+    matricula, setMatricula, // <-- Agregamos matrícula acá
     password, setPassword,
     confirmPassword, setConfirmPassword,
     loading,
@@ -84,12 +87,13 @@ export default function KinesiologoRegister() {
                 <Text className="text-navy text-sm font-semibold">Nombre Completo</Text>
                 <AuthInput
                   iconName="person-outline"
-                  placeholder="Juan Pérez"
+                  placeholder="Dr. Juan Pérez"
                   autoCapitalize="words"
                   value={name}
                   onChangeText={setName}
                 />
               </View>
+              
               <View style={{ gap: 6 }}>
                 <Text className="text-navy text-sm font-semibold">Correo Electrónico</Text>
                 <AuthInput
@@ -98,8 +102,23 @@ export default function KinesiologoRegister() {
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
+                  autoCapitalize="none"
                 />
               </View>
+
+              {/* --- NUEVO CAMPO: MATRÍCULA --- */}
+              <View style={{ gap: 6 }}>
+                <Text className="text-navy text-sm font-semibold">Matrícula Profesional</Text>
+                <AuthInput
+                  iconName="id-card-outline"
+                  placeholder="MN-12345"
+                  autoCapitalize="characters"
+                  value={matricula}
+                  onChangeText={setMatricula}
+                />
+              </View>
+              {/* ------------------------------ */}
+
               <View style={{ gap: 6 }}>
                 <Text className="text-navy text-sm font-semibold">Contraseña</Text>
                 <AuthInput
@@ -149,10 +168,21 @@ export default function KinesiologoRegister() {
 
             <Text className="text-gray-400 text-xs text-center mt-5 leading-5">
               Al registrarte, aceptás nuestros{' '}
-              <Text className="text-turquoise font-medium">Términos de Servicio</Text>
+              <Text 
+                className="text-turquoise font-medium" 
+                onPress={() => router.push('/terminos.mobile')}
+              >
+                Términos de Servicio
+              </Text>
               {' '}y{' '}
-              <Text className="text-turquoise font-medium">Política de Privacidad</Text>
+              <Text 
+                className="text-turquoise font-medium" 
+                onPress={() => router.push('/privacidad.mobile')}
+              >
+                Política de Privacidad
+              </Text>
             </Text>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
