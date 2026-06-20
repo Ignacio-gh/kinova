@@ -8,15 +8,15 @@ import { useMisPacientes, FILTERS, FILTER_LABELS } from '@/hooks/use-mis-pacient
 import { api } from '@/services/api';
 import { router } from 'expo-router';
 import { useTutorial } from '@/context/TutorialContext';
+import { SkeletonBox, SkeletonRow } from '@/components/ui/skeleton';
 
 const today = new Date().toISOString().split('T')[0];
 
 export default function MisPacientes() {
   // Extraemos "refetch" también para actualizar la lista tras crear un paciente
-  const { search, setSearch, filter, setFilter, filtered, goToPatient, refetch } = useMisPacientes();
+  const { search, setSearch, filter, setFilter, filtered, loading, goToPatient, refetch } = useMisPacientes();
 
-  // <-- AGREGÁ ESTA LÍNEA AQUÍ -->
-  const { startMobileTutorial } = useTutorial(); 
+  const { startMobileTutorial } = useTutorial();
 
   // --- Estados del Modal y Formulario ---
   const [showModal, setShowModal] = useState(false);
@@ -72,6 +72,34 @@ export default function MisPacientes() {
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar style="dark" />
+        <View className="flex-row items-start justify-between px-5 pt-4 pb-3">
+          <View style={{ gap: 8, flex: 1 }}>
+            <SkeletonBox width={180} height={28} radius={10} />
+            <SkeletonBox width={240} height={14} radius={6} delay={80} />
+          </View>
+          <SkeletonBox width={88} height={40} radius={10} delay={60} />
+        </View>
+        <View className="px-5 mb-3">
+          <SkeletonBox width="100%" height={44} radius={12} delay={100} />
+        </View>
+        <View className="flex-row px-5 mb-4" style={{ gap: 8 }}>
+          {[0, 1, 2].map((i) => (
+            <SkeletonBox key={i} width={72} height={32} radius={20} delay={i * 60} />
+          ))}
+        </View>
+        <View className="px-5" style={{ gap: 8 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <SkeletonRow key={i} delay={i * 70} />
+          ))}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -174,10 +202,7 @@ export default function MisPacientes() {
       {/* --- BOTÓN DEL TUTORIAL ACÁ (Fuera del Modal, en la pantalla principal) --- */}
       <TouchableOpacity 
         className="flex-row items-center justify-center mt-2 mb-8 mx-5 py-4 rounded-xl border border-dashed border-turquoise bg-white"
-        onPress={() => {
-          startMobileTutorial('kine_inicio'); 
-          router.push('/tutorialkine/mock-index-mobile-kine' as never); 
-        }}
+        onPress={() => startMobileTutorial('kine_inicio')}
         activeOpacity={0.7}
       >
         <Ionicons name="school-outline" size={20} color="#00A896" style={{ marginRight: 8 }} />

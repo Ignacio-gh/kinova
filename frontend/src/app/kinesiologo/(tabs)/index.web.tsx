@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal } from 'react-native';
+import { SkeletonBox, SkeletonRow } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileIndex from './index.tsx';
 import { useMisPacientes, FILTERS, FILTER_LABELS } from '@/hooks/use-mis-pacientes';
 import { api } from '@/services/api';
 import React from 'react';
@@ -33,11 +36,14 @@ const adherenceColor = (v: number) =>
 const today = new Date().toISOString().split('T')[0];
 
 export default function MisPacientesWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileIndex />;
+
    const { isTutorialActive } = useTutorial();
   if (isTutorialActive) {
     return <MockIndex />;
   }
-  const { search, setSearch, filter, setFilter, filtered, goToPatient, refetch } = useMisPacientes();
+  const { search, setSearch, filter, setFilter, filtered, loading, goToPatient, refetch } = useMisPacientes();
 
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,6 +96,32 @@ export default function MisPacientesWeb() {
   };
 
   
+
+  if (loading) {
+    return (
+      <View style={s.root}>
+        <WebSidebarKine />
+        <View style={s.main}>
+          <View style={s.topbar}>
+            <View style={{ gap: 8 }}>
+              <SkeletonBox width={200} height={28} radius={10} />
+              <SkeletonBox width={280} height={14} radius={6} delay={80} />
+            </View>
+            <SkeletonBox width={140} height={40} radius={10} delay={60} />
+          </View>
+          <View style={{ padding: 24, gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8 }}>
+              <SkeletonBox width="70%" height={40} radius={10} />
+              <SkeletonBox width="28%" height={40} radius={10} delay={60} />
+            </View>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <SkeletonRow key={i} delay={i * 60} />
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>

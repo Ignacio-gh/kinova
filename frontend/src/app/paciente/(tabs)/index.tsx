@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { usePacienteInicio, UPCOMING } from '@/hooks/use-paciente-inicio';
 import { useTutorial } from '@/context/TutorialContext';
+import { SkeletonBox, SkeletonCard } from '@/components/ui/skeleton';
 
 const CARD_WIDTH = Dimensions.get('window').width * 0.74;
 
@@ -90,7 +91,7 @@ function TodayCard({ exercise, onToggle, onStart }: TodayCardProps) {
 }
 
 export default function PacienteInicio() {
- const { startMobileTutorial, setIsTutorialActive } = useTutorial();
+ const { startMobileTutorial } = useTutorial();
   const router = useRouter();
   const {
     exercises,
@@ -101,8 +102,41 @@ export default function PacienteInicio() {
     today,
     toggleExercise,
     goToCalendar,
-    userName, 
+    userName,
+    loading,
   } = usePacienteInicio();
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar style="dark" />
+        <View className="px-5 pt-5 pb-4">
+          <SkeletonBox width={240} height={36} radius={10} style={{ marginBottom: 8 }} />
+          <SkeletonBox width={150} height={14} radius={6} delay={80} />
+        </View>
+        <View className="flex-row items-center justify-between px-5 mb-3">
+          <SkeletonBox width={160} height={20} radius={6} />
+          <SkeletonBox width={100} height={14} radius={6} delay={60} />
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 20 }}>
+          {[0, 1].map((i) => (
+            <SkeletonBox
+              key={i}
+              width={CARD_WIDTH}
+              height={220}
+              radius={16}
+              delay={i * 100}
+              style={{ marginRight: 16 }}
+            />
+          ))}
+        </ScrollView>
+        <View className="px-5 mt-5" style={{ gap: 16 }}>
+          <SkeletonCard height={120} delay={0} />
+          <SkeletonCard height={100} delay={100} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const startExercise = (ex: typeof exercises[0]) =>
     router.push({
@@ -277,10 +311,7 @@ export default function PacienteInicio() {
         </View>
       <TouchableOpacity 
   className="flex-row items-center justify-center mt-8 mb-6 mx-5 py-4 rounded-xl border border-dashed border-turquoise bg-white"
-  onPress={() => {
-    setIsTutorialActive(true); // Esto activa el contexto del tutorial
-    router.push('/tutorialmobile/mock-index-mobile'); // Esto te lleva a la pantalla
-  }}
+  onPress={() => startMobileTutorial()}
   activeOpacity={0.7}
 >
   <Ionicons name="school-outline" size={20} color="#00A896" style={{ marginRight: 8 }} />

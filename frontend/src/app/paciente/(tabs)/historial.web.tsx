@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { SkeletonBox, SkeletonStatCard } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileHistorial from './historial.tsx';
 import {
   useHistorialSesiones,
   formatSessionDate,
@@ -30,6 +33,8 @@ const adherenceBg = (v: number) =>
   v >= 90 ? '#F0FDF4' : v >= 60 ? '#FFFBEB' : '#FFF1F2';
 
 export default function HistorialWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileHistorial />;
   const { isTutorialActive } = useTutorial();
   if (isTutorialActive) {
     return <MockHistorial />;
@@ -50,8 +55,16 @@ export default function HistorialWeb() {
         </View>
 
         {loading ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color={C.turquoise} />
+          <View style={{ padding: 32, gap: 24 }}>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <SkeletonStatCard delay={0} />
+              <SkeletonStatCard delay={80} />
+              <SkeletonStatCard delay={160} />
+              <SkeletonStatCard delay={240} />
+            </View>
+            {[0, 1, 2].map((i) => (
+              <SkeletonBox key={i} width="100%" height={130} radius={16} delay={i * 80} />
+            ))}
           </View>
         ) : (
           <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
