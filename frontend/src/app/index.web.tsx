@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useWelcome } from '@/hooks/use-welcome';
 import { useRouter } from 'expo-router';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileIndex from './index.tsx';
 
 // Tokens de diseño — consistentes con la paleta de la ap
 const C = {
@@ -17,6 +19,9 @@ const C = {
 };
 
 export default function IndexWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileIndex />;
+
   const { goToPatient, goToKinesiologo, stats } = useWelcome();
   const router = useRouter();
 

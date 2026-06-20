@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useKinesiologoLogin } from '@/hooks/use-kinesiologo-login';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileLogin from './login.tsx';
 
 const C = {
   navy: '#0A1628',
@@ -24,6 +26,9 @@ const FEATURES = [
 ];
 
 export default function KinesiologoLoginWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileLogin />;
+
   const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack, goToRegister } =
     useKinesiologoLogin();
 

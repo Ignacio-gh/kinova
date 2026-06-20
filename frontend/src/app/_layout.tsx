@@ -1,6 +1,6 @@
 import '@/global.css';
 import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { Stack, useRouter, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { TutorialProvider, useTutorial } from '@/context/TutorialContext'; // <-- Importamos useTutorial también
@@ -16,8 +16,9 @@ const IS_WEB = Platform.OS === 'web';
 function RootLayoutContent() {
   const router = useRouter();
   const pathname = usePathname();
-  
-  
+  const { width } = useWindowDimensions();
+  const isMobileBrowser = IS_WEB && width < 768;
+
   const { isTutorialActive, setIsTutorialActive } = useTutorial();
   
   // Detectar rol según la ruta actual
@@ -210,7 +211,7 @@ function RootLayoutContent() {
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
-      {IS_WEB && isTutorialActive === true && (
+      {IS_WEB && !isMobileBrowser && isTutorialActive === true && (
         <TutorialOverlay steps={steps} onClose={closeTutorial} />
       )}
     </>

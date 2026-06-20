@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileCalendario from './calendario.tsx';
 import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
 import { useTutorial } from '@/context/TutorialContext';
 import MockCalendario from '@/mock/mock-calendario.web';
@@ -21,6 +23,8 @@ const C = {
 };
 
 export default function MiCalendarioWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileCalendario />;
   const { isTutorialActive } = useTutorial();
   if (isTutorialActive) {
     return <MockCalendario />;

@@ -20,6 +20,8 @@ import { api } from '@/services/api';
 import React from 'react';
 import { useTutorial } from '@/context/TutorialContext';
 import MockPatientDetail from '@/mock/mock-[id]';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobilePatientDetail from './[id].tsx';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,8 @@ function CompactRoutineCard({
 // ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function PatientDetailWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobilePatientDetail />;
   const { isTutorialActive } = useTutorial();
 
   if (isTutorialActive) {

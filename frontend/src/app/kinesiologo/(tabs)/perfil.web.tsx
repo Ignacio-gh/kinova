@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobilePerfil from './perfil.tsx';
 import { usePerfilKine } from '@/hooks/use-perfil-kine';
 import { useRouter } from 'expo-router';
 
@@ -19,6 +21,8 @@ const PERFIL_AJUSTES = [
 ];
 
 export default function MiPerfilWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobilePerfil />;
   const { perfilInfo, loading, handleLogout, kineStats } = usePerfilKine();
   const router = useRouter();
 

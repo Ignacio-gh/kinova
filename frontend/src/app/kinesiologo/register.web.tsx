@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useKinesiologoRegister } from '@/hooks/use-kinesiologo-register';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileRegister from './register.tsx';
 
 const C = {
   navy: '#0A1628',
@@ -23,6 +25,9 @@ const BENEFITS = [
 ];
 
 export default function KinesiologoRegisterWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileRegister />;
+
   const {
     name, setName,
     email, setEmail,
