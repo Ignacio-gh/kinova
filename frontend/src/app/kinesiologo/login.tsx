@@ -13,7 +13,7 @@ import { AuthInput } from '@/components/auth-input';
 import { useKinesiologoLogin } from '@/hooks/use-kinesiologo-login';
 
 export default function KinesiologoLogin() {
-  const { email, setEmail, password, setPassword, loading, handleLogin, goBack, goToRegister } =
+  const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack, goToRegister } =
     useKinesiologoLogin();
 
   return (
@@ -21,7 +21,7 @@ export default function KinesiologoLogin() {
       <StatusBar style="light" />
 
       {/* Círculos decorativos */}
-      <View className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
+      <View className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none', zIndex: -1 }}>
         <View
           className="absolute rounded-full bg-turquoise"
           style={{ width: 300, height: 300, right: -80, top: '15%', opacity: 0.06 }}
@@ -72,6 +72,7 @@ export default function KinesiologoLogin() {
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.25,
               shadowRadius: 14,
+              zIndex: 10
             }}
           >
             <View className="items-center mb-5">
@@ -88,6 +89,7 @@ export default function KinesiologoLogin() {
                 iconName="mail-outline"
                 placeholder="kinesiologo@email.com"
                 keyboardType="email-address"
+                autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
               />
@@ -99,6 +101,28 @@ export default function KinesiologoLogin() {
                 onChangeText={setPassword}
               />
             </View>
+
+            {/* CARTEL DE ERROR VISUAL */}
+            {error ? (
+              <View 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#FEF2F2', 
+                  borderWidth: 1, 
+                  borderColor: '#FECACA', 
+                  borderRadius: 12, 
+                  padding: 12, 
+                  marginTop: 16,
+                  gap: 8
+                }}
+              >
+                <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+                <Text style={{ color: '#DC2626', fontSize: 12, flex: 1, fontWeight: '500' }}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
 
             <TouchableOpacity
               className="bg-turquoise rounded-xl items-center justify-center mt-6"

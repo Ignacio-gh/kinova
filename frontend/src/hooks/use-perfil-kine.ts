@@ -60,5 +60,5 @@ export function usePerfilKine() {
     { icon: 'id-card-outline' as const, label: 'Matrícula', value: kineProfile?.matricula ?? '...' },
   ];
 
-  return { perfilInfo, loading, handleLogout, kineStats };
+  return { perfilInfo, loading, handleLogout, kineStats, user };
 }
