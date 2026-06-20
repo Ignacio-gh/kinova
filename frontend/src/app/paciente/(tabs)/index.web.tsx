@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { SkeletonBox, SkeletonCard } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileIndex from './index.tsx';
 import { usePacienteInicio, type TodayExercise } from '@/hooks/use-paciente-inicio';
 import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 import { useTutorial } from '@/context/TutorialContext';
@@ -24,6 +27,9 @@ const C = {
 };
 
 export default function PacienteInicioWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileIndex />;
+
   const { isTutorialActive } = useTutorial();
   if (isTutorialActive) {
     return <MockPacienteIndex />;
@@ -39,6 +45,7 @@ export default function PacienteInicioWeb() {
     today,
     toggleExercise,
     goToCalendar,
+    loading,
   } = usePacienteInicio();
   const { profile } = usePacientePerfil();
 
@@ -56,6 +63,32 @@ export default function PacienteInicioWeb() {
         angleMax: ex.angleMax != null ? String(ex.angleMax) : '',
       },
     } as never);
+
+  if (loading) {
+    return (
+      <View style={s.root}>
+        <WebSidebarPaciente />
+        <ScrollView style={s.main} showsVerticalScrollIndicator={false}>
+          <View style={s.topbar}>
+            <View style={{ gap: 10 }}>
+              <SkeletonBox width={280} height={32} radius={10} />
+              <SkeletonBox width={160} height={14} radius={6} delay={80} />
+            </View>
+            <SkeletonBox width={120} height={36} radius={18} delay={60} />
+          </View>
+          <View style={{ paddingHorizontal: 32, paddingTop: 8, gap: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              {[0, 1, 2].map((i) => (
+                <SkeletonBox key={i} width="31%" height={200} radius={16} delay={i * 80} />
+              ))}
+            </View>
+            <SkeletonCard height={140} delay={0} />
+            <SkeletonCard height={120} delay={80} />
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>

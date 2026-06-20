@@ -1,4 +1,4 @@
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import {
   formatSessionDate,
   type SessionHistoryItem,
 } from '@/hooks/use-historial-sesiones';
+import { SkeletonBox, SkeletonStatCard } from '@/components/ui/skeleton';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -141,8 +142,27 @@ export default function HistorialSesiones() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#00A896" />
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar style="dark" />
+        <View className="px-5 pt-4 pb-4">
+          <SkeletonBox width={220} height={28} radius={10} style={{ marginBottom: 8 }} />
+          <SkeletonBox width={160} height={14} radius={6} delay={80} />
+        </View>
+        <View className="px-5 pb-5" style={{ gap: 10 }}>
+          <View className="flex-row" style={{ gap: 10 }}>
+            <SkeletonStatCard delay={0} />
+            <SkeletonStatCard delay={100} />
+          </View>
+          <View className="flex-row" style={{ gap: 10 }}>
+            <SkeletonStatCard delay={200} />
+            <SkeletonStatCard delay={300} />
+          </View>
+        </View>
+        {[0, 1, 2].map((i) => (
+          <View key={i} className="px-5 mb-4">
+            <SkeletonBox width="100%" height={120} radius={16} delay={i * 80} />
+          </View>
+        ))}
       </SafeAreaView>
     );
   }

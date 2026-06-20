@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePacienteLogin } from '@/hooks/use-paciente-login';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileLogin from './login.tsx';
 
 const C = {
   navy: '#0A1628',
@@ -22,6 +24,9 @@ const FEATURES = [
 ];
 
 export default function PacienteLoginWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileLogin />;
+
   const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack } =
     usePacienteLogin();
 

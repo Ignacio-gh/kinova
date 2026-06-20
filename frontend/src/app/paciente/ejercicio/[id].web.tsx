@@ -4,6 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEjercicioSesion } from '@/hooks/use-ejercicio-sesion';
 import { PoseSkeletonOverlay } from '@/components/PoseSkeletonOverlay';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileEjercicio from './[id].tsx';
 
 // ─── Componente de cámara web ─────────────────────────────────────────────────
 
@@ -93,6 +95,8 @@ function WebCamera({
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 
 export default function EjercicioSesionWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileEjercicio />;
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;

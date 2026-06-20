@@ -17,6 +17,8 @@ import type { Exercise } from '@/components/kinesiologo/exercise-card';
 import React from 'react';
 import { useTutorial } from '@/context/TutorialContext';
 import MockBiblioteca from '@/mock/mock-biblioteca.web';
+import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
+import MobileBiblioteca from './biblioteca.tsx';
 
 const C = {
   bg: '#F1F5F9',
@@ -54,6 +56,8 @@ const DAY_TO_ENGLISH: Record<string, string> = {
 };
 
 export default function BibliotecaWeb() {
+  const isMobile = useIsMobileBrowser();
+  if (isMobile) return <MobileBiblioteca />;
   const { isTutorialActive } = useTutorial();
   if (isTutorialActive) {
     return <MockBiblioteca />;
