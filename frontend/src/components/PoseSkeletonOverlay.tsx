@@ -41,8 +41,7 @@ type ArcDef = { label: string; vertex: JointName; a: JointName; b: JointName };
 
 const ANGLES: Record<string, ArcDef[]> = {
   squat: [
-    { label: 'knee',  vertex: 'knee', a: 'hip',      b: 'ankle' },
-    { label: 'trunk', vertex: 'hip',  a: 'shoulder', b: 'knee'  },
+    { label: 'knee', vertex: 'knee', a: 'hip', b: 'ankle' },
   ],
   knee_extension: [
     { label: 'knee',  vertex: 'knee', a: 'hip',      b: 'ankle' },

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv/bin/python -c ' *)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova status)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova log --oneline -3)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova add backend/app/api/v1/routes/pose.py backend/app/pose/detector.py backend/requirements.txt backend/app/pose/pose_landmarker_full.task frontend/src/app/paciente/ejercicio/[id].web.tsx frontend/src/components/PoseSkeletonOverlay.tsx frontend/src/hooks/use-ejercicio-sesion.ts)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova commit -m ' *)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova config user.email \"mariapaztraversi@gmail.com\")",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova config user.name \"maipi0512\")",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova push origin main)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova remote get-url origin)",
+      "Bash(gh auth *)",
+      "Bash(ssh -T git@github.com)"
+    ]
+  }
+}
