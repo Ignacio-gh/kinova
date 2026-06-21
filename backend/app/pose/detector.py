@@ -51,7 +51,10 @@ class PoseDetector:
             return
 
         options = vision.PoseLandmarkerOptions(
-            base_options=base_options_module.BaseOptions(model_asset_path=_MODEL_PATH),
+            base_options=base_options_module.BaseOptions(
+                model_asset_path=_MODEL_PATH,
+                delegate=base_options_module.BaseOptions.Delegate.CPU,
+            ),
             running_mode=vision.RunningMode.VIDEO,
             min_pose_detection_confidence=settings.POSE_CONFIDENCE_THRESHOLD,
             min_pose_presence_confidence=settings.POSE_CONFIDENCE_THRESHOLD,
