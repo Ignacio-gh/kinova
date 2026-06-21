@@ -21,8 +21,8 @@ export default function KinesiologoTabsLayoutWeb() {
               backgroundColor: '#FFFFFF',
               borderTopWidth: 1,
               borderTopColor: '#E5E7EB',
-              height: 62,
-              paddingBottom: 10,
+              height: 'calc(62px + env(safe-area-inset-bottom, 0px))' as any,
+              paddingBottom: 'env(safe-area-inset-bottom, 10px)' as any,
               paddingTop: 6,
             },
             tabBarLabelStyle: {
