@@ -1,12 +1,17 @@
 import { useWindowDimensions } from 'react-native';
-import { Tabs, Slot } from 'expo-router';
+import { Tabs, Slot, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 
 type IconProps = { color: string; size: number };
 
 export default function PacienteTabsLayoutWeb() {
+  const status = useRequireAuth();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+
+  if (status === 'loading') return null;
+  if (status === 'unauth') return <Redirect href="/paciente/login" />;
 
   if (isMobile) {
     return (
