@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { SkeletonBox } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
@@ -48,8 +49,47 @@ export default function MiPerfilWeb() {
 
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
           {loading ? (
-            <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-              <ActivityIndicator size="large" color={C.turquoise} />
+            <View style={s.columns}>
+              <View style={s.colLeft}>
+                <View style={[s.avatarCard, { gap: 16 }]}>
+                  <SkeletonBox width={80} height={80} radius={40} />
+                  <SkeletonBox width={140} height={18} radius={6} delay={60} />
+                  <SkeletonBox width={110} height={13} radius={5} delay={120} />
+                  <SkeletonBox width={120} height={28} radius={20} delay={80} />
+                  <View style={{ width: '100%', flexDirection: 'row', backgroundColor: C.bg, borderRadius: 12, padding: 14 }}>
+                    {[0, 1, 2].map((i) => (
+                      <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+                        <SkeletonBox width={36} height={22} radius={5} delay={i * 80} />
+                        <SkeletonBox width={50} height={11} radius={4} delay={i * 80 + 40} />
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <SkeletonBox width="100%" height={48} radius={12} delay={200} />
+              </View>
+              <View style={s.colRight}>
+                <View style={s.section}>
+                  <SkeletonBox width={180} height={16} radius={6} style={{ margin: 20 }} />
+                  {[0, 1, 2].map((i) => (
+                    <View key={i} style={[s.infoRow]}>
+                      <SkeletonBox width={36} height={36} radius={9} delay={i * 60} />
+                      <View style={{ flex: 1, gap: 6 }}>
+                        <SkeletonBox width="35%" height={11} radius={4} delay={i * 60 + 40} />
+                        <SkeletonBox width="60%" height={14} radius={5} delay={i * 60 + 80} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+                <View style={s.section}>
+                  <SkeletonBox width={160} height={16} radius={6} style={{ margin: 20 }} />
+                  {[0, 1, 2].map((i) => (
+                    <View key={i} style={[s.settingRow]}>
+                      <SkeletonBox width={36} height={36} radius={9} delay={i * 60} />
+                      <SkeletonBox width="55%" height={14} radius={5} delay={i * 60 + 60} />
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
           ) : (
             <View style={s.columns}>

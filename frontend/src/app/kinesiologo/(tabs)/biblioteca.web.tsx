@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  TextInput, 
-  StyleSheet, 
-  ScrollView, 
-  Modal 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useBiblioteca, CATEGORY_FILTERS } from '@/hooks/use-biblioteca';
+import { SkeletonBox } from '@/components/ui/skeleton';
 import { useMisPacientes } from '@/hooks/use-mis-pacientes';
 import { api } from '@/services/api';
 import type { Exercise } from '@/components/kinesiologo/exercise-card';
@@ -58,7 +59,7 @@ const DAY_TO_ENGLISH: Record<string, string> = {
 export default function BibliotecaWeb() {
   const isMobile = useIsMobileBrowser();
   const { isTutorialActive } = useTutorial();
-  const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
+  const { search, setSearch, filter, setFilter, filtered, loading } = useBiblioteca();
   const { filtered: allPatients, loading: patientsLoading } = useMisPacientes();
   const activePatients = allPatients.filter((p) => p.status === 'Activo');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -178,7 +179,32 @@ export default function BibliotecaWeb() {
           contentContainerStyle={s.gridContent}
           showsVerticalScrollIndicator={false}
         >
-          {filtered.length === 0 ? (
+          {loading ? (
+            <View style={s.cardGrid}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <View key={i} style={s.exCard}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <SkeletonBox width={70} height={22} radius={20} delay={i * 40} />
+                    <SkeletonBox width={80} height={28} radius={8} delay={i * 40 + 60} />
+                  </View>
+                  <SkeletonBox width="75%" height={20} radius={6} delay={i * 40 + 80} />
+                  <View style={{ gap: 6, marginTop: 10 }}>
+                    <SkeletonBox width="100%" height={13} radius={5} delay={i * 40 + 120} />
+                    <SkeletonBox width="85%" height={13} radius={5} delay={i * 40 + 160} />
+                    <SkeletonBox width="65%" height={13} radius={5} delay={i * 40 + 200} />
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
+                    <SkeletonBox width={64} height={22} radius={20} delay={i * 40 + 100} />
+                    <SkeletonBox width={80} height={22} radius={20} delay={i * 40 + 120} />
+                  </View>
+                  <View style={{ gap: 8, marginTop: 14, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 14 }}>
+                    <SkeletonBox width="65%" height={12} radius={5} delay={i * 40 + 140} />
+                    <SkeletonBox width="50%" height={12} radius={5} delay={i * 40 + 180} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : filtered.length === 0 ? (
             <View style={s.empty}>
               <Ionicons name="barbell-outline" size={48} color={C.gray200} />
               <Text style={s.emptyText}>No se encontraron ejercicios</Text>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { SkeletonBox, SkeletonCard } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
@@ -25,11 +26,45 @@ const C = {
 export default function MiCalendarioWeb() {
   const isMobile = useIsMobileBrowser();
   const { isTutorialActive } = useTutorial();
-  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, toggleComplete } =
+  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete } =
     useMiCalendario();
 
   if (isMobile) return <MobileCalendario />;
   if (isTutorialActive) return <MockCalendario />;
+
+  if (loading) {
+    return (
+      <View style={s.root}>
+        <WebSidebarPaciente />
+        <View style={s.main}>
+          <View style={s.topbar}>
+            <View>
+              <Text style={s.pageTitle}>Mi Calendario Semanal</Text>
+              <Text style={s.pageSub}>Visualizá y completá tus ejercicios asignados</Text>
+            </View>
+          </View>
+          <View style={s.body}>
+            <View style={s.daySelector}>
+              <SkeletonBox width={80} height={10} radius={4} style={{ marginBottom: 8 }} />
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                <View key={i} style={{ paddingVertical: 14, paddingHorizontal: 12 }}>
+                  <SkeletonBox width="70%" height={14} radius={6} delay={i * 40} />
+                </View>
+              ))}
+            </View>
+            <View style={{ flex: 1, padding: 28, gap: 20 }}>
+              <SkeletonBox width={220} height={22} radius={6} />
+              <View style={s.exGrid}>
+                {[0, 1, 2].map((i) => (
+                  <SkeletonCard key={i} height={160} delay={i * 80} />
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>

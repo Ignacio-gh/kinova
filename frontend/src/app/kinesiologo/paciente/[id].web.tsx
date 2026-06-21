@@ -9,8 +9,8 @@ import {
   TextStyle,
   Modal,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
+import { SkeletonBox, SkeletonCard } from '@/components/ui/skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -272,8 +272,45 @@ export default function PatientDetailWeb() {
     return (
       <View style={s.webRoot}>
         <WebSidebarKine />
-        <View style={s.centerView}>
-          <ActivityIndicator size="large" color="#00A896" />
+        <View style={{ flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Topbar skeleton */}
+          <View style={{ paddingHorizontal: 36, paddingTop: 28, paddingBottom: 24, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <SkeletonBox width={80} height={80} radius={40} />
+              <View style={{ gap: 10 }}>
+                <SkeletonBox width={200} height={22} radius={6} />
+                <SkeletonBox width={140} height={14} radius={5} delay={60} />
+                <SkeletonBox width={100} height={24} radius={12} delay={100} />
+              </View>
+              <View style={{ marginLeft: 'auto' as any, flexDirection: 'row', gap: 24 }}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                    <SkeletonBox width={48} height={24} radius={6} delay={i * 60} />
+                    <SkeletonBox width={60} height={11} radius={4} delay={i * 60 + 40} />
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+          {/* Body skeleton */}
+          <ScrollView contentContainerStyle={{ padding: 36, flexDirection: 'row', gap: 24 }}>
+            <View style={{ width: 280, gap: 16 }}>
+              <SkeletonCard height={160} />
+              <SkeletonCard height={120} delay={80} />
+            </View>
+            <View style={{ flex: 1, gap: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                  <SkeletonBox key={i} width={70} height={34} radius={8} delay={i * 30} />
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <SkeletonCard key={i} height={120} delay={i * 60} style={{ minWidth: 200, flex: 1 }} />
+                ))}
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </View>
     );
