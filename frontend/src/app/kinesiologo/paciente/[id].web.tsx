@@ -341,7 +341,7 @@ export default function PatientDetailWeb() {
         <View style={s.headerContainer}>
           <TouchableOpacity
             style={s.backBtnRow}
-            onPress={() => router.push('/')}
+            onPress={() => router.push('/kinesiologo')}
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={18} color="#6B7280" />
