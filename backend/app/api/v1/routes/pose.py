@@ -89,10 +89,29 @@ async def pose_websocket(
     angle_min = float(angle_min) if angle_min else None
     angle_max = float(angle_max) if angle_max else None
 
+    # ── Aceptar la conexion primero para poder enviar errores al cliente ──
+    await websocket.accept()
+    logger.info(
+        "WebSocket conectado: evaluator=%s, angle_min=%s, angle_max=%s",
+        evaluator_key, angle_min, angle_max,
+    )
+
     # ── Crear evaluador y detector ──
     evaluator_class = EVALUATOR_REGISTRY[evaluator_key]
     evaluator = evaluator_class(angle_min=angle_min, angle_max=angle_max)
-    detector = PoseDetector()
+    try:
+        detector = PoseDetector()
+    except Exception as exc:
+        logger.error("Error al inicializar PoseDetector: %s", exc, exc_info=True)
+        await websocket.send_json({
+            "status": "bad",
+            "corrections": [{"joint": "sistema", "message": f"Error al cargar modelo de pose: {exc}", "severity": "error"}],
+            "angles": {},
+            "rep_counted": False,
+            "total_reps": 0,
+        })
+        await websocket.close(code=4500, reason="Error al inicializar PoseDetector")
+        return
 
     # ── Buffer de suavizado temporal (EMA) ──
     # Cada landmark nuevo se mezcla con su valor previo para evitar saltos
@@ -106,13 +125,6 @@ async def pose_websocket(
     MAX_JUMP = 0.35  # rechaza teleportaciones pero permite movimientos de ejercicio
     no_detection_frames = 0  # frames consecutivos sin detección
     NO_DETECTION_RESET = 3   # tras 3 frames sin nadie → resetear EMA (balance entre limpieza y estabilidad)
-
-    # ── Aceptar la conexion ──
-    await websocket.accept()
-    logger.info(
-        "WebSocket conectado: evaluator=%s, angle_min=%s, angle_max=%s",
-        evaluator_key, angle_min, angle_max,
-    )
 
     try:
         while True:

@@ -40,6 +40,13 @@ async def lifespan(app: FastAPI):
     logger.info("Frontend URL: %s", settings.FRONTEND_URL)
     logger.info("DB: %s", settings.DATABASE_URL)
 
+    try:
+        from app.pose.detector import PoseDetector
+        PoseDetector()
+        logger.info("PoseDetector inicializado y listo")
+    except Exception as exc:
+        logger.warning("PoseDetector no se pudo inicializar en startup: %s", exc)
+
     logger.info("Servidor listo!")
 
     yield
