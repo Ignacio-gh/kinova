@@ -29,11 +29,13 @@ function RootLayoutContent() {
   }, [pathname]);
 
   useEffect(() => {
-    if (IS_WEB) {
-      const hasSeen = localStorage.getItem('tutorial_visto');
-      setIsTutorialActive(hasSeen !== 'true');
-    }
-  }, []);
+    if (!IS_WEB) return;
+    const hasSeen = localStorage.getItem('tutorial_visto');
+    if (hasSeen === 'true') return;
+    // Solo auto-inicia en el dashboard, no en landing ni login
+    const isDashboard = pathname === '/kinesiologo' || pathname === '/paciente';
+    if (isDashboard) setIsTutorialActive(true);
+  }, [pathname, setIsTutorialActive]);
 
   // Escuchadores dinámicos para ambos roles (solo web — usa window events)
   useEffect(() => {
@@ -211,7 +213,8 @@ function RootLayoutContent() {
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
-      {IS_WEB && !isMobileBrowser && isTutorialActive === true && (
+      {IS_WEB && !isMobileBrowser && isTutorialActive === true &&
+        (pathname.startsWith('/kinesiologo') || pathname.startsWith('/paciente')) && (
         <TutorialOverlay steps={steps} onClose={closeTutorial} />
       )}
     </>
