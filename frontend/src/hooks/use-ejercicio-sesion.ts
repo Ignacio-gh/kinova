@@ -33,6 +33,7 @@ function resolveEvaluatorKey(name: string): string | null {
   const lower = name.toLowerCase();
   if (lower.includes('sentadilla') || lower.includes('squat')) return 'squat';
   if (lower.includes('extensi')) return 'knee_extension';
+  if (lower.includes('elevaci') || lower.includes('pierna recta') || lower.includes('slr')) return 'straight_leg_raise';
   return null;
 }
 
@@ -150,10 +151,12 @@ export function useEjercicioSesion(
   targetSeries: number,
   angleMin: number | null = null,
   angleMax: number | null = null,
+  evaluatorKeyOverride: string | null = null,
 ) {
   const router = useRouter();
   const dbKey = resolveExerciseKey(exerciseName);
-  const evaluatorKey = resolveEvaluatorKey(exerciseName);
+  // Prioridad: param de ruta (viene del DB) → derivado del nombre → null (sin WS)
+  const evaluatorKey = evaluatorKeyOverride ?? resolveEvaluatorKey(exerciseName);
   const db = EXERCISE_DB[dbKey];
 
   const [isRunning, setIsRunning] = useState(true);

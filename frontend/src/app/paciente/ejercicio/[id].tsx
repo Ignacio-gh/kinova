@@ -68,7 +68,7 @@ export default function EjercicioSesion() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
-    angleMin: string; angleMax: string;
+    angleMin: string; angleMax: string; evaluatorKey: string;
   }>();
 
   const name        = params.name     ?? 'Ejercicio';
@@ -77,6 +77,7 @@ export default function EjercicioSesion() {
   const targetSeries = Number(params.series  ?? 3);
   const angleMin     = params.angleMin ? Number(params.angleMin) : null;
   const angleMax     = params.angleMax ? Number(params.angleMax) : null;
+  const evaluatorKeyParam = params.evaluatorKey || null;
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -91,7 +92,7 @@ export default function EjercicioSesion() {
     currentFeedback, steps, sessionFinished, finishSession,
     sendFrame, connected, landmarks, angles, wsStatus, rawCorrections, evaluatorKey,
     summaryCorrections,
-  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
+  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax, evaluatorKeyParam);
 
   // Dimensiones del contenedor de cámara para el overlay SVG
   const [cameraSize, setCameraSize] = useState({ width: 0, height: 0 });

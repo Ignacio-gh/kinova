@@ -100,7 +100,7 @@ export default function EjercicioSesionWeb() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     name: string; muscle: string; reps: string; series: string;
-    angleMin: string; angleMax: string;
+    angleMin: string; angleMax: string; evaluatorKey: string;
   }>();
 
   const name         = params.name    ?? 'Ejercicio';
@@ -109,6 +109,7 @@ export default function EjercicioSesionWeb() {
   const targetSeries = Number(params.series  ?? 3);
   const angleMin     = params.angleMin ? Number(params.angleMin) : null;
   const angleMax     = params.angleMax ? Number(params.angleMax) : null;
+  const evaluatorKeyParam = params.evaluatorKey || null;
 
   const [cameraError, setCameraError]     = useState<string | null>(null);
   const [cameraPanelSize, setCameraPanelSize] = useState({ width: 0, height: 0 });
@@ -128,7 +129,7 @@ export default function EjercicioSesionWeb() {
     reps, series, isRunning, togglePause, elapsedFormatted,
     sessionFinished, finishSession,
     sendFrame, connected, landmarks, angles, rawCorrections, evaluatorKey,
-  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax);
+  } = useEjercicioSesion(name, muscle, targetReps, targetSeries, angleMin, angleMax, evaluatorKeyParam);
 
   // Correcciones client-side: el backend solo las genera si angle_min/max están
   // configurados en la sesión. Este fallback replica la misma lógica para que

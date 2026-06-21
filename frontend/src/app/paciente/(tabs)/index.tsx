@@ -145,6 +145,7 @@ export default function PacienteInicio() {
         id: ex.id,
         name: ex.name,
         muscle: ex.muscle,
+        evaluatorKey: ex.evaluatorKey ?? '',
         reps: ex.reps,
         series: ex.series,
         angleMin: ex.angleMin != null ? String(ex.angleMin) : '',

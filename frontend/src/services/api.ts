@@ -37,6 +37,8 @@ async function getToken(): Promise<string | null> {
   return _cachedToken;
 }
 
+export const readToken = getToken;
+
 export async function saveToken(token: string): Promise<void> {
   _cachedToken = token;
   await AsyncStorage.setItem(TOKEN_KEY, token);
