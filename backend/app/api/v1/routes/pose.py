@@ -32,6 +32,7 @@ from app.pose.base_evaluator import BaseEvaluator
 from app.pose.detector import PoseDetector
 from app.pose.evaluators.knee_extension import KneeExtensionEvaluator
 from app.pose.evaluators.squat import SquatEvaluator
+from app.pose.evaluators.straight_leg_raise import StraightLegRaiseEvaluator
 
 logger = logging.getLogger("kinova.pose")
 
@@ -42,6 +43,7 @@ SKELETON_LANDMARK_INDICES = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
 EVALUATOR_REGISTRY: dict[str, type[BaseEvaluator]] = {
     "squat": SquatEvaluator,
     "knee_extension": KneeExtensionEvaluator,
+    "straight_leg_raise": StraightLegRaiseEvaluator,
 }
 
 

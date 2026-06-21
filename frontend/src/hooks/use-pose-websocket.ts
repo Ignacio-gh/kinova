@@ -43,6 +43,10 @@ export type PoseWSFeedback = {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+// Mínimo intervalo entre frames enviados (ms). El backend lite+sin-CLAHE procesa
+// en ~100-150ms. Enviamos cada 80ms para mantener la pipe llena sin acumular cola.
+const MIN_SEND_INTERVAL_MS = 80;
+
 export function usePoseWebSocket(
   evaluatorKey: string | null,
   enabled: boolean,
@@ -52,84 +56,69 @@ export function usePoseWebSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const [feedback, setFeedback] = useState<PoseWSFeedback | null>(null);
   const [connected, setConnected] = useState(false);
-  const sendingRef = useRef(false);
-  const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sentAtRef = useRef<number>(0);
+  const lastSentRef = useRef<number>(0);
+  const inFlightRef = useRef(0);
 
   useEffect(() => {
     if (!evaluatorKey || !enabled) {
-      console.log('[PoseWS] efecto sin conectar — evaluatorKey:', evaluatorKey, 'enabled:', enabled);
       return;
     }
 
-    console.log('[PoseWS] efecto iniciando — evaluatorKey:', evaluatorKey, 'angleMin:', angleMin, 'angleMax:', angleMax);
     const wsBase = BASE_URL.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
-    // Armar query params con los ángulos del paciente (vienen de la rutina)
     const qp = new URLSearchParams();
     if (angleMin != null) qp.set('angle_min', String(angleMin));
     if (angleMax != null) qp.set('angle_max', String(angleMax));
     const qs = qp.toString();
     const url = `${wsBase}/api/v1/pose/ws/${evaluatorKey}${qs ? `?${qs}` : ''}`;
-    console.log('[PoseWS] conectando a', url);
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
+    inFlightRef.current = 0;
 
-    ws.onopen = () => {
-      console.log('[PoseWS] conectado');
-      setConnected(true);
-    };
+    ws.onopen = () => setConnected(true);
+
     ws.onmessage = (event) => {
-      if (sendTimeoutRef.current) {
-        clearTimeout(sendTimeoutRef.current);
-        sendTimeoutRef.current = null;
-      }
-      const rtt = sentAtRef.current ? Date.now() - sentAtRef.current : 0;
+      inFlightRef.current = Math.max(0, inFlightRef.current - 1);
       try {
         const parsed = JSON.parse(event.data) as PoseWSFeedback;
         setFeedback(parsed);
-        const lmCount = parsed.landmarks ? Object.keys(parsed.landmarks).length : 0;
-        console.log(`[PoseWS] feedback rtt=${rtt}ms status=${parsed.status} landmarks=${lmCount}`);
       } catch {
         // ignorar frames malformados
-      } finally {
-        sendingRef.current = false;
       }
     };
-    ws.onclose = (e) => {
-      console.log('[PoseWS] desconectado', e.code, e.reason);
+
+    ws.onclose = () => {
       setConnected(false);
-      sendingRef.current = false;
+      inFlightRef.current = 0;
     };
+
     ws.onerror = () => {
       console.warn('[PoseWS] error de conexión. URL usada:', url);
       setConnected(false);
-      sendingRef.current = false;
+      inFlightRef.current = 0;
     };
 
     return () => {
-      console.log('[PoseWS] cleanup — cerrando WS (cambió dep o unmount)');
       ws.close();
       wsRef.current = null;
-      sendingRef.current = false;
+      inFlightRef.current = 0;
     };
   }, [evaluatorKey, enabled, angleMin, angleMax]);
 
   const sendFrame = useCallback((base64: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN && !sendingRef.current) {
-      sendingRef.current = true;
-      sentAtRef.current = Date.now();
+    const ws = wsRef.current;
+    if (ws?.readyState !== WebSocket.OPEN) return;
 
-      // Timeout de seguridad: si el backend no responde en 2s, liberamos el bloqueo
-      // para que el siguiente frame pueda enviarse (evita deadlock).
-      if (sendTimeoutRef.current) clearTimeout(sendTimeoutRef.current);
-      sendTimeoutRef.current = setTimeout(() => {
-        console.warn('[PoseWS] timeout esperando respuesta — liberando lock');
-        sendingRef.current = false;
-      }, 2000);
+    const now = Date.now();
+    const elapsed = now - lastSentRef.current;
 
-      wsRef.current.send(JSON.stringify({ frame: base64 }));
-    }
+    // Throttle: no enviar más rápido que MIN_SEND_INTERVAL_MS
+    // y no acumular más de 2 frames en vuelo (evita latencia acumulada)
+    if (elapsed < MIN_SEND_INTERVAL_MS || inFlightRef.current >= 2) return;
+
+    lastSentRef.current = now;
+    inFlightRef.current += 1;
+    ws.send(JSON.stringify({ frame: base64 }));
   }, []);
 
   return { feedback, connected, sendFrame };

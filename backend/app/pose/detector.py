@@ -17,7 +17,10 @@ from PIL import Image, ImageOps
 
 from app.config.settings import settings
 
-_MODEL_PATH = os.path.join(os.path.dirname(__file__), "pose_landmarker_full.task")
+_DIR = os.path.dirname(__file__)
+_LITE_MODEL = os.path.join(_DIR, "pose_landmarker_lite.task")
+_FULL_MODEL = os.path.join(_DIR, "pose_landmarker_full.task")
+_MODEL_PATH = _LITE_MODEL if os.path.exists(_LITE_MODEL) else _FULL_MODEL
 
 LEFT_LANDMARKS = {
     "shoulder": 11,
@@ -57,6 +60,8 @@ class PoseDetector:
         self._landmarker = vision.PoseLandmarker.create_from_options(options)
         self._start_ts = time.monotonic()
         self._initialized = True
+        import logging
+        logging.getLogger("kinova.pose").info("PoseDetector usando modelo: %s", _MODEL_PATH)
 
     def detect_from_bytes(self, image_bytes: bytes) -> dict[str, Any] | None:
         try:
@@ -73,15 +78,9 @@ class PoseDetector:
             return None
 
         h, w = image.shape[:2]
-        if max(h, w) > 640:
-            scale = 640 / max(h, w)
+        if max(h, w) > 480:
+            scale = 480 / max(h, w)
             image = cv2.resize(image, (int(w * scale), int(h * scale)))
-
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-        l_ch, a_ch, b_ch = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        l_ch = clahe.apply(l_ch)
-        image = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2BGR)
 
         return self.detect_from_array(image)
 

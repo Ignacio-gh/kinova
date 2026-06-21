@@ -25,9 +25,10 @@ export default function MiPerfilPacienteWeb() {
   const initials = profile?.full_name
     ?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? 'PA';
 
-  const statusLabel = profile?.status === 'active' ? 'Tratamiento Activo' : 'Tratamiento Finalizado';
-  const statusColor = profile?.status === 'active' ? C.turquoise : C.gray400;
-  const statusBg = profile?.status === 'active' ? C.turquoiseBg : C.gray100;
+  const isActive = profile?.status === 'activo' || profile?.status === 'active';
+  const statusLabel = isActive ? 'Tratamiento Activo' : 'Tratamiento Finalizado';
+  const statusColor = isActive ? C.turquoise : C.gray400;
+  const statusBg = isActive ? C.turquoiseBg : C.gray100;
 
   const infoRows = [
     { icon: 'person-outline' as const, label: 'Nombre completo', value: profile?.full_name ?? '...' },
