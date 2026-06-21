@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', icon: 'home-outline', path: '/paciente' },
   { label: 'Mi Calendario', icon: 'calendar-outline', path: '/paciente/calendario' },
   { label: 'Historial', icon: 'time-outline', path: '/paciente/historial' },
+  { label: 'Mi Perfil', icon: 'person-outline', path: '/paciente/perfil' },
 ];
 
 export function WebSidebarPaciente() {
