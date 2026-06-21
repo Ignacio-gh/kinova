@@ -1,4 +1,3 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 export default function Root({ children }: PropsWithChildren) {
@@ -7,12 +6,14 @@ export default function Root({ children }: PropsWithChildren) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        {/* viewport-fit=cover permite usar env(safe-area-inset-*) en iOS Safari */}
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
-        <ScrollViewStyleReset />
+        {/* Reset necesario para que Expo web ocupe el viewport completo */}
+        <style dangerouslySetInnerHTML={{
+          __html: '#root,body,html{height:100%}body{overflow:hidden}#root{display:flex}'
+        }} />
       </head>
       <body>{children}</body>
     </html>
