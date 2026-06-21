@@ -16,10 +16,10 @@ const C = {
 
 export default function MiPerfilPacienteWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobilePerfil />;
-
   const { profile, handleLogout } = usePacientePerfil();
   const router = useRouter();
+
+  if (isMobile) return <MobilePerfil />;
   const loading = !profile;
 
   const initials = profile?.full_name

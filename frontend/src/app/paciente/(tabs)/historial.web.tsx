@@ -34,12 +34,11 @@ const adherenceBg = (v: number) =>
 
 export default function HistorialWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileHistorial />;
   const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockHistorial />;
-  }
   const { sessions, stats, loading } = useHistorialSesiones();
+
+  if (isMobile) return <MobileHistorial />;
+  if (isTutorialActive) return <MockHistorial />;
 
   return (
     <View style={s.root}>

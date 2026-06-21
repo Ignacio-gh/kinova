@@ -57,21 +57,17 @@ const DAY_TO_ENGLISH: Record<string, string> = {
 
 export default function BibliotecaWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileBiblioteca />;
   const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockBiblioteca />;
-  }
-  
   const { search, setSearch, filter, setFilter, filtered } = useBiblioteca();
   const { filtered: allPatients, loading: patientsLoading } = useMisPacientes();
   const activePatients = allPatients.filter((p) => p.status === 'Activo');
-
-  // --- Estados del Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [assignError, setAssignError] = useState('');
   const [assignSaving, setAssignSaving] = useState(false);
+
+  if (isMobile) return <MobileBiblioteca />;
+  if (isTutorialActive) return <MockBiblioteca />;
 
   // --- Estados del Formulario ---
   const [patientId, setPatientId] = useState('');

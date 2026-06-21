@@ -22,9 +22,10 @@ const PERFIL_AJUSTES = [
 
 export default function MiPerfilWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobilePerfil />;
   const { perfilInfo, loading, handleLogout, kineStats } = usePerfilKine();
   const router = useRouter();
+
+  if (isMobile) return <MobilePerfil />;
 
   const name = perfilInfo.find((i) => i.label === 'Nombre completo')?.value ?? '';
   const email = perfilInfo.find((i) => i.label === 'Correo')?.value ?? '';

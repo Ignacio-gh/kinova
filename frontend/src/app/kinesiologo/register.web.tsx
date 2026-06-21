@@ -26,8 +26,6 @@ const BENEFITS = [
 
 export default function KinesiologoRegisterWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileRegister />;
-
   const {
     name, setName,
     email, setEmail,
@@ -39,6 +37,8 @@ export default function KinesiologoRegisterWeb() {
     goBack,
     goToLogin,
   } = useKinesiologoRegister();
+
+  if (isMobile) return <MobileRegister />;
 
   return (
     <View style={s.root}>

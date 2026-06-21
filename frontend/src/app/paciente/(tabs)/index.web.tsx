@@ -28,12 +28,7 @@ const C = {
 
 export default function PacienteInicioWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileIndex />;
-
   const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockPacienteIndex />;
-  }
   const router = useRouter();
   const {
     userName,
@@ -48,6 +43,9 @@ export default function PacienteInicioWeb() {
     loading,
   } = usePacienteInicio();
   const { profile } = usePacientePerfil();
+
+  if (isMobile) return <MobileIndex />;
+  if (isTutorialActive) return <MockPacienteIndex />;
 
   const startExercise = (ex: TodayExercise) =>
     router.push({

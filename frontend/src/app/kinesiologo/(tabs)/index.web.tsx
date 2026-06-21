@@ -37,14 +37,8 @@ const today = new Date().toISOString().split('T')[0];
 
 export default function MisPacientesWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileIndex />;
-
-   const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockIndex />;
-  }
+  const { isTutorialActive } = useTutorial();
   const { search, setSearch, filter, setFilter, filtered, loading, goToPatient, refetch } = useMisPacientes();
-
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
@@ -55,6 +49,9 @@ export default function MisPacientesWeb() {
     treatment_weeks: '12', treatment_start_date: today,
     phone: '', notes: '',
   });
+
+  if (isMobile) return <MobileIndex />;
+  if (isTutorialActive) return <MockIndex />;
 
   const setField = (key: keyof typeof form) => (val: string) =>
     setForm((f) => ({ ...f, [key]: val }));

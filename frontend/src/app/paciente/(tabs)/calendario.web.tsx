@@ -24,14 +24,12 @@ const C = {
 
 export default function MiCalendarioWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileCalendario />;
   const { isTutorialActive } = useTutorial();
-  if (isTutorialActive) {
-    return <MockCalendario />;
-  }
-
   const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, toggleComplete } =
     useMiCalendario();
+
+  if (isMobile) return <MobileCalendario />;
+  if (isTutorialActive) return <MockCalendario />;
 
   return (
     <View style={s.root}>

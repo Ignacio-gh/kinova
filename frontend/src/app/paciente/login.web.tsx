@@ -25,10 +25,10 @@ const FEATURES = [
 
 export default function PacienteLoginWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobileLogin />;
-
   const { email, setEmail, password, setPassword, loading, error, handleLogin, goBack } =
     usePacienteLogin();
+
+  if (isMobile) return <MobileLogin />;
 
   return (
     <View style={s.root}>
