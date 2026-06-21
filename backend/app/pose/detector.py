@@ -8,6 +8,10 @@ import os
 import time
 from typing import Any
 
+# Must be set before importing mediapipe: prevents GPU library detection
+# on headless servers (e.g. Render) that lack libGLESv2.so.2
+os.environ.setdefault('MEDIAPIPE_DISABLE_GPU', '1')
+
 import cv2
 import mediapipe as mp
 import numpy as np
