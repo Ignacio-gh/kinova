@@ -93,7 +93,7 @@ export default function IndexWeb() {
           <Text style={s.cardsTitle}>¿Cómo querés ingresar?</Text>
 
           {/* Paciente */}
-          <Link href="/paciente/login" style={{ textDecorationLine: 'none' }}>
+          <Link href="/paciente/login" style={{ textDecorationLine: 'none', display: 'flex' as any }}>
             <View style={s.cardPatient}>
               <View style={[s.cardIcon, { backgroundColor: C.turquoiseDim }]}>
                 <Text style={s.cardEmoji}>🧑‍🦽</Text>
@@ -107,7 +107,7 @@ export default function IndexWeb() {
           </Link>
 
           {/* Kinesiólogo */}
-          <Link href="/kinesiologo/login" style={{ textDecorationLine: 'none' }}>
+          <Link href="/kinesiologo/login" style={{ textDecorationLine: 'none', display: 'flex' as any }}>
             <View style={s.cardKine}>
               <View style={[s.cardIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
                 <Text style={s.cardEmoji}>👨‍⚕️</Text>
@@ -297,6 +297,8 @@ const s = StyleSheet.create({
     padding: 20,
     gap: 16,
     cursor: 'pointer' as any,
+    width: '100%' as any,
+    minHeight: 88,
   },
   cardKine: {
     flexDirection: 'row',
@@ -306,6 +308,8 @@ const s = StyleSheet.create({
     padding: 20,
     gap: 16,
     cursor: 'pointer' as any,
+    width: '100%' as any,
+    minHeight: 88,
   },
   cardIcon: {
     width: 52,
