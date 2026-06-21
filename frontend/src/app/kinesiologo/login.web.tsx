@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useKinesiologoLogin } from '@/hooks/use-kinesiologo-login';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
@@ -156,9 +157,9 @@ export default function KinesiologoLoginWeb() {
 
           <View style={s.registerRow}>
             <Text style={s.registerLabel}>¿No tenés cuenta?</Text>
-            <TouchableOpacity onPress={goToRegister} activeOpacity={0.7}>
+            <Link href="/kinesiologo/register" style={{ textDecorationLine: 'none' }}>
               <Text style={s.registerLink}>Registrate aquí</Text>
-            </TouchableOpacity>
+            </Link>
           </View>
         </View>
       </View>

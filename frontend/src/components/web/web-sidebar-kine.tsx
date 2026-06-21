@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { Link, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const C = {
@@ -56,16 +56,26 @@ export function WebSidebarKine() {
       <View style={s.nav}>
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.path) && !item.isTutorial;
+          if (item.isTutorial) {
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={s.navItem}
+                onPress={openTutorial}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={item.icon} size={20} color={C.text} />
+                <Text style={s.navLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            );
+          }
           return (
-            <TouchableOpacity
-              key={item.label}
-              style={[s.navItem, active && s.navItemActive]}
-              onPress={() => item.isTutorial ? openTutorial() : router.push(item.path as never)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={item.icon} size={20} color={active ? C.active : C.text} />
-              <Text style={[s.navLabel, active && s.navLabelActive]}>{item.label}</Text>
-            </TouchableOpacity>
+            <Link key={item.label} href={item.path as never} style={{ textDecorationLine: 'none' }}>
+              <View style={[s.navItem, active && s.navItemActive]}>
+                <Ionicons name={item.icon} size={20} color={active ? C.active : C.text} />
+                <Text style={[s.navLabel, active && s.navLabelActive]}>{item.label}</Text>
+              </View>
+            </Link>
           );
         })}
       </View>

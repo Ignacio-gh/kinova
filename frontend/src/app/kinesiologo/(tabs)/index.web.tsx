@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal } from 'react-native';
 import { SkeletonBox, SkeletonRow } from '@/components/ui/skeleton';
 import { Ionicons } from '@expo/vector-icons';
+import { Link } from 'expo-router';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileIndex from './index.tsx';
@@ -255,14 +256,12 @@ export default function MisPacientesWeb() {
                   </View>
 
                   {/* Acción */}
-                  <TouchableOpacity
-                    style={s.viewBtn}
-                    onPress={() => goToPatient(p.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.viewBtnText}>Ver</Text>
-                    <Ionicons name="chevron-forward" size={14} color={C.turquoise} />
-                  </TouchableOpacity>
+                  <Link href={`/kinesiologo/paciente/${p.id}` as never} style={{ textDecorationLine: 'none' }}>
+                    <View style={s.viewBtn}>
+                      <Text style={s.viewBtnText}>Ver</Text>
+                      <Ionicons name="chevron-forward" size={14} color={C.turquoise} />
+                    </View>
+                  </Link>
                 </View>
               );
             })

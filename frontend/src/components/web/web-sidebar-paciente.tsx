@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { Link, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 
@@ -88,21 +88,18 @@ export function WebSidebarPaciente() {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.path);
           return (
-            <TouchableOpacity
-              key={item.path}
-              style={[s.navItem, active && s.navItemActive]}
-              onPress={() => router.push(item.path as never)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={item.icon}
-                size={20}
-                color={active ? C.active : C.text}
-              />
-              <Text style={[s.navLabel, active && s.navLabelActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
+            <Link key={item.path} href={item.path as never} style={{ textDecorationLine: 'none' }}>
+              <View style={[s.navItem, active && s.navItemActive]}>
+                <Ionicons
+                  name={item.icon}
+                  size={20}
+                  color={active ? C.active : C.text}
+                />
+                <Text style={[s.navLabel, active && s.navLabelActive]}>
+                  {item.label}
+                </Text>
+              </View>
+            </Link>
           );
         })}
       </View>

@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useWelcome } from '@/hooks/use-welcome';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileIndex from './index.tsx';
 
@@ -93,30 +93,34 @@ export default function IndexWeb() {
           <Text style={s.cardsTitle}>¿Cómo querés ingresar?</Text>
 
           {/* Paciente */}
-          <TouchableOpacity style={s.cardPatient} onPress={goToPatient} activeOpacity={0.8}>
-            <View style={[s.cardIcon, { backgroundColor: C.turquoiseDim }]}>
-              <Text style={s.cardEmoji}>🧑‍🦽</Text>
+          <Link href="/paciente/login" style={{ textDecorationLine: 'none' }}>
+            <View style={s.cardPatient}>
+              <View style={[s.cardIcon, { backgroundColor: C.turquoiseDim }]}>
+                <Text style={s.cardEmoji}>🧑‍🦽</Text>
+              </View>
+              <View style={s.cardBody}>
+                <Text style={s.cardTitle}>Soy Paciente</Text>
+                <Text style={s.cardSubtitle}>Accedé a tu plan de rehabilitación personalizado</Text>
+              </View>
+              <Text style={[s.cardArrow, { color: C.turquoise }]}>›</Text>
             </View>
-            <View style={s.cardBody}>
-              <Text style={s.cardTitle}>Soy Paciente</Text>
-              <Text style={s.cardSubtitle}>Accedé a tu plan de rehabilitación personalizado</Text>
-            </View>
-            <Text style={[s.cardArrow, { color: C.turquoise }]}>›</Text>
-          </TouchableOpacity>
+          </Link>
 
           {/* Kinesiólogo */}
-          <TouchableOpacity style={s.cardKine} onPress={goToKinesiologo} activeOpacity={0.8}>
-            <View style={[s.cardIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-              <Text style={s.cardEmoji}>👨‍⚕️</Text>
+          <Link href="/kinesiologo/login" style={{ textDecorationLine: 'none' }}>
+            <View style={s.cardKine}>
+              <View style={[s.cardIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                <Text style={s.cardEmoji}>👨‍⚕️</Text>
+              </View>
+              <View style={s.cardBody}>
+                <Text style={[s.cardTitle, { color: C.white }]}>Soy Kinesiólogo</Text>
+                <Text style={[s.cardSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
+                  Gestioná tus pacientes y sesiones
+                </Text>
+              </View>
+              <Text style={[s.cardArrow, { color: C.white }]}>›</Text>
             </View>
-            <View style={s.cardBody}>
-              <Text style={[s.cardTitle, { color: C.white }]}>Soy Kinesiólogo</Text>
-              <Text style={[s.cardSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
-                Gestioná tus pacientes y sesiones
-              </Text>
-            </View>
-            <Text style={[s.cardArrow, { color: C.white }]}>›</Text>
-          </TouchableOpacity>
+          </Link>
 
           {/* Footer de seguridad */}
           <View style={s.securityNote}>
