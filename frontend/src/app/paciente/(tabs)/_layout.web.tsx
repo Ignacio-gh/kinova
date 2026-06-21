@@ -56,6 +56,15 @@ export default function PacienteTabsLayoutWeb() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="perfil"
+          options={{
+            title: 'Mi Perfil',
+            tabBarIcon: ({ color, size }: IconProps) => (
+              <Ionicons name="person-circle-outline" size={size} color={color} />
+            ),
+          }}
+        />
       </Tabs>
     );
   }
