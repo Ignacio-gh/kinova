@@ -36,6 +36,7 @@ interface DashboardResponse {
     sets: number;
     effective_angle_min: number | null;
     effective_angle_max: number | null;
+    completed: boolean;
   }[];
   adherence_pct: number;
   current_week: number;
@@ -101,6 +102,11 @@ export function usePacienteInicio() {
     const exercise = exercises.find((e) => e.id === id);
     if (!exercise || exercise.completed) return;
 
+    // Optimistic update: la UI responde de inmediato sin esperar al backend
+    setExercises((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
+    );
+
     try {
       await api.post('/api/v1/sessions/complete-exercise', {
         routine_id: parseInt(id),
@@ -109,22 +115,24 @@ export function usePacienteInicio() {
         avg_score: 100.0,
       });
 
-      setExercises((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
-      );
-
-      // Refrescar adherencia desde el backend
+      // Refrescar adherencia desde el backend tras confirmar el guardado
       api.get<DashboardResponse>('/api/v1/patients/me/dashboard')
         .then((dashboard) => {
           setAdherencePct(dashboard.adherence_pct);
+          // Sincronizar estado completado con la respuesta del servidor
+          setExercises((prev) =>
+            prev.map((e) => {
+              const match = dashboard.today_exercises.find(
+                (be) => String(be.routine_id) === e.id,
+              );
+              return match ? { ...e, completed: match.completed } : e;
+            })
+          );
         })
         .catch(console.error);
     } catch (error) {
       console.error('Error al completar ejercicio:', error);
-      // Fallback: marcar localmente igual
-      setExercises((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
-      );
+      // El optimistic update ya está aplicado; no revertir para no confundir al usuario
     }
   };
 
@@ -135,6 +143,7 @@ export function usePacienteInicio() {
     exercises,
     completedToday,
     weeklyPercent,
+    adherencePct,
     totalWeekly: totalToday,
     completedWeekly: completedToday,
     today,

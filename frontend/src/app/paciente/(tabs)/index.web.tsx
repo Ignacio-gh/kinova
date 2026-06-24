@@ -35,6 +35,7 @@ export default function PacienteInicioWeb() {
     exercises,
     completedToday,
     weeklyPercent,
+    adherencePct,
     totalWeekly,
     completedWeekly,
     today,
@@ -42,6 +43,9 @@ export default function PacienteInicioWeb() {
     goToCalendar,
     loading,
   } = usePacienteInicio();
+
+  // Muestra la adherencia del backend cuando ya llegó; mientras tanto usa el cálculo local
+  const displayAdherence = adherencePct > 0 ? adherencePct : weeklyPercent;
   const { profile } = usePacientePerfil();
 
   if (isMobile) return <MobileIndex />;
@@ -192,9 +196,9 @@ export default function PacienteInicioWeb() {
               {/* Barra */}
               <View>
                 <View style={s.progressBg}>
-                  <View style={[s.progressFill, { width: `${weeklyPercent}%` as any }]} />
+                  <View style={[s.progressFill, { width: `${displayAdherence}%` as any }]} />
                 </View>
-                <Text style={s.progressPct}>{weeklyPercent}% del objetivo</Text>
+                <Text style={s.progressPct}>{displayAdherence}% del objetivo</Text>
               </View>
 
               <Text style={s.progressMsg}>

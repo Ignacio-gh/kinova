@@ -38,13 +38,15 @@ async def complete_exercise(
     """
     Marca un ejercicio como completado.
     """
-    from datetime import datetime, timezone
+    from datetime import date, datetime, timezone
 
     from fastapi import HTTPException, status
 
     from app.models.patient import PatientProfile
     from app.models.routine import Routine
     from app.models.session import ExerciseExecution, Session
+
+    _DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
     # Buscar paciente en la MISMA sesion de DB
     patient_result = await db.execute(
@@ -85,12 +87,15 @@ async def complete_exercise(
             detail="Rutina no encontrada",
         )
 
-    # 3. Verificar que no se haya completado ya
+    # 3. Verificar que no se haya completado ya HOY (en cualquier sesion de hoy)
     existing_result = await db.execute(
-        select(ExerciseExecution).where(
-            ExerciseExecution.session_id == session.id,
+        select(ExerciseExecution)
+        .join(Session, Session.id == ExerciseExecution.session_id)
+        .where(
+            Session.patient_id == patient.id,
             ExerciseExecution.routine_id == data.routine_id,
             ExerciseExecution.status == "completed",
+            Session.started_at >= today_start,
         )
     )
     already_done = existing_result.scalar_one_or_none()
@@ -119,10 +124,38 @@ async def complete_exercise(
     exec_id = execution.id
     sess_id = session.id
 
-    # 6. Actualizar sesion
+    # 6. Calcular adherencia del dia: completados hoy / asignados para hoy
+    today_name = _DAYS[date.today().weekday()]
+    assigned_result = await db.execute(
+        select(func.count()).where(
+            Routine.patient_id == patient.id,
+            Routine.is_active == True,
+            Routine.day_of_week == today_name,
+        )
+    )
+    assigned_today = assigned_result.scalar_one() or 1
+
+    completed_result = await db.execute(
+        select(func.count())
+        .select_from(ExerciseExecution)
+        .join(Session, Session.id == ExerciseExecution.session_id)
+        .where(
+            Session.patient_id == patient.id,
+            ExerciseExecution.status == "completed",
+            Session.started_at >= today_start,
+        )
+    )
+    completed_today = completed_result.scalar_one() or 0
+
+    adherence = round(min(completed_today / assigned_today * 100, 100.0), 1)
+
+    # 7. Actualizar sesion
     session.ended_at = now
     session.status = "completed"
-    session.duration_minutes = 0
+    session.duration_minutes = max(
+        int((now - session.started_at).total_seconds() / 60), 0
+    )
+    session.adherence_pct = adherence
 
     return CompleteExerciseResponse(
         message="Ejercicio completado",
