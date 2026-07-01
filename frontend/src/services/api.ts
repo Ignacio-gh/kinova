@@ -62,8 +62,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: response.statusText }));
-    // El backend devuelve { message } — FastAPI validation devuelve { detail }
-    throw new Error(error.message ?? error.detail ?? 'Error desconocido');
+    // FastAPI validation errors devuelven { detail: [{msg, loc, type}, ...] }
+    const detail = error.detail;
+    const detailMsg = Array.isArray(detail)
+      ? detail.map((d: any) => d.msg).join(', ')
+      : detail;
+    throw new Error(error.message ?? detailMsg ?? 'Error desconocido');
   }
 
   return response.json() as Promise<T>;
