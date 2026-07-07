@@ -53,6 +53,7 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    width: '100%' as any,
     zIndex: 20,
     flexDirection: 'row',
     backgroundColor: C.white,
