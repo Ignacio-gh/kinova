@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Modal // <-- Agregá Modal acá
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Modal, // <-- Agregá Modal acá
+  PanResponder, useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -163,6 +164,42 @@ export default function EjercicioSesion() {
     ).start();
   }, []);
 
+  // ── Panel de feedback deslizable — arrastrando el "grip" de arriba
+  // se achica el panel y la cámara ocupa el espacio que va quedando libre. ──
+  const { height: screenHeight } = useWindowDimensions();
+  const MIN_PANEL_HEIGHT = 160;
+  const MAX_PANEL_HEIGHT = screenHeight * 0.75;
+  const DEFAULT_PANEL_HEIGHT = Math.min(
+    MAX_PANEL_HEIGHT,
+    Math.max(MIN_PANEL_HEIGHT, screenHeight * 0.42)
+  );
+
+  const panelHeight = useRef(new Animated.Value(DEFAULT_PANEL_HEIGHT)).current;
+  const panelHeightRef = useRef(DEFAULT_PANEL_HEIGHT);
+  const dragStartHeightRef = useRef(DEFAULT_PANEL_HEIGHT);
+
+  useEffect(() => {
+    const id = panelHeight.addListener(({ value }) => { panelHeightRef.current = value; });
+    return () => panelHeight.removeListener(id);
+  }, [panelHeight]);
+
+  const panelPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 4,
+      onPanResponderGrant: () => {
+        dragStartHeightRef.current = panelHeightRef.current;
+      },
+      onPanResponderMove: (_, gesture) => {
+        const next = Math.min(
+          MAX_PANEL_HEIGHT,
+          Math.max(MIN_PANEL_HEIGHT, dragStartHeightRef.current - gesture.dy)
+        );
+        panelHeight.setValue(next);
+      },
+    })
+  ).current;
+
   if (!permission)          return <View style={{ flex: 1, backgroundColor: '#0A1628' }} />;
   if (!permission.granted)  return <PermissionScreen onRequest={requestPermission} />;
 
@@ -269,8 +306,12 @@ export default function EjercicioSesion() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Panel inferior ── */}
-      <View style={s.panel}>
+      {/* ── Panel inferior — arrastrable desde el grip ── */}
+      <Animated.View style={[s.panel, { height: panelHeight }]}>
+        <View style={s.gripHandleWrap} {...panelPanResponder.panHandlers}>
+          <View style={s.gripHandle} />
+        </View>
+
         {currentFeedback.length > 0 && (() => {
           const worstStatus = currentFeedback.some(f => f.status === 'incorrect')
             ? 'incorrect' as const
@@ -342,7 +383,7 @@ export default function EjercicioSesion() {
         <TouchableOpacity style={s.finishBtn} onPress={finishSession} activeOpacity={0.8}>
           <Text style={s.finishBtnText}>Finalizar sesión</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* --- NUEVO MODAL DE TIPS --- */}
       {/* El Modal va a la misma altura que la vista final, pero fuera de la vista principal del Panel */}
@@ -462,8 +503,8 @@ export default function EjercicioSesion() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0A1628' },
 
-  // Cámara
-  cameraWrap: { flex: 1.4, position: 'relative', overflow: 'hidden' },
+  // Cámara — flex:1 para que ocupe todo el espacio que el panel va liberando
+  cameraWrap: { flex: 1, position: 'relative', overflow: 'hidden' },
   topOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'flex-start',
@@ -513,8 +554,10 @@ const s = StyleSheet.create({
   connectionDot:  { width: 7, height: 7, borderRadius: 4 },
   connectionText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
 
-  // Panel inferior
-  panel:        { flex: 1, backgroundColor: '#FFFFFF' },
+  // Panel inferior — la altura la controla panelHeight (drag del grip)
+  panel:        { backgroundColor: '#FFFFFF' },
+  gripHandleWrap: { alignItems: 'center', paddingVertical: 8 },
+  gripHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' },
   postureHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 20, paddingVertical: 14,
