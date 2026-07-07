@@ -3,13 +3,11 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal 
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
 import { useMisPacientes, FILTERS, FILTER_LABELS } from '@/mock/mock-use-mis-pacientes';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
-  bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
-  turquoise: '#00A896', turquoiseDim: 'rgba(0,168,150,0.10)',
-  gray100: '#F3F4F6', gray200: '#E5E7EB', gray400: '#9CA3AF',
-  gray500: '#6B7280', border: '#E5E7EB', red: '#EF4444',
-  green: '#16A34A', amber: '#F59E0B',
+  ...KinovaColors,
+  turquoiseDim: 'rgba(0,168,150,0.10)',
 };
 
 const adherenceColor = (v: number) =>

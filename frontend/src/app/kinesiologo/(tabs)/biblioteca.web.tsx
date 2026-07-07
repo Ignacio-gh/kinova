@@ -18,21 +18,13 @@ import type { Exercise } from '@/components/kinesiologo/exercise-card';
 import React from 'react';
 import { useTutorial } from '@/context/TutorialContext';
 import MockBiblioteca from '@/mock/mock-biblioteca.web';
+import { KinovaColors } from '@/constants/colors';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileBiblioteca from './biblioteca.tsx';
 
 const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
+  ...KinovaColors,
   turquoiseDim: 'rgba(0,168,150,0.10)',
-  turquoiseBg: '#e5f7f5',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {

@@ -3,16 +3,14 @@ import { useWelcome } from '@/hooks/use-welcome';
 import { Link, useRouter } from 'expo-router';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileIndex from './index.tsx';
+import { KinovaColors } from '@/constants/colors';
 
 // Tokens de diseño — consistentes con la paleta de la ap
 const C = {
+  ...KinovaColors,
   navy: '#0A1628',
   navyLight: '#0F2040',
-  turquoise: '#00A896',
   turquoiseDim: 'rgba(0,168,150,0.15)',
-  white: '#FFFFFF',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
   separator: 'rgba(255,255,255,0.10)',
   cardBg: 'rgba(255,255,255,0.06)',
   cardBorder: 'rgba(255,255,255,0.12)',

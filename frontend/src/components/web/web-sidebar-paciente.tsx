@@ -2,16 +2,16 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Link, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
+  ...KinovaColors,
   sidebar: '#071220',
-  active: '#00A896',
+  active: KinovaColors.turquoise,
   activeBg: 'rgba(0,168,150,0.12)',
   text: '#CBD5E1',
   textMuted: '#64748B',
   border: 'rgba(255,255,255,0.06)',
-  turquoise: '#00A896',
-  white: '#FFFFFF',
 };
 
 type NavItem = {

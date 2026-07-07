@@ -6,13 +6,11 @@ import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobilePerfil from './perfil.tsx';
 import { usePerfilKine } from '@/hooks/use-perfil-kine';
 import { useRouter } from 'expo-router';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
-  bg: '#F1F5F9', white: '#FFFFFF', navy: '#002B49',
-  turquoise: '#00A896', turquoiseBg: '#e5f7f5',
-  gray100: '#F3F4F6', gray200: '#E5E7EB', gray400: '#9CA3AF',
-  gray500: '#6B7280', border: '#E5E7EB',
-  red: '#EF4444', redBg: '#FFF1F2', redBorder: '#FECDD3',
+  ...KinovaColors,
+  redBg: '#FFF1F2', redBorder: '#FECDD3',
 };
 
 const PERFIL_AJUSTES = [

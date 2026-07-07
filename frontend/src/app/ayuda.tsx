@@ -1,16 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
+  ...KinovaColors,
   navy: '#0A1628',
-  turquoise: '#00A896',
-  white: '#FFFFFF',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
 };
 
 export default function AyudaSoporteScreen() {

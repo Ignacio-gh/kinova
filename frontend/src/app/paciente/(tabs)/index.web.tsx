@@ -10,20 +10,11 @@ import { usePacienteInicio, type TodayExercise } from '@/hooks/use-paciente-inic
 import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 import { useTutorial } from '@/context/TutorialContext';
 import MockPacienteIndex from '@/mock/mock-paciente-index.web';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
-  turquoiseBg: '#e5f7f5',
+  ...KinovaColors,
   turquoiseDim: 'rgba(0,168,150,0.10)',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
-  green: '#16A34A',
 };
 
 export default function PacienteInicioWeb() {

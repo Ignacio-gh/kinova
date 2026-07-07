@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
+  ...KinovaColors,
   navy: '#0A1628',
-  turquoise: '#00A896',
   turquoiseDim: 'rgba(0,168,150,0.15)',
-  white: '#FFFFFF',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
   separator: 'rgba(255,255,255,0.10)',
   cardBg: 'rgba(255,255,255,0.06)',
   cardBorder: 'rgba(255,255,255,0.12)',

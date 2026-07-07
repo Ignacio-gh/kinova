@@ -4,17 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useKinesiologoLogin } from '@/hooks/use-kinesiologo-login';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileLogin from './login.tsx';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
+  ...KinovaColors,
   navy: '#0A1628',
   navyMid: '#0F2040',
-  turquoise: '#00A896',
   turquoiseDim: 'rgba(0,168,150,0.15)',
-  white: '#FFFFFF',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
   navyText: '#002B49',
   separator: 'rgba(255,255,255,0.10)',
   inputBorder: '#E5E7EB',

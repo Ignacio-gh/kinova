@@ -11,24 +11,14 @@ import { api } from '@/services/api';
 import React from 'react';
 import { useTutorial } from '@/context/TutorialContext'; // Tu estado global del tutorial
 import MockIndex from '@/mock/mock-index.web';
+import { KinovaColors } from '@/constants/colors';
 
 
 
 
 const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
+  ...KinovaColors,
   turquoiseDim: 'rgba(0,168,150,0.10)',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
-  red: '#EF4444',
-  green: '#16A34A',
-  amber: '#F59E0B',
 };
 
 const adherenceColor = (v: number) =>

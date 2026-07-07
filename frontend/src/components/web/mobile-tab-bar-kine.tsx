@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Link, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { KinovaColors } from '@/constants/colors';
 
 const C = {
-  active: '#00A896',
-  inactive: '#9CA3AF',
-  border: '#E5E7EB',
-  white: '#FFFFFF',
+  ...KinovaColors,
+  active: KinovaColors.turquoise,
+  inactive: KinovaColors.gray400,
 };
 
 const ITEMS: { label: string; icon: keyof typeof Ionicons.glyphMap; path: string }[] = [
@@ -47,6 +47,13 @@ export function MobileTabBarKine() {
 
 const s = StyleSheet.create({
   bar: {
+    // fixed (no flex) — así siempre queda pegada al fondo del viewport,
+    // sin depender de que el layout flex de la pantalla le deje espacio.
+    position: 'fixed' as any,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
     flexDirection: 'row',
     backgroundColor: C.white,
     borderTopWidth: 1,

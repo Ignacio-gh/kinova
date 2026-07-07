@@ -8,20 +8,9 @@ import MobileCalendario from './calendario.tsx';
 import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
 import { useTutorial } from '@/context/TutorialContext';
 import MockCalendario from '@/mock/mock-calendario.web';
+import { KinovaColors } from '@/constants/colors';
 
-const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
-  turquoiseBg: '#e5f7f5',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
-  green: '#16A34A',
-};
+const C = { ...KinovaColors };
 
 export default function MiCalendarioWeb() {
   const isMobile = useIsMobileBrowser();

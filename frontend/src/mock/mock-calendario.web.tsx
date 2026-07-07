@@ -2,20 +2,9 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
 import { useMiCalendario, DAYS, ROUTINE } from '@/mock/mock-use-mi-calendario';
+import { KinovaColors } from '@/constants/colors';
 
-const C = {
-  bg: '#F1F5F9',
-  white: '#FFFFFF',
-  navy: '#002B49',
-  turquoise: '#00A896',
-  turquoiseBg: '#e5f7f5',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  border: '#E5E7EB',
-  green: '#16A34A',
-};
+const C = { ...KinovaColors };
 
 export default function MiCalendarioWeb() {
   const { selectedDay, setSelectedDay, completedIds, dayExercises, toggleComplete } =

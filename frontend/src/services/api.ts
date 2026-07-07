@@ -1,31 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { getBackendUrl } from './backend-url';
 
-function getBaseUrl(): string {
-  // Variable de entorno manual tiene prioridad (útil para ngrok u otros tunnels)
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // En web, el backend corre en el mismo localhost
-  if (Platform.OS === 'web') {
-    return 'http://localhost:8000';
-  }
-
-  // En dispositivo físico/emulador, Expo expone la IP del servidor de desarrollo.
-  // Se extrae esa IP y se apunta al puerto del backend.
-  const hostUri = Constants.expoConfig?.hostUri;
-  const host = hostUri?.split(':')[0];
-  if (host) {
-    return `http://${host}:8000`;
-  }
-
-  // Fallback: emulador Android usa esta IP especial para el host
-  return 'http://10.0.2.2:8000';
-}
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = getBackendUrl();
 const TOKEN_KEY = 'kinova-token';
 
 // Token cacheado en memoria para no leer AsyncStorage en cada request

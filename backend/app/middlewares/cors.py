@@ -31,8 +31,6 @@ COMO SE USA:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config.settings import settings
-
 
 def setup_cors(app: FastAPI) -> None:
     """
@@ -40,9 +38,9 @@ def setup_cors(app: FastAPI) -> None:
 
     Parametros del middleware:
         allow_origins: lista de URLs que pueden hablar con el backend.
-            Usamos settings.FRONTEND_URL (viene del .env).
-            En desarrollo es ["http://localhost:5173"].
-            En produccion seria ["https://kinova.com"].
+            Usamos ["*"] (todos) — ver comentario mas abajo del por que.
+            settings.FRONTEND_URL NO se usa aca (solo se loguea en
+            main.py al arrancar); no confundir una cosa con la otra.
 
         allow_credentials: permite que el frontend mande cookies y
             headers de autenticacion (el token JWT va en un header).

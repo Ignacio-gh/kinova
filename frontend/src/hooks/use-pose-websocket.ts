@@ -1,30 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-
-// ─── URL del backend ───────────────────────────────────────────────────────────
-// Si hay EXPO_PUBLIC_API_URL definida (ej. en .env) se usa esa.
-// Si no, en web usa localhost. En móvil extrae la IP de la PC desde
-// el manifest de Expo (Constants.expoConfig.hostUri = "192.168.x.x:8081")
-// y asume que el backend corre en el mismo host pero en el puerto 8000.
-
-function getBackendUrl(): string {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  if (Platform.OS === 'web') {
-    return 'http://localhost:8000';
-  }
-  // En Expo Go, hostUri = "192.168.x.x:8081"
-  const hostUri =
-    Constants.expoConfig?.hostUri ??
-    (Constants as unknown as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost;
-  if (hostUri) {
-    const host = hostUri.split(':')[0]; // solo la IP, sin el puerto
-    return `http://${host}:8000`;
-  }
-  return 'http://localhost:8000';
-}
+import { getBackendUrl } from '@/services/backend-url';
 
 const BASE_URL = getBackendUrl();
 
