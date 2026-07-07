@@ -223,8 +223,7 @@ async def get_dashboard(
     db: AsyncSession,
     patient,
 ) -> PatientDashboard:
-    from datetime import datetime, timezone
-
+    from app.core.timezone import local_today_bounds
     from app.models.session import ExerciseExecution, Session
 
     today_routines = await routine_service.get_today_routine(db, patient)
@@ -232,7 +231,7 @@ async def get_dashboard(
     current_week = _current_week(patient.treatment_start_date)
 
     # Buscar que rutinas se completaron HOY
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
+    today_start, _ = local_today_bounds()
     completed_result = await db.execute(
         select(ExerciseExecution.routine_id)
         .join(Session, Session.id == ExerciseExecution.session_id)

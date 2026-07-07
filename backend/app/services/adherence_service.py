@@ -1,11 +1,8 @@
-from datetime import date, datetime, timezone
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import local_today_bounds
 from app.schemas.session import DashboardStats
-
-_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
 async def calculate_weekly_adherence(
@@ -20,10 +17,7 @@ async def calculate_weekly_adherence(
     from app.models.routine import Routine
     from app.models.session import Session, ExerciseExecution
 
-    today_name = _DAYS[date.today().weekday()]
-    today_start = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    today_start, today_name = local_today_bounds()
 
     # Rutinas asignadas para hoy
     assigned_result = await db.execute(

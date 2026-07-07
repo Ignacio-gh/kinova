@@ -1,9 +1,8 @@
-from datetime import date
-
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import DAYS, local_today_bounds
 from app.schemas.exercise import ExerciseResponse
 from app.schemas.routine import (
     RoutineCreate,
@@ -13,11 +12,9 @@ from app.schemas.routine import (
     WeeklyRoutineResponse,
 )
 
-DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-
 
 def _day_of_week() -> str:
-    return DAYS[date.today().weekday()]
+    return local_today_bounds()[1]
 
 
 async def assign_exercise(

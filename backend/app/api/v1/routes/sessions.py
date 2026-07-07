@@ -38,15 +38,14 @@ async def complete_exercise(
     """
     Marca un ejercicio como completado.
     """
-    from datetime import date, datetime, timezone
+    from datetime import datetime, timezone
 
     from fastapi import HTTPException, status
 
+    from app.core.timezone import local_today_bounds
     from app.models.patient import PatientProfile
     from app.models.routine import Routine
     from app.models.session import ExerciseExecution, Session
-
-    _DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
     # Buscar paciente en la MISMA sesion de DB
     patient_result = await db.execute(
@@ -57,7 +56,7 @@ async def complete_exercise(
         raise HTTPException(status_code=403, detail="No sos paciente")
 
     now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start, _ = local_today_bounds()
 
     # 1. Buscar o crear sesion de hoy
     result = await db.execute(
@@ -125,29 +124,8 @@ async def complete_exercise(
     sess_id = session.id
 
     # 6. Calcular adherencia del dia: completados hoy / asignados para hoy
-    today_name = _DAYS[date.today().weekday()]
-    assigned_result = await db.execute(
-        select(func.count()).where(
-            Routine.patient_id == patient.id,
-            Routine.is_active == True,
-            Routine.day_of_week == today_name,
-        )
-    )
-    assigned_today = assigned_result.scalar_one() or 1
-
-    completed_result = await db.execute(
-        select(func.count())
-        .select_from(ExerciseExecution)
-        .join(Session, Session.id == ExerciseExecution.session_id)
-        .where(
-            Session.patient_id == patient.id,
-            ExerciseExecution.status == "completed",
-            Session.started_at >= today_start,
-        )
-    )
-    completed_today = completed_result.scalar_one() or 0
-
-    adherence = round(min(completed_today / assigned_today * 100, 100.0), 1)
+    # (misma formula que usa el resto de la app, evita que ambos calculos diverjan)
+    adherence = await adherence_service.calculate_weekly_adherence(db, patient)
 
     # 7. Actualizar sesion
     session.ended_at = now

@@ -17,6 +17,7 @@ python-multipart==0.0.20
 # Configuration
 pydantic-settings==2.9.1
 email-validator==2.2.0
+tzdata==2025.2
 
 # Computer vision
 mediapipe==0.10.35
