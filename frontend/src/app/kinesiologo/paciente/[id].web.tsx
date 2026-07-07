@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { WebSidebarKine } from '@/components/web/web-sidebar-kine';
+import { MobileTabBarKine } from '@/components/web/mobile-tab-bar-kine';
 import { api } from '@/services/api';
 import React from 'react';
 import { useTutorial } from '@/context/TutorialContext';
@@ -144,7 +145,14 @@ function CompactRoutineCard({
 
 export default function PatientDetailWeb() {
   const isMobile = useIsMobileBrowser();
-  if (isMobile) return <MobilePatientDetail />;
+  if (isMobile) {
+    return (
+      <View style={s.mobileRoot}>
+        <MobilePatientDetail />
+        <MobileTabBarKine />
+      </View>
+    );
+  }
   const { isTutorialActive } = useTutorial();
 
   if (isTutorialActive) {
@@ -542,6 +550,7 @@ export default function PatientDetailWeb() {
 }
 
 const s = StyleSheet.create({
+  mobileRoot: { flex: 1, flexDirection: 'column', minHeight: '100vh' as any, backgroundColor: '#F1F5F9' } as ViewStyle,
   webRoot: { flex: 1, flexDirection: 'row', minHeight: '100vh' as any, backgroundColor: '#F1F5F9' } as ViewStyle,
   root: { flex: 1, backgroundColor: '#F1F5F9' } as ViewStyle,
   flex1: { flex: 1 } as ViewStyle,
