@@ -62,3 +62,4 @@ src/
 ## Equipo
 
 SANMAIN S.A. — Proyecto universitario UADE
+Integrantes: Ignacio Almanza, Agustin Fernandez, Ivan Cupito, Santiago Torres, Santiago Valentino Rossi y Maria Paz Traversi.

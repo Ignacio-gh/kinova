@@ -11,7 +11,26 @@
       "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova push origin main)",
       "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova remote get-url origin)",
       "Bash(gh auth *)",
-      "Bash(ssh -T git@github.com)"
+      "Bash(ssh -T git@github.com)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova diff --name-only HEAD)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova diff --stat)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova stash)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova log --oneline -5)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova diff HEAD -- backend/app/pose/evaluators/squat.py frontend/src/components/PoseSkeletonOverlay.tsx)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova show HEAD:backend/app/pose/evaluators/squat.py)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova stash pop)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova pull origin main)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova fetch origin)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova log --oneline origin/main..HEAD)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova log --oneline HEAD..origin/main)",
+      "Bash(git -C /home/maipi0512/Escritorio/Kinova/kinova pull --no-rebase origin main)",
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/ltcknqvmtikibxrfsvpq.supabase.co/5432')",
+      "Bash(nslookup db.ltcknqvmtikibxrfsvpq.supabase.co)",
+      "Bash(host db.ltcknqvmtikibxrfsvpq.supabase.co)",
+      "Bash(host ltcknqvmtikibxrfsvpq.supabase.co)",
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/ltcknqvmtikibxrfsvpq.supabase.co/6543')",
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-0-us-east-1.pooler.supabase.com/5432')",
+      "Bash(PYTHONPATH=. alembic heads)"
     ]
   }
 }
