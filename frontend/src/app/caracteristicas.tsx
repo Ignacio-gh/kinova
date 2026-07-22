@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KinovaColors } from '@/constants/colors';
@@ -18,18 +18,21 @@ const FEATURES = [
     title: 'Visión por Computadora (IA)',
     description: 'Kinova utiliza la cámara del dispositivo del paciente para trackear en tiempo real puntos articulares clave. Calcula ángulos de flexión, repeticiones completadas y postura, brindando correcciones al instante sin necesidad de hardware adicional.',
     icon: 'scan-outline',
+    image: 'https://images.unsplash.com/photo-1758599881072-62facc386445?q=80&w=800&auto=format&fit=crop',
   },
   {
     id: 2,
     title: 'Panel Kinesiólogo Centralizado',
     description: 'Gestioná todos tus pacientes desde un solo lugar. Asigná rutinas semanales, revisá notas médicas, controlá el estado de los tratamientos y medí el porcentaje de adherencia con gráficos claros y precisos.',
     icon: 'people-outline',
+    image: 'https://images.unsplash.com/photo-1666886573421-d19e546cfc4e?q=80&w=800&auto=format&fit=crop',
   },
   {
     id: 3,
-    title: 'Biblioteca de Ejercicios Inteligente',
-    description: 'Accedé a un catálogo completo de ejercicios de rehabilitación ordenados por grupo muscular. Asignalos con un clic configurando series, repeticiones y rangos articulares mínimos y máximos esperados.',
+    title: 'Ejercicios de Rehabilitación de Rodilla',
+    description: 'Kinova se enfoca en los ejercicios clave para la recuperación de rodilla: sentadilla libre y extensión de rodilla sentado. Asignalos con un clic configurando series, repeticiones y rangos articulares mínimos y máximos esperados.',
     icon: 'library-outline',
+    image: 'https://images.unsplash.com/photo-1649751361457-01d3a696c7e6?q=80&w=800&auto=format&fit=crop',
   },
 ];
 
@@ -38,6 +41,13 @@ export default function CaracteristicasWeb() {
 
   return (
     <View style={s.root}>
+      {/* Círculos decorativos — mismos que el landing para mantener consistencia visual */}
+      <View style={s.decoLayer} pointerEvents="none">
+        <View style={[s.circle, { width: 600, height: 600, right: -120, top: -80, opacity: 0.05 }]} />
+        <View style={[s.circle, { width: 350, height: 350, left: -80, bottom: -60, opacity: 0.04 }]} />
+        <View style={[s.circle, { width: 200, height: 200, left: '40%', top: '30%', opacity: 0.03 }]} />
+      </View>
+
       {/* Navbar */}
       <View style={s.navbar}>
         <TouchableOpacity style={s.navLogo} onPress={() => router.push('/')} activeOpacity={0.8}>
@@ -81,7 +91,8 @@ export default function CaracteristicasWeb() {
                 {/* "Imagen" / Gráfico */}
                 <View style={s.featureImageContainer}>
                   <View style={s.mockImage}>
-                    <Ionicons name={feat.icon as any} size={80} color="rgba(255,255,255,0.05)" />
+                    <Image source={{ uri: feat.image }} style={s.mockImg} resizeMode="cover" />
+                    <View style={s.mockImgOverlay} />
                     <View style={s.mockBadge}>
                       <Ionicons name="checkmark-circle" size={16} color={C.turquoise} />
                       <Text style={s.mockBadgeText}>Sistema Activo</Text>
@@ -115,7 +126,9 @@ export default function CaracteristicasWeb() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.navy, minHeight: '100vh' as any },
-  
+  decoLayer: { position: 'absolute', inset: 0, overflow: 'hidden' },
+  circle: { position: 'absolute', borderRadius: 9999, backgroundColor: C.turquoise },
+
   // Navbar
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 64, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: C.separator },
   navLogo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -145,6 +158,8 @@ const s = StyleSheet.create({
 
   featureImageContainer: { flex: 1 },
   mockImage: { backgroundColor: C.cardBg, borderWidth: 1, borderColor: C.cardBorder, borderRadius: 24, height: 320, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  mockImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  mockImgOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,22,40,0.35)' },
   mockBadge: { position: 'absolute', bottom: 24, right: 24, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 99 },
   mockBadgeText: { color: C.white, fontSize: 13, fontWeight: '600' },
 
