@@ -235,7 +235,7 @@ export default function MisPacientesWeb() {
                         s.statusText,
                         { color: p.status === 'Activo' ? C.turquoise : C.gray500 },
                       ]}>
-                        {p.status}
+                        {p.status === 'Activo' ? 'Activo' : 'Dado de alta'}
                       </Text>
                     </View>
                   </View>

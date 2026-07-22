@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import DAYS, local_today_bounds
+from app.core.timezone import DAYS, local_today_bounds, local_week_start
 from app.schemas.exercise import ExerciseResponse
 from app.schemas.routine import (
     RoutineCreate,
@@ -77,6 +77,7 @@ async def get_weekly_routine(
 ) -> WeeklyRoutineResponse:
     from app.models.routine import Routine
     from app.models.exercise import Exercise
+    from app.models.session import Session, ExerciseExecution
 
     result = await db.execute(
         select(Routine, Exercise)
@@ -85,6 +86,17 @@ async def get_weekly_routine(
         .order_by(Routine.day_of_week)
     )
     rows = result.all()
+
+    completed_result = await db.execute(
+        select(ExerciseExecution.routine_id)
+        .join(Session, Session.id == ExerciseExecution.session_id)
+        .where(
+            Session.patient_id == patient_id,
+            ExerciseExecution.status == "completed",
+            Session.started_at >= local_week_start(),
+        )
+    )
+    completed_routine_ids = {row[0] for row in completed_result.all()}
 
     weekly: dict[str, list[RoutineResponse]] = {day: [] for day in DAYS}
     for routine, exercise in rows:
@@ -99,6 +111,7 @@ async def get_weekly_routine(
                 angle_min=routine.angle_min,
                 angle_max=routine.angle_max,
                 is_active=routine.is_active,
+                completed=routine.id in completed_routine_ids,
             )
         )
 

@@ -8,7 +8,7 @@ export const FILTERS: Filter[] = ['Todos', 'Activo', 'Finalizado'];
 export const FILTER_LABELS: Record<Filter, string> = {
   Todos: 'Todos',
   Activo: 'Activos',
-  Finalizado: 'Finalizados',
+  Finalizado: 'Dados de alta',
 };
 
 export function useMisPacientes() {

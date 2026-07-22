@@ -36,6 +36,7 @@ class RoutineResponse(BaseModel):
     angle_min: float | None
     angle_max: float | None
     is_active: bool
+    completed: bool = False
 
     model_config = {"from_attributes": True}
 

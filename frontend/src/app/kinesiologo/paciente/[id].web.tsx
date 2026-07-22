@@ -67,7 +67,7 @@ function mapApiRoutine(w: Record<string, any[]>): Record<Day, RoutineExercise[]>
       reps: r.reps,
       angle: r.angle_min != null && r.angle_max != null ? `${r.angle_min}° - ${r.angle_max}°` : undefined,
       muscle: r.exercise.zone,
-      completed: false,
+      completed: Boolean(r.completed),
     }));
   }
   return mapped;
@@ -112,9 +112,9 @@ function CompactRoutineCard({
         <Text style={s.cardExerciseName} numberOfLines={1}>{exercise.name}</Text>
         <View nativeID={statusId}>
           <Ionicons
-            name={exercise.completed ? 'checkmark-circle' : 'close-circle-outline'}
+            name={exercise.completed ? 'checkmark-circle' : 'ellipse-outline'}
             size={16}
-            color={exercise.completed ? '#16A34A' : '#9CA3AF'}
+            color={exercise.completed ? '#16A34A' : '#D1D5DB'}
           />
         </View>
       </View>
@@ -188,6 +188,7 @@ export default function PatientDetailWeb() {
   const [editReps, setEditReps] = useState('');
   const [editMinAngle, setEditMinAngle] = useState('');
   const [editMaxAngle, setEditMaxAngle] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const fetchRoutine = useCallback(async () => {
     if (!id) return;
@@ -273,6 +274,26 @@ export default function PatientDetailWeb() {
       } catch (e: any) {
         alert(e.message ?? 'Error al guardar');
       }
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    if (!patient) return;
+    const isCurrentlyActive = patient.status === 'Activo';
+    const newStatus = isCurrentlyActive ? 'finalizado' : 'activo';
+    const confirmMsg = isCurrentlyActive
+      ? `¿Dar de alta a ${patient.name}? Se lo va a marcar como tratamiento finalizado.`
+      : `¿Reactivar el tratamiento de ${patient.name}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setStatusSaving(true);
+    try {
+      await api.patch(`/api/v1/patients/${id}/status`, { status: newStatus });
+      setPatient((prev) => prev ? { ...prev, status: isCurrentlyActive ? 'Finalizado' : 'Activo' } : prev);
+    } catch (e: any) {
+      window.alert(e.message ?? 'Error al actualizar el estado.');
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -399,9 +420,19 @@ export default function PatientDetailWeb() {
                 <View style={[s.statusBadgeContainer, { borderColor: isActive ? '#00A896' : '#9CA3AF' }]}>
                   <View style={[s.statusDot, { backgroundColor: isActive ? '#00A896' : '#9CA3AF' }]} />
                   <Text style={[s.statusBadgeText, { color: isActive ? '#00A896' : '#9CA3AF' }]}>
-                    {patient.status}
+                    {isActive ? 'Activo' : 'Dado de alta'}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  style={[s.statusToggleBtn, statusSaving && { opacity: 0.6 }]}
+                  onPress={handleToggleStatus}
+                  disabled={statusSaving}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.statusToggleBtnText}>
+                    {statusSaving ? 'Guardando...' : isActive ? 'Dar de alta' : 'Reactivar tratamiento'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -580,6 +611,8 @@ const s = StyleSheet.create({
   statusBadgeContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1.5 } as ViewStyle,
   statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 } as ViewStyle,
   statusBadgeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' } as TextStyle,
+  statusToggleBtn: { marginTop: 8 } as ViewStyle,
+  statusToggleBtnText: { color: '#00A896', fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' } as TextStyle,
   calendarWrapper: { paddingHorizontal: 24, marginBottom: 32 } as ViewStyle,
   sectionTitle: { color: '#002B49', fontSize: 18, fontWeight: '700', marginBottom: 12 } as TextStyle,
   kanbanScrollContent: { gap: 12, paddingBottom: 16, flexDirection: 'row' } as ViewStyle,
