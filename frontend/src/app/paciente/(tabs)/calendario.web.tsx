@@ -6,6 +6,7 @@ import { WebSidebarPaciente } from '@/components/web/web-sidebar-paciente';
 import { useIsMobileBrowser } from '@/hooks/use-mobile-browser';
 import MobileCalendario from './calendario.tsx';
 import { useMiCalendario, DAYS } from '@/hooks/use-mi-calendario';
+import { usePacientePerfil } from '@/hooks/use-paciente-perfil';
 import { useTutorial } from '@/context/TutorialContext';
 import MockCalendario from '@/mock/mock-calendario.web';
 import { KinovaColors } from '@/constants/colors';
@@ -15,8 +16,10 @@ const C = { ...KinovaColors };
 export default function MiCalendarioWeb() {
   const isMobile = useIsMobileBrowser();
   const { isTutorialActive } = useTutorial();
-  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete } =
+  const { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete, today } =
     useMiCalendario();
+  const isToday = selectedDay === today;
+  const { profile } = usePacientePerfil();
 
   if (isMobile) return <MobileCalendario />;
   if (isTutorialActive) return <MockCalendario />;
@@ -71,7 +74,7 @@ export default function MiCalendarioWeb() {
             <View style={s.doctorAvatar}>
               <Ionicons name="person-outline" size={14} color={C.white} />
             </View>
-            <Text style={s.doctorText}>Supervisado por tu <Text style={s.doctorName}>kinesiólogo</Text></Text>
+            <Text style={s.doctorText}>Supervisado por <Text style={s.doctorName}>{profile?.kinesiologo_name ?? 'tu kinesiólogo'}</Text></Text>
           </View>
         </View>
 
@@ -174,9 +177,10 @@ export default function MiCalendarioWeb() {
                           <Text style={s.videoBtnText}>Video Demo</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[s.doneBtn, done && s.doneBtnActive]}
-                          onPress={() => toggleComplete(ex.id)}
-                          activeOpacity={0.75}
+                          style={[s.doneBtn, done && s.doneBtnActive, !isToday && { opacity: 0.5 }]}
+                          onPress={() => isToday && toggleComplete(ex.id)}
+                          activeOpacity={isToday ? 0.75 : 1}
+                          disabled={!isToday}
                         >
                           <Ionicons
                             name={done ? 'checkmark-circle' : 'ellipse-outline'}
@@ -184,7 +188,7 @@ export default function MiCalendarioWeb() {
                             color={done ? C.turquoise : C.gray400}
                           />
                           <Text style={[s.doneBtnText, done && s.doneBtnTextActive]}>
-                            {done ? 'Completado' : 'Marcar Listo'}
+                            {done ? 'Completado' : isToday ? 'Marcar Listo' : 'Solo disponible hoy'}
                           </Text>
                         </TouchableOpacity>
                       </View>

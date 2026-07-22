@@ -35,8 +35,8 @@ export default function PacienteInicioWeb() {
     loading,
   } = usePacienteInicio();
 
-  // Muestra la adherencia del backend cuando ya llegó; mientras tanto usa el cálculo local
-  const displayAdherence = adherencePct > 0 ? adherencePct : weeklyPercent;
+  // % real de la semana — adherencePct del backend es de HOY, no sirve acá.
+  const displayAdherence = totalWeekly > 0 ? Math.round((completedWeekly / totalWeekly) * 100) : 0;
   const { profile } = usePacientePerfil();
 
   if (isMobile) return <MobileIndex />;

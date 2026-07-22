@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 export type Exercise = {
   id: string;
   name: string;
-  category: 'Cadera' | 'Rodilla' | 'Muslo' | 'Tobillo';
+  category: 'Rodilla';
   muscles: string[];
   description: string;
   benefits: string[];
@@ -16,14 +16,11 @@ type Props = {
 };
 
 const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
-  Muslo:   { bg: '#e5f7f5', text: '#00A896' },
   Rodilla: { bg: '#EFF6FF', text: '#3B82F6' },
-  Cadera:  { bg: '#FFF7ED', text: '#EA580C' },
-  Tobillo: { bg: '#F3E8FF', text: '#9333EA' },
 };
 
 export function ExerciseCard({ exercise, onAdd }: Props) {
-  const style = CATEGORY_STYLE[exercise.category] ?? CATEGORY_STYLE.Muslo;
+  const style = CATEGORY_STYLE[exercise.category] ?? CATEGORY_STYLE.Rodilla;
 
   return (
     <View

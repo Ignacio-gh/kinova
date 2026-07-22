@@ -28,18 +28,10 @@ const C = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Muslo: '#EFF6FF',
   Rodilla: '#FFF7ED',
-  Cadera: '#FDF4FF',
-  Tobillo: '#F0FDF4',
-  Glúteo: '#FFF1F2',
 };
 const CATEGORY_TEXT: Record<string, string> = {
-  Muslo: '#3B82F6',
   Rodilla: '#F97316',
-  Cadera: '#A855F7',
-  Tobillo: '#22C55E',
-  Glúteo: '#EF4444',
 };
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import local_today_bounds
+from app.core.timezone import local_week_start
 from app.schemas.session import DashboardStats
 
 
@@ -11,20 +11,20 @@ async def calculate_weekly_adherence(
     week_offset: int = 0,
 ) -> float:
     """
-    Calcula la adherencia del día actual: ejercicios completados hoy
-    sobre ejercicios asignados para hoy. Devuelve porcentaje (0-100).
+    Calcula la adherencia de la semana actual: ejercicios completados desde
+    el lunes sobre el total de ejercicios asignados en toda la semana
+    (todos los días, no solo hoy). Devuelve porcentaje (0-100).
     """
     from app.models.routine import Routine
     from app.models.session import Session, ExerciseExecution
 
-    today_start, today_name = local_today_bounds()
+    week_start = local_week_start()
 
-    # Rutinas asignadas para hoy
+    # Rutinas asignadas en toda la semana (los 7 días)
     assigned_result = await db.execute(
         select(func.count()).where(
             Routine.patient_id == patient.id,
             Routine.is_active == True,
-            Routine.day_of_week == today_name,
         )
     )
     assigned = assigned_result.scalar_one() or 0
@@ -32,7 +32,7 @@ async def calculate_weekly_adherence(
     if assigned == 0:
         return 0.0
 
-    # Ejecuciones completadas hoy
+    # Ejecuciones completadas desde el lunes de esta semana
     completed_result = await db.execute(
         select(func.count())
         .select_from(ExerciseExecution)
@@ -40,7 +40,7 @@ async def calculate_weekly_adherence(
         .where(
             Session.patient_id == patient.id,
             ExerciseExecution.status == "completed",
-            Session.started_at >= today_start,
+            Session.started_at >= week_start,
         )
     )
     completed = completed_result.scalar_one() or 0

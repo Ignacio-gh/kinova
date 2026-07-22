@@ -8,7 +8,7 @@ las rutinas "de hoy" (day_of_week) y las ejecuciones "de hoy" (started_at)
 se comparaban contra el día calendario equivocado.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 APP_TIMEZONE = ZoneInfo("America/Argentina/Buenos_Aires")
@@ -24,3 +24,15 @@ def local_today_bounds() -> tuple[datetime, str]:
     now_local = datetime.now(APP_TIMEZONE)
     start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
     return start_local.astimezone(timezone.utc), DAYS[now_local.weekday()]
+
+
+def local_week_start() -> datetime:
+    """
+    Devuelve el inicio (00:00) del lunes de la semana actual, en UTC,
+    usando la hora local del paciente.
+    """
+    now_local = datetime.now(APP_TIMEZONE)
+    monday_local = (now_local - timedelta(days=now_local.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return monday_local.astimezone(timezone.utc)

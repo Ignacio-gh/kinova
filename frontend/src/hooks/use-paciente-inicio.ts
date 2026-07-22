@@ -48,6 +48,32 @@ interface UserResponse {
   email: string;
 }
 
+interface RoutineWeekResponse {
+  monday: unknown[];
+  tuesday: unknown[];
+  wednesday: unknown[];
+  thursday: unknown[];
+  friday: unknown[];
+  saturday: unknown[];
+  sunday: unknown[];
+}
+
+interface HistorySessionResponse {
+  date: string;
+  exercises: { completed: boolean }[];
+}
+
+// Lunes 00:00 de la semana actual, para filtrar el historial.
+function getWeekStart(): Date {
+  const now = new Date();
+  const day = now.getDay(); // 0 = domingo … 6 = sábado
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 export function usePacienteInicio() {
   const router = useRouter();
   const [userName, setUserName] = useState('');
@@ -55,6 +81,8 @@ export function usePacienteInicio() {
   const [adherencePct, setAdherencePct] = useState(0);
   const [currentWeek, setCurrentWeek] = useState(1);
   const [treatmentWeeks, setTreatmentWeeks] = useState(1);
+  const [totalWeekly, setTotalWeekly] = useState(0);
+  const [completedWeekly, setCompletedWeekly] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -84,6 +112,25 @@ export function usePacienteInicio() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // Progreso semanal real: total asignado en toda la semana vs.
+    // completados desde el lunes — no solo lo de hoy.
+    api.get<RoutineWeekResponse>('/api/v1/routines/me/week')
+      .then((week) => {
+        const total = Object.values(week).reduce((sum, items) => sum + items.length, 0);
+        setTotalWeekly(total);
+      })
+      .catch(console.error);
+
+    api.get<HistorySessionResponse[]>('/api/v1/sessions/me/history')
+      .then((history) => {
+        const weekStart = getWeekStart();
+        const completed = history
+          .filter((s) => new Date(s.date) >= weekStart)
+          .reduce((sum, s) => sum + s.exercises.filter((e) => e.completed).length, 0);
+        setCompletedWeekly(completed);
+      })
+      .catch(console.error);
   }, []);
 
   const completedToday = exercises.filter((e) => e.completed).length;
@@ -106,6 +153,7 @@ export function usePacienteInicio() {
     setExercises((prev) =>
       prev.map((e) => (e.id === id ? { ...e, completed: true } : e))
     );
+    setCompletedWeekly((prev) => prev + 1);
 
     try {
       await api.post('/api/v1/sessions/complete-exercise', {
@@ -144,8 +192,8 @@ export function usePacienteInicio() {
     completedToday,
     weeklyPercent,
     adherencePct,
-    totalWeekly: totalToday,
-    completedWeekly: completedToday,
+    totalWeekly,
+    completedWeekly,
     today,
     loading,
     toggleExercise,

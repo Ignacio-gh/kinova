@@ -59,11 +59,17 @@ async def complete_exercise(
     today_start, _ = local_today_bounds()
 
     # 1. Buscar o crear sesion de hoy
+    # order_by + limit(1): si ya existe mas de una sesion de hoy (pruebas
+    # repetidas, doble clic), tomamos la mas reciente en vez de explotar
+    # con MultipleResultsFound.
     result = await db.execute(
-        select(Session).where(
+        select(Session)
+        .where(
             Session.patient_id == patient.id,
             Session.started_at >= today_start,
         )
+        .order_by(Session.started_at.desc())
+        .limit(1)
     )
     session = result.scalar_one_or_none()
 
@@ -96,6 +102,7 @@ async def complete_exercise(
             ExerciseExecution.status == "completed",
             Session.started_at >= today_start,
         )
+        .limit(1)
     )
     already_done = existing_result.scalar_one_or_none()
     if already_done is not None:

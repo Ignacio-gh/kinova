@@ -18,6 +18,10 @@ const DAY_MAP: Record<string, Day> = {
   thursday: 'Jue', friday: 'Vie', saturday: 'Sáb', sunday: 'Dom',
 };
 
+// Date.getDay(): 0 = domingo … 6 = sábado
+const JS_DAY_TO_LABEL: Day[] = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const TODAY: Day = JS_DAY_TO_LABEL[new Date().getDay()];
+
 interface RoutineItem {
   id: number;
   exercise: { id: number; name: string; zone: string };
@@ -38,13 +42,17 @@ interface WeeklyResponse {
   sunday: RoutineItem[];
 }
 
+interface DashboardResponse {
+  today_exercises: { routine_id: number; completed: boolean }[];
+}
+
 function buildAngle(min: number | null, max: number | null): string | undefined {
   if (min != null && max != null) return `${min}° - ${max}°`;
   return undefined;
 }
 
 export function useMiCalendario() {
-  const [selectedDay, setSelectedDay] = useState<Day>('Lun');
+  const [selectedDay, setSelectedDay] = useState<Day>(TODAY);
   const [routine, setRoutine] = useState<Record<Day, CalendarExercise[]>>(
     Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, CalendarExercise[]>
   );
@@ -52,8 +60,11 @@ export function useMiCalendario() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<WeeklyResponse>('/api/v1/routines/me/week')
-      .then((data) => {
+    Promise.all([
+      api.get<WeeklyResponse>('/api/v1/routines/me/week'),
+      api.get<DashboardResponse>('/api/v1/patients/me/dashboard'),
+    ])
+      .then(([data, dashboard]) => {
         const mapped = Object.fromEntries(DAYS.map((d) => [d, []])) as Record<Day, CalendarExercise[]>;
         for (const [backendDay, items] of Object.entries(data)) {
           const day = DAY_MAP[backendDay];
@@ -68,6 +79,13 @@ export function useMiCalendario() {
           }));
         }
         setRoutine(mapped);
+        // El backend solo sabe si se completó HOY — no hay estado real para
+        // otros días de la semana, así que el Set solo refleja el día actual.
+        setCompletedIds(
+          new Set(
+            dashboard.today_exercises.filter((e) => e.completed).map((e) => String(e.routine_id)),
+          ),
+        );
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -75,12 +93,25 @@ export function useMiCalendario() {
 
   const dayExercises = routine[selectedDay] ?? [];
 
-  const toggleComplete = (id: string) =>
-    setCompletedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  const toggleComplete = async (id: string) => {
+    // Solo se puede marcar como completado el día de hoy — el endpoint no
+    // acepta una fecha arbitraria, siempre usa "ahora".
+    if (selectedDay !== TODAY || completedIds.has(id)) return;
 
-  return { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete };
+    setCompletedIds((prev) => new Set(prev).add(id));
+
+    const exercise = dayExercises.find((e) => e.id === id);
+    try {
+      await api.post('/api/v1/sessions/complete-exercise', {
+        routine_id: parseInt(id),
+        completed_reps: (exercise?.reps ?? 0) * (exercise?.series ?? 1),
+        correct_reps: (exercise?.reps ?? 0) * (exercise?.series ?? 1),
+        avg_score: 100.0,
+      });
+    } catch (error) {
+      console.error('Error al completar ejercicio:', error);
+    }
+  };
+
+  return { selectedDay, setSelectedDay, completedIds, dayExercises, routine, loading, toggleComplete, today: TODAY };
 }

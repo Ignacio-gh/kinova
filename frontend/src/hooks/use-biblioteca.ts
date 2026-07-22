@@ -26,8 +26,8 @@ function mapExercise(e: ExerciseResponse): Exercise {
   };
 }
 
-export type CategoryFilter = 'Todos' | 'Cadera' | 'Rodilla' | 'Muslo' | 'Tobillo' | 'Glúteo';
-export const CATEGORY_FILTERS: CategoryFilter[] = ['Todos', 'Cadera', 'Rodilla', 'Muslo', 'Tobillo', 'Glúteo'];
+export type CategoryFilter = 'Todos' | 'Rodilla';
+export const CATEGORY_FILTERS: CategoryFilter[] = ['Todos', 'Rodilla'];
 
 export function useBiblioteca() {
   const [search, setSearch] = useState('');

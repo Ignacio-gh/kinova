@@ -25,7 +25,11 @@ function mapPatient(p: PatientListItem): Patient {
     diagnosis: p.diagnosis,
     status: p.status === 'activo' ? 'Activo' : 'Finalizado',
     adherence: Math.round(p.adherence_pct ?? 0),
-    weeklyProgress: Math.round(p.adherence_pct ?? 0),
+    // Progreso del tratamiento (semana actual / semanas totales) — distinto
+    // de la adherencia, que mide cumplimiento semanal, no avance del plan.
+    weeklyProgress: p.treatment_weeks > 0
+      ? Math.round(Math.min((p.current_week / p.treatment_weeks) * 100, 100))
+      : 0,
     lastSession,
     pendingReview: false,
   };
