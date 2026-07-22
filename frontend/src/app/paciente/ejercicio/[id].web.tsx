@@ -140,12 +140,20 @@ export default function EjercicioSesionWeb() {
     if (angles.knee !== undefined) {
       const a       = Math.round(angles.knee);
       const flexion = Math.round(180 - a);
-      // angleMax es el ángulo real máximo permitido (ej: 160°) — "se pasa"
-      if (angleMax !== null && a > angleMax)
-        result.push({ joint: 'rodilla', severity: 'error',   message: `Ángulo ${a}° supera el máximo de ${angleMax}°` });
-      // angleMin es el objetivo de flexión a alcanzar (ej: 40°) — "no llega al mínimo"
-      else if (angleMin !== null && flexion > angleMin)
-        result.push({ joint: 'rodilla', severity: 'warning', message: `Flexión ${flexion}° > mín ${angleMin}°` });
+      if (evaluatorKey === 'squat') {
+        // Sentadilla: min/max se miden en flexión — bajar de más / no bajar lo suficiente.
+        if (angleMax !== null && flexion > angleMax)
+          result.push({ joint: 'rodilla', severity: 'error',   message: `Flexión ${flexion}° supera el máximo de ${angleMax}°` });
+        else if (angleMin !== null && flexion < angleMin)
+          result.push({ joint: 'rodilla', severity: 'warning', message: `Flexión ${flexion}° < mín ${angleMin}°` });
+      } else {
+        // Extensión de rodilla (y default): angleMax es el ángulo real máximo permitido (ej: 160°) — "se pasa".
+        if (angleMax !== null && a > angleMax)
+          result.push({ joint: 'rodilla', severity: 'error',   message: `Ángulo ${a}° supera el máximo de ${angleMax}°` });
+        // angleMin es el techo de flexión a superar hacia abajo (ej: 40°) — "todavía no estiró lo suficiente".
+        else if (angleMin !== null && flexion > angleMin)
+          result.push({ joint: 'rodilla', severity: 'warning', message: `Flexión ${flexion}° > mín ${angleMin}°` });
+      }
     }
     if (angles.hip !== undefined) {
       const elev = Math.round(180 - angles.hip);
@@ -155,7 +163,7 @@ export default function EjercicioSesionWeb() {
         result.push({ joint: 'cadera', severity: 'warning', message: `Elevación ${elev}° < mín ${angleMin}°` });
     }
     return result;
-  }, [angles, angleMin, angleMax]);
+  }, [angles, angleMin, angleMax, evaluatorKey]);
 
   const effectiveCorrections = rawCorrections.length > 0 ? rawCorrections : computedCorrections;
 

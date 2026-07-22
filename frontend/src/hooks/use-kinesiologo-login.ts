@@ -29,6 +29,11 @@ export function useKinesiologoLogin() {
         password,
       });
 
+      if (data.role !== 'kinesiologo') {
+        setError('Esta cuenta es de paciente. Ingresá desde el portal de paciente.');
+        return;
+      }
+
       await saveToken(data.access_token);
       router.replace('/kinesiologo' as never);
     } catch (err: any) {

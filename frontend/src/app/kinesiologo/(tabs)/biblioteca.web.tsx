@@ -64,7 +64,7 @@ export default function BibliotecaWeb() {
 
   // --- Estados del Formulario ---
   const [patientId, setPatientId] = useState('');
-  const [day, setDay] = useState('');
+  const [days, setDays] = useState<string[]>([]);
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('15');
   const [minAngle, setMinAngle] = useState('');
@@ -78,7 +78,7 @@ export default function BibliotecaWeb() {
     setSelectedExercise(ex);
     // Reiniciar valores por defecto
     setPatientId('');
-    setDay('');
+    setDays([]);
     setSets('3');
     setReps('15');
     setMinAngle('');
@@ -93,23 +93,31 @@ export default function BibliotecaWeb() {
     setIsDayDropdownOpen(false);
   };
 
+  const toggleDay = (d: string) => {
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+
   const handleSave = async () => {
     setAssignError('');
-    if (!patientId || !day) {
-      setAssignError('Seleccioná un paciente y un día.');
+    if (!patientId || days.length === 0) {
+      setAssignError('Seleccioná un paciente y al menos un día.');
       return;
     }
     setAssignSaving(true);
     try {
-      await api.post('/api/v1/routines/', {
-        patient_id: Number(patientId),
-        exercise_id: Number(selectedExercise!.id),
-        day_of_week: DAY_TO_ENGLISH[day],
-        sets: Number(sets) || 3,
-        reps: Number(reps) || 15,
-        angle_min: minAngle ? Number(minAngle) : null,
-        angle_max: maxAngle ? Number(maxAngle) : null,
-      });
+      await Promise.all(
+        days.map((d) =>
+          api.post('/api/v1/routines/', {
+            patient_id: Number(patientId),
+            exercise_id: Number(selectedExercise!.id),
+            day_of_week: DAY_TO_ENGLISH[d],
+            sets: Number(sets) || 3,
+            reps: Number(reps) || 15,
+            angle_min: minAngle ? Number(minAngle) : null,
+            angle_max: maxAngle ? Number(maxAngle) : null,
+          }),
+        ),
+      );
       handleCloseModal();
     } catch (e: any) {
       setAssignError(e.message ?? 'Error al asignar ejercicio.');
@@ -324,39 +332,51 @@ export default function BibliotecaWeb() {
   </View>
 </View>
 
-              {/* Día */}
+              {/* Días (selección múltiple) */}
               <View style={[s.inputGroup, { zIndex: 1 }]}>
-                <Text style={s.label}>DÍA DE LA SEMANA</Text>
+                <Text style={s.label}>DÍAS DE LA SEMANA</Text>
                 <View>
-                  <TouchableOpacity 
-                    style={s.dropdownBtn} 
+                  <TouchableOpacity
+                    style={s.dropdownBtn}
                     activeOpacity={0.8}
                     onPress={() => {
                       setIsDayDropdownOpen(!isDayDropdownOpen);
                       setIsPatientDropdownOpen(false);
                     }}
                   >
-                    <Text style={[s.dropdownText, !day && { color: C.gray400 }]}>
-                      {day || 'Seleccionar día...'}
+                    <Text style={[s.dropdownText, days.length === 0 && { color: C.gray400 }]} numberOfLines={1}>
+                      {days.length === 0 ? 'Seleccionar día(s)...' : days.join(', ')}
                     </Text>
                     <Ionicons name={isDayDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={C.gray500} />
                   </TouchableOpacity>
                   {isDayDropdownOpen && (
                     <View style={s.dropdownList}>
-                      <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
-                        {DAYS.map(d => (
-                          <TouchableOpacity 
-                            key={d} 
-                            style={s.dropdownItem} 
-                            onPress={() => {
-                              setDay(d);
-                              setIsDayDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={s.dropdownItemText}>{d}</Text>
-                          </TouchableOpacity>
-                        ))}
+                      <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled>
+                        {DAYS.map(d => {
+                          const checked = days.includes(d);
+                          return (
+                            <TouchableOpacity
+                              key={d}
+                              style={[s.dropdownItem, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}
+                              onPress={() => toggleDay(d)}
+                              activeOpacity={0.7}
+                            >
+                              <Ionicons
+                                name={checked ? 'checkbox' : 'square-outline'}
+                                size={18}
+                                color={checked ? C.turquoise : C.gray400}
+                              />
+                              <Text style={s.dropdownItemText}>{d}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </ScrollView>
+                      <TouchableOpacity
+                        style={{ padding: 12, alignItems: 'center', borderTopWidth: 1, borderTopColor: C.gray100 }}
+                        onPress={() => setIsDayDropdownOpen(false)}
+                      >
+                        <Text style={{ color: C.turquoise, fontSize: 13, fontWeight: '700' }}>Listo</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </View>
@@ -534,7 +554,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '800', color: C.navy },
   modalSub: { fontSize: 14, color: C.turquoise, fontWeight: '600', marginTop: 4 },
-  modalBody: { padding: 24, gap: 16 },
+  modalBody: { padding: 24, gap: 16, zIndex: 1 },
   row: { flexDirection: 'row', gap: 16 },
   inputGroup: { gap: 8 },
   label: { fontSize: 12, fontWeight: '700', color: C.gray500, letterSpacing: 0.5 },

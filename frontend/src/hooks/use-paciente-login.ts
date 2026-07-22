@@ -29,9 +29,14 @@ export function usePacienteLogin() {
         password,
       });
 
+      if (data.role !== 'paciente') {
+        setError('Esta cuenta es de kinesiólogo. Ingresá desde el portal profesional.');
+        return;
+      }
+
       await saveToken(data.access_token);
       router.replace('/paciente' as never);
-      
+
     } catch (err: any) {
       // --- AQUÍ ESTÁ EL NUEVO CATCH CORRECTAMENTE UBICADO ---
       console.log("Error completo de la API:", err);
